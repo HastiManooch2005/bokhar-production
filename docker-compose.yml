@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # ۱. دیتابیس پستگرس
+  db:
+    image: postgres:15-alpine
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+
+  # ۲. ردیس برای کَش و سلری
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis_data:/data
+
+  # ۳. بک‌اکند جنگو (نام سرویس برای هماهنگی با ان‌جینکس backend شد)
+  backend:
+    build: ./backend
+    restart: always
+    # اجرای اتوماتیک مایگریشن‌ها و جمع‌آوری استاتیک‌فایل‌ها پیش از لود گانیکورن
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn bokhar.wsgi:application --bind 0.0.0.0:8000 --workers 5 --timeout 120"
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+
+  # ۴. ورکر سلری
+  celery:
+    build: ./backend
+    restart: always
+    command: celery -A bokhar worker --loglevel=info --concurrency=4
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+
+  # ۵. سلری بیت (تسک‌های زمان‌بندی شده)
+  celery_beat:
+    build: ./backend
+    restart: always
+    command: celery -A bokhar beat --loglevel=info
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+
+  # ۶. فرانت‌اکند ری‌اکت به همراه Nginx داخلی (مغز متفکر شبکه و لایه بیرونی)
+  frontend:
+    build: ./Bokhar-Frontend
+    restart: always
+    ports:
+      - "80:80" # باز کردن پورت 80 سرور برای دسترسی عمومی به سایت
+      - "443:443"
+    volumes:
+      - static_volume:/app/staticfiles:ro # اشتراک فایل‌های استاتیک جنگو با Nginx فرانت (فقط خواندنی)
+      - media_volume:/app/media:ro       # اشتراک عکس محصولات با Nginx فرانت (فقط خواندنی)
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:

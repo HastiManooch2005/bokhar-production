@@ -1,0 +1,286 @@
+@import "tailwindcss";
+
+/* ------------------------------
+   Fade-In + SlideUp (General)
+--------------------------------*/
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+/* ------------------------------
+   Slide-Up Base Animation
+--------------------------------*/
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.35s ease-out forwards;
+}
+
+/* ------------------------------
+   iOS Bottom Sheet Animation
+--------------------------------*/
+/*@keyframes slide-up-ios {
+  0% {
+    transform: translateY(100%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up-ios {
+  animation: slide-up-ios 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}*/
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.25s ease-out;
+}
+
+
+/* ------------------------------
+   Loading Dots Animation
+--------------------------------*/
+@keyframes dots {
+  0% { content: ""; }
+  33% { content: "."; }
+  66% { content: ".."; }
+  100% { content: "..."; }
+}
+
+.loading-dots::after {
+  content: "";
+  animation: dots 1s steps(3, end) infinite;
+}
+
+/* ------------------------------
+   Theme Colors (Tailwind v4)
+--------------------------------*/
+:root {
+  --glass-bg: rgba(255,255,255,0.06);
+
+  --color-bouquet-50: #f9f6f8;
+  --color-bouquet-100: #f5eef3;
+  --color-bouquet-200: #ecdee8;
+  --color-bouquet-300: #ddc4d5;
+  --color-bouquet-400: #c79fb9;
+  --color-bouquet-500: #af7a9b;
+  --color-bouquet-600: #9d6585;
+  --color-bouquet-700: #84526d;
+  --color-bouquet-800: #6f455b;
+  --color-bouquet-900: #5e3d4e;
+  --color-bouquet-950: #37202c;
+
+  --color-deepgreen-50:  #F2F7F6;
+  --color-deepgreen-100: #E4EFEC;
+  --color-deepgreen-200: #C6DED8;
+  --color-deepgreen-300: #9AC5BB;
+  --color-deepgreen-400: #6EA99C;
+  --color-deepgreen-500: #4F877B;
+  --color-deepgreen-600: #35655A;
+  --color-deepgreen-700: #274D44;
+  --color-deepgreen-800: #1F3D37;
+  --color-deepgreen-900: #0F2622;
+  --color-deepgreen-950: #091412;
+}
+
+/* ------------------------------
+   Dark Variant
+--------------------------------*/
+@custom-variant dark (&:where(.dark, .dark *));
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/*check button for AdminOrders */
+@keyframes fab-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-fab-in {
+  animation: fab-in 0.3s ease-out;
+}
+
+@keyframes success-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-success-pop {
+  animation: success-pop 0.4s ease-out;
+}
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+}
+
+.pulse-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #ffffff; /* رنگ نقطه */
+  animation: pulse 1s infinite ease-in-out;
+}
+
+/* for toasts */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.25s ease-out;
+}
+
+
+/* Remove number input arrows */
+.remove-arrows::-webkit-inner-spin-button,
+.remove-arrows::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.remove-arrows {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+/* افکت پالس آب مخصوص کارت‌هایی که پس‌زمینه sky دارند */
+.discount-glow {
+  animation: border-sky-pulse 2.4s ease-in-out infinite both;
+}
+
+.animate-restart {
+  animation: none !important;
+}
+
+@keyframes border-sky-pulse {
+  0% {
+    border-color: rgba(56, 189, 248, 0.05);
+    box-shadow: 0 0 0px rgba(56, 189, 248, 0.00);
+  }
+  50% {
+    border-color: rgba(56, 189, 248, 1.0); /* شدت بسیار زیاد → Chrome نمی‌تواند merge کند */
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.7);
+  }
+  100% {
+    border-color: rgba(56, 189, 248, 0.05);
+    box-shadow: 0 0 0px rgba(56, 189, 248, 0.00);
+  }
+}
+
+/* در فایل CSS global */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgb(14 165 233); /* sky-500 */
+  border-radius: 20px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(56 189 248); /* sky-400 */
+}
+
+/*skeleton loading */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150px;
+  width: 150px;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.55),
+    transparent
+  );
+  animation: shimmer 1.2s infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    left: 100%;
+  }
+}
+
+.leaflet-control-container {
+  display: none !important;
+}
+
+.leaflet-control-attribution {
+  display: none !important;
+}
+
+.leaflet-container {
+  font-family: inherit;
+}
