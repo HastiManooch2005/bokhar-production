@@ -4,8 +4,10 @@ on:
   push:
     branches:
       - master
+
 permissions:
-  contents: write        # ← این رو اضافه کن
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,21 +25,24 @@ jobs:
           docker save backend:latest | gzip > backend.tar.gz
           docker save frontend:latest | gzip > frontend.tar.gz
 
-      - name: Delete old release
-        run: |
-          gh release delete deploy-latest --yes || true
-          git push origin :refs/tags/deploy-latest || true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Copy files to VPS
+        uses: appleboy/scp-action@v0.1.7
         with:
-          tag_name: deploy-latest
-          name: "Latest Deploy"
-          files: |
-            backend.tar.gz
-            frontend.tar.gz
-            docker-compose.yml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "backend.tar.gz,frontend.tar.gz,docker-compose.yml"
+          target: "/root/bokhar-production"
+
+      - name: Deploy on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /root/bokhar-production
+            docker load < backend.tar.gz
+            docker load < frontend.tar.gz
+            docker compose down
+            docker compose up -d
