@@ -1,68 +1,42 @@
-  name: Deploy to VPS
+name: Deploy to VPS
 
-  on:
-    push:
-      branches:
-        - master
+on:
+  push:
+    branches:
+      - master
 
-  jobs:
-    deploy:
-      runs-on: ubuntu-latest
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-        - name: Build Backend
-          run: |
-            docker build \
-              --cache-from backend:latest \
-              -t backend:latest \
-              ./backend
+      - name: Build images
+        run: |
+          docker build -t backend:latest ./backend
+          docker build -t frontend:latest ./Bokhar-Frontend
 
-        - name: Build Frontend
-          run: |
-            docker build \
-              --cache-from frontend:latest \
-              -t frontend:latest \
-              ./Bokhar-Frontend
+      - name: Save and compress
+        run: |
+          docker save backend:latest | gzip > backend.tar.gz
+          docker save frontend:latest | gzip > frontend.tar.gz
 
-        - name: Save and compress images
-          run: |
-            docker save backend:latest | gzip > backend.tar.gz
-            docker save frontend:latest | gzip > frontend.tar.gz
+      - name: Delete old release
+        run: |
+          gh release delete deploy-latest --yes || true
+          git push origin :refs/tags/deploy-latest || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-        - name: Copy files to VPS
-          uses: appleboy/scp-action@v0.1.7
-          with:
-            host: ${{ secrets.VPS_HOST }}
-            username: ${{ secrets.VPS_USER }}
-            key: ${{ secrets.VPS_SSH_KEY }}
-            port: 22
-            source: "backend.tar.gz,frontend.tar.gz,docker-compose.yml"
-            target: "/root/app"
-
-        - name: Deploy on VPS
-          uses: appleboy/ssh-action@v1.0.3
-          with:
-            host: ${{ secrets.VPS_HOST }}
-            username: ${{ secrets.VPS_USER }}
-            key: ${{ secrets.VPS_SSH_KEY }}
-            port: 22
-            script: |
-              set -e
-              cd /root/app
-  
-              echo "📦 Loading images..."
-              docker load -i backend.tar.gz
-              docker load -i frontend.tar.gz
-  
-              echo "🚀 Starting containers..."
-              docker compose up -d --force-recreate --remove-orphans
-  
-              echo "🧹 Cleanup..."
-              docker image prune -f
-              rm -f backend.tar.gz frontend.tar.gz
-  
-              echo "✅ Deploy complete!"
-              docker compose ps
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: deploy-latest
+          name: "Latest Deploy"
+          files: |
+            backend.tar.gz
+            frontend.tar.gz
+            docker-compose.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
