@@ -4,7 +4,8 @@ on:
   push:
     branches:
       - master
-
+permissions:
+  contents: write        # ← این رو اضافه کن
 jobs:
   build:
     runs-on: ubuntu-latest
