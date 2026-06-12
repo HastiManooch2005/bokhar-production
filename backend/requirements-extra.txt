@@ -6,10 +6,11 @@ pytest==9.0.2
 pytest-django==4.11.1
 
 django-extensions==4.1
+drf-spectacular
 
 pydot==4.0.1
 pydotplus==2.0.2
-
+openpyxl
 opentelemetry-api==1.42.1
 opentelemetry-sdk==1.42.1
 
@@ -35,3 +36,5 @@ protobuf==6.33.6
 googleapis-common-protos==1.75.0
 
 Pygments==2.19.2
+
+django-prometheus

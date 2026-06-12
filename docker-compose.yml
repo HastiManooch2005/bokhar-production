@@ -1,70 +1,95 @@
 services:
   db:
     image: postgres:15-alpine
-    restart: always
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
     env_file:
       - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
-    restart: always
+    restart: unless-stopped
+    command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
-    build:
-      context: ./backend
-    restart: always
-    command: >
-      sh -c "python manage.py migrate &&
-             python manage.py collectstatic --noinput &&
-             gunicorn bokhar.wsgi:application --bind 0.0.0.0:8000 --workers 5 --timeout 120"
+    build: ./backend
+    image: bokhar-backend:latest
+    restart: unless-stopped
     env_file:
       - .env
+    command: >
+      sh -c "
+      python manage.py migrate &&
+      python manage.py collectstatic --noinput &&
+      gunicorn bokhar.wsgi:application --bind 0.0.0.0:8000 --workers $${GUNICORN_WORKERS:-5} --timeout 120 --access-logfile - --error-logfile -
+      "
+
+    environment:
+      - DJANGO_SETTINGS_MODULE=bokhar.settings
+      - STATIC_ROOT=/app/staticfiles
+      - STATIC_URL=/static/
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
 
   celery:
-    build:
-      context: ./backend
-    restart: always
-    command: celery -A bokhar worker --loglevel=info
+    image: bokhar-backend:latest
+    restart: unless-stopped
+    command: celery -A bokhar worker --loglevel=warning --concurrency=${CELERY_CONCURRENCY:-4}
     env_file:
       - .env
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   celery_beat:
-    build:
-      context: ./backend
-    restart: always
-    command: celery -A bokhar beat --loglevel=info
+    image: bokhar-backend:latest
+    restart: unless-stopped
+    command: celery -A bokhar beat --loglevel=warning --scheduler django_celery_beat.schedulers:DatabaseScheduler
     env_file:
       - .env
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   frontend:
-    build:
-      context: ./Bokhar-Frontend
-    restart: always
+    build: ./Bokhar-Frontend
+    restart: unless-stopped
+    env_file:
+      - .env
     ports:
       - "80:80"
       - "443:443"
+    depends_on:
+      - backend
+
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
+      - ./Bokhar-Frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - /etc/nginx/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - backend
 
 volumes:
   postgres_data:

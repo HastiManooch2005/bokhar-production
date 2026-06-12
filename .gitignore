@@ -15,6 +15,7 @@ static/
 
 # Environment
 .env
+Bokhat-Frontend/.env
 .env.local
 .env.*.local
 

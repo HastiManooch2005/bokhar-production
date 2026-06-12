@@ -2,6 +2,12 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 from report.urls import *
+from discounts.urls import *
+from notifications.urls import *
+from order.urls import *
+from products.urls import *
+from report.urls import *
+from users.urls import *
 from django.urls import path
 from drf_spectacular.views import (
     SpectacularAPIView,

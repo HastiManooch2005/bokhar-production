@@ -44,15 +44,12 @@ class PublicProductDetailView(generics.RetrieveAPIView):
 # PUBLIC: Final price API
 # ---------------------------
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def product_final_price(request, product_id, tab_id, material_id):
-    """
-    Returns the final price of a product with the strongest discount applied.
-    Supports coupon codes.
-    """
 
-    product = Product.objects.get(id=product_id)
-    tab = ProductPricingTab.objects.get(id=tab_id)
-    material = MaterialPrice.objects.get(id=material_id)
+    product = get_object_or_404(Product, id=product_id)
+    tab = get_object_or_404(ProductPricingTab, id=tab_id)
+    material = get_object_or_404(MaterialPrice, id=material_id)
 
     coupon = request.query_params.get("coupon")
 
@@ -66,7 +63,5 @@ def product_final_price(request, product_id, tab_id, material_id):
 
     return Response({
         "product_id": product_id,
-        "pricing_tab_id": tab_id,
-        "material_id": material_id,
         "final_price": final_price
     })
