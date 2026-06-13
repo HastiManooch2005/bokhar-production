@@ -3,7 +3,7 @@ services:
     image: postgres:15-alpine
     restart: unless-stopped
     env_file:
-      - .env
+      - .env.prod
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -25,20 +25,26 @@ services:
       retries: 5
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        ENV: production
+        PIP_INDEX: https://package-mirror.liara.ir/repository/pypi/simple/
+
     image: bokhar-backend:latest
     restart: unless-stopped
     env_file:
-      - .env
+      - .env.prod
     command: >
       sh -c "
       python manage.py migrate &&
       python manage.py collectstatic --noinput &&
       gunicorn bokhar.wsgi:application --bind 0.0.0.0:8000 --workers $${GUNICORN_WORKERS:-5} --timeout 120 --access-logfile - --error-logfile -
       "
-
     environment:
       - DJANGO_SETTINGS_MODULE=bokhar.settings
+      - DJANGO_ENV=production
+      - DEBUG=False
       - STATIC_ROOT=/app/staticfiles
       - STATIC_URL=/static/
     depends_on:
@@ -51,11 +57,14 @@ services:
       - media_volume:/app/media
 
   celery:
-    image: bokhar-backend:latest
+    image: bokhar-backend:latest  # از همون image بیلد‌شده backend استفاده میکنه
     restart: unless-stopped
     command: celery -A bokhar worker --loglevel=warning --concurrency=${CELERY_CONCURRENCY:-4}
     env_file:
-      - .env
+      - .env.prod
+    environment:
+      - DJANGO_ENV=production
+      - DEBUG=False
     depends_on:
       db:
         condition: service_healthy
@@ -63,11 +72,14 @@ services:
         condition: service_healthy
 
   celery_beat:
-    image: bokhar-backend:latest
+    image: bokhar-backend:latest  # از همون image بیلد‌شده backend استفاده میکنه
     restart: unless-stopped
     command: celery -A bokhar beat --loglevel=warning --scheduler django_celery_beat.schedulers:DatabaseScheduler
     env_file:
-      - .env
+      - .env.prod
+    environment:
+      - DJANGO_ENV=production
+      - DEBUG=False
     depends_on:
       db:
         condition: service_healthy
@@ -78,13 +90,12 @@ services:
     build: ./Bokhar-Frontend
     restart: unless-stopped
     env_file:
-      - .env
+      - Bokhar-Frontend/.env
     ports:
       - "80:80"
       - "443:443"
     depends_on:
       - backend
-
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/media

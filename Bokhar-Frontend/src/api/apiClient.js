@@ -3,7 +3,7 @@ const API_BASE = import.meta.env.VITE_API_URL;
 // ------------------------- Send Register OTP -------------------------
 export async function sendRegisterOtp(phone) {
   try {
-    const res = await fetch(`${API_BASE}/sent/otp/`, {
+    const res = await fetch(`${API_BASE}/send/otp/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -42,5 +42,4 @@ export async function verifyRegisterOtp({ phone, otp, fullname }) {
     throw new Error(err?.message || "خطا در تایید OTP");
   }
 }
-
 

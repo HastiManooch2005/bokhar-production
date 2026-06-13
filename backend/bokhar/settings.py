@@ -4,14 +4,21 @@ from pathlib import Path
 
 from decouple import config
 
+# ---------------- BASE ----------------
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
+DJANGO_ENV = config("DJANGO_ENV", default="local")  # "local" | "production"
 
 ALLOWED_HOSTS = [
     "bokhar.online",
     "www.bokhar.online",
-    "backend",  # برای ارتباط داخلی کانتینرها باهم
+    "backend",
 ]
+
+if DEBUG:
+    ALLOWED_HOSTS += ["localhost", "127.0.0.1"]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -41,20 +48,17 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'django_prometheus.middleware.PrometheusBeforeMiddleware',
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-
-    # JWT Cookie -> Authorization Header
     "bokhar.middleware.CookieToHeaderMiddleware",
-
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    'django_prometheus.middleware.PrometheusAfterMiddleware',
+    "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 
 ROOT_URLCONF = "bokhar.urls"
@@ -76,18 +80,27 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "bokhar.wsgi.application"
 
-# ----------------------database----------------------------
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB"),
-        "USER": os.getenv("POSTGRES_USER"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
-        "HOST": "db",
-        "PORT": "5432",
+# ---------------- DATABASE ----------------
+if DJANGO_ENV == "production":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": config("POSTGRES_DB"),
+            "USER": config("POSTGRES_USER"),
+            "PASSWORD": config("POSTGRES_PASSWORD"),
+            "HOST": "db",
+            "PORT": "5432",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
+# ---------------- AUTH ----------------
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -100,16 +113,18 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
+AUTH_USER_MODEL = "users.User"
+
+# ---------------- INTERNATIONALIZATION ----------------
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Asia/Tehran"
 USE_I18N = True
 USE_TZ = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-AUTH_USER_MODEL = "users.User"
 
 # ---------------- CORS & CSRF ----------------
-if not DEBUG:
+if DJANGO_ENV == "production":
     CORS_ALLOWED_ORIGINS = [
         "https://bokhar.online",
         "https://www.bokhar.online",
@@ -127,6 +142,8 @@ else:
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ]
+
+CORS_ALLOW_CREDENTIALS = True
 
 # ---------------- DRF ----------------
 REST_FRAMEWORK = {
@@ -149,10 +166,12 @@ SPECTACULAR_SETTINGS = {
                 "bearerFormat": "JWT",
             }
         }
-    }
+    },
 }
 
 # ---------------- JWT ----------------
+_IS_PRODUCTION = DJANGO_ENV == "production"
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
@@ -161,14 +180,21 @@ SIMPLE_JWT = {
     "AUTH_COOKIE": "access",
     "AUTH_COOKIE_REFRESH": "refresh",
     "AUTH_COOKIE_HTTP_ONLY": True,
-
-    # فعال‌سازی امنیت کوکی در حالت پروداکشن برای سازگاری با HTTPS
-    "AUTH_COOKIE_SECURE": not DEBUG,
+    "AUTH_COOKIE_SECURE": _IS_PRODUCTION,
     "AUTH_COOKIE_SAMESITE": "Lax",
-
     "ACCESS_TOKEN_LIFETIME_SECONDS": int(timedelta(hours=1).total_seconds()),
     "REFRESH_TOKEN_LIFETIME_SECONDS": int(timedelta(days=7).total_seconds()),
 }
+
+# ---------------- COOKIE & SESSION SECURITY ----------------
+AUTH_COOKIE_SECURE = _IS_PRODUCTION
+SESSION_COOKIE_SECURE = _IS_PRODUCTION
+CSRF_COOKIE_SECURE = _IS_PRODUCTION
+
+SESSION_COOKIE_HTTPONLY = True
+SESSION_SAVE_EVERY_REQUEST = True
+CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_HTTPONLY = False
 
 # ---------------- LOGGING ----------------
 LOGGING = {
@@ -179,7 +205,7 @@ LOGGING = {
     },
     "root": {
         "handlers": ["console"],
-        "level": "INFO" if not DEBUG else "DEBUG",
+        "level": "DEBUG" if DEBUG else "INFO",
     },
 }
 
@@ -195,45 +221,37 @@ CACHES = {
 CELERY_BROKER_URL = config("CELERY_BROKER_URL")
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
-
+CELERY_RESULT_BACKEND = "django-db"
 
 # ---------------- MEDIA & STATIC ----------------
 STATIC_URL = "/static/"
-STATIC_ROOT = "/app/staticfiles"
-
 MEDIA_URL = "/media/"
-MEDIA_ROOT = "/app/media"
 
+if DJANGO_ENV == "production":
+    STATIC_ROOT = "/app/staticfiles"
+    MEDIA_ROOT = "/app/media"
+else:
+    STATIC_ROOT = BASE_DIR / "staticfiles"
+    MEDIA_ROOT = BASE_DIR / "media"
 
-# ---------------- SESSION & CSRF SECURITY ----------------
-# تنظیمات امنیتی کوکی‌ها هماهنگ با پروتکل HTTPS در پروداکشن
-AUTH_COOKIE_SECURE = not DEBUG
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
-
-SESSION_COOKIE_HTTPONLY = True
-SESSION_SAVE_EVERY_REQUEST = True
-CSRF_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_HTTPONLY = False
-
-
-# ---------------- OPENTELEMETRY ----------------
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-
-resource = Resource.create({"service.name": "payment-api", "service.version": "1.0.0"})
-provider = TracerProvider(resource=resource)
-processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="http://otel-collector:4317", insecure=True))
-provider.add_span_processor(processor)
-trace.set_tracer_provider(provider)
-
-
-# ---------------- PROXY SETTINGS (SSL بخش‌های مربوط به) ----------------
-# فعال‌سازی هدرهای فوروارد شده از Nginx برای تفهیم وضعیت HTTPS به جنگو
-if not DEBUG:
+# ---------------- PROXY / SSL (production only) ----------------
+if _IS_PRODUCTION:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     USE_X_FORWARDED_HOST = True
     SECURE_SSL_REDIRECT = True
+
+# ---------------- OPENTELEMETRY (production only) ----------------
+if _IS_PRODUCTION:
+    from opentelemetry import trace
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+
+    resource = Resource.create({"service.name": "payment-api", "service.version": "1.0.0"})
+    provider = TracerProvider(resource=resource)
+    processor = BatchSpanProcessor(
+        OTLPSpanExporter(endpoint="http://otel-collector:4317", insecure=True)
+    )
+    provider.add_span_processor(processor)
+    trace.set_tracer_provider(provider)
