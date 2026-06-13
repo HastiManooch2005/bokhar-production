@@ -1,73 +1,31 @@
 services:
-  db:
-    image: postgres:15-alpine
-    restart: always
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    env_file:
-      - .env
 
   redis:
     image: redis:7-alpine
-    restart: always
-    volumes:
-      - redis_data:/data
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
 
   backend:
     build:
       context: ./backend
-    restart: always
-    command: >
-      sh -c "python manage.py migrate &&
-             python manage.py collectstatic --noinput &&
-             gunicorn bokhar.wsgi:application --bind 0.0.0.0:8000 --workers 5 --timeout 120"
+    command: python manage.py runserver 0.0.0.0:8000
     env_file:
-      - .env
-    depends_on:
-      - db
-      - redis
+      - .env.local
+    ports:
+      - "8000:8000"
     volumes:
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
+      - ./backend:/app
+    depends_on:
+      - redis
 
   celery:
     build:
       context: ./backend
-    restart: always
     command: celery -A bokhar worker --loglevel=info
     env_file:
-      - .env
-    depends_on:
-      - db
-      - redis
-
-  celery_beat:
-    build:
-      context: ./backend
-    restart: always
-    command: celery -A bokhar beat --loglevel=info
-    env_file:
-      - .env
-    depends_on:
-      - db
-      - redis
-
-  frontend:
-    build:
-      context: ./Bokhar-Frontend
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
+      - .env.local
     volumes:
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
-      - /etc/nginx/ssl:/etc/nginx/ssl:ro
+      - ./backend:/app
     depends_on:
-      - backend
-
-volumes:
-  postgres_data:
-  redis_data:
-  static_volume:
-  media_volume:
+      - redis
