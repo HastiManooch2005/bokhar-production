@@ -220,18 +220,18 @@ export default function AdminServices() {
               دسته‌بندی‌ها
             </h2>
 
-            <div className="flex gap-2 mb-4">
-              <input
+<div className="flex items-center gap-2 mb-4">
+                <input
                 value={newCat}
                 onChange={(e) => setNewCat(e.target.value)}
                 placeholder="نام دسته جدید"
-                className="flex-1 p-3 h-12 rounded-xl border border-sky-200 dark:border-indigo-600 bg-white/80 dark:bg-neutral-800 shadow text-slate-800 dark:text-gray-200"
+                className="flex-1 min-w-0 p-3 h-12 rounded-xl border border-sky-200 dark:border-indigo-600 bg-white/80 dark:bg-neutral-800 shadow text-slate-800 dark:text-gray-200"
                 onKeyDown={(e) => e.key === "Enter" && addCategory()}
               />
               <button
                 onClick={addCategory}
                 disabled={isLoading}
-                className="px-4 h-12 rounded-xl bg-gradient-to-r from-sky-100 to-sky-200 dark:from-purple-700 dark:to-purple-800 border border-sky-200 dark:border-indigo-600 shadow-lg text-gray-800 dark:text-white flex items-center gap-2 shrink-0 cursor-pointer hover:scale-105 transition disabled:opacity-50"
+                className="px-3 sm:px-4 h-12 shrink-0 rounded-xl bg-gradient-to-r from-sky-100 to-sky-200 dark:from-purple-700 dark:to-purple-800 border border-sky-200 dark:border-indigo-600 shadow-lg text-gray-800 dark:text-white flex items-center gap-2 shrink-0 cursor-pointer hover:scale-105 transition disabled:opacity-50"
               >
                 <FiPlus /> افزودن
               </button>

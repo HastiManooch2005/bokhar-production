@@ -99,7 +99,12 @@ function CustomerCard({ customer, onClick }) {
     </div>
   );
 }
-
+const tabs = [
+  { key: "all", label: "همه", icon: <FiUsers /> },
+  { key: "active", label: "فعال", icon: <FiUser /> },
+  { key: "inactive", label: "غیرفعال", icon: <FiUser /> },
+  { key: "vip", label: "VIP", icon: <FiStar /> },
+];
 /* ================= PAGE ================= */
 
 export default function AdminCustomers() {
@@ -140,30 +145,27 @@ export default function AdminCustomers() {
         {/* Tabs + Search */}
         <div className="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           {/* Tabs */}
-          <div className="flex flex-wrap justify-center md:justify-start gap-2">
-            {[
-              { key: "all", label: "همه", icon: <FiUsers /> },
-              { key: "active", label: "فعال", icon: <FiUser /> },
-              { key: "inactive", label: "غیرفعال", icon: <FiUser /> },
-              { key: "vip", label: "VIP", icon: <FiStar /> },
-            ].map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`
-                  flex items-center gap-2 px-4 py-2 rounded-2xl font-medium transition border shadow-md cursor-pointer
-                  ${
-                    activeTab === tab.key
-                      ? "bg-gradient-to-r from-sky-100 to-sky-200 dark:from-purple-700 dark:to-purple-800 border-gray-300 dark:border-indigo-600 shadow-lg shadow-indigo-300 dark:shadow-indigo-500 scale-105 text-gray-800 dark:text-white/90"
-                      : "bg-white dark:bg-white/80 hover:bg-sky-100 dark:hover:bg-white/95 border-gray-200 shadow-lg text-gray-800"
-                  }
-                `}
-              >
-                {tab.icon}
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
+<div className="flex justify-center md:justify-start gap-2">
+  {tabs.map((tab) => (
+    <button
+      key={tab.key}
+      onClick={() => setActiveTab(tab.key)}
+      className={`
+        flex-1 min-w-0
+        flex items-center justify-center gap-1
+        px-2 py-2 rounded-2xl font-medium transition border shadow-md cursor-pointer
+        ${
+          activeTab === tab.key
+            ? "bg-gradient-to-r from-sky-100 to-sky-200 dark:from-purple-700 dark:to-purple-800 border-gray-300 dark:border-indigo-600 shadow-lg shadow-indigo-300 dark:shadow-indigo-500 scale-105 text-gray-800 dark:text-white/90"
+            : "bg-white dark:bg-white/80 hover:bg-sky-100 dark:hover:bg-white/95 border-gray-200 shadow-lg text-gray-800"
+        }
+      `}
+    >
+      {tab.icon}
+      <span className="text-sm">{tab.label}</span>
+    </button>
+  ))}
+</div>
 
           {/* Search */}
           <div className="w-full md:w-1/3">
