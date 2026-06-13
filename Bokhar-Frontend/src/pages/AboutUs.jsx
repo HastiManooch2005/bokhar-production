@@ -70,7 +70,7 @@ const AboutUs = () => {
     <section className="w-full relative overflow-x-hidden">
       {/* بخش اول: لپ‌تاپ و دلیوری */}
       <div className="relative overflow-hidden">
-        <div className="flex flex-row items-start pt-6 sm:pt-10 md:pt-14 mb-8">
+        <div className="flex flex-row items-start pt-6 sm:pt-10 md:pt-14 mb-4">
           {/* لپ‌تاپ + باکس مشکی */}
           <div className="w-3/5 relative flex flex-col items-end pb-11 sm:pb-14 md:pb-18 lg:pb-20">
             <img
@@ -182,7 +182,7 @@ const AboutUs = () => {
           {/* باکس پایینی (در نمایش): راه‌های ارتباط - z-index بالاتر */}
           <div
             className="w-full bg-sky-50 justify-center rounded-t-4xl shadow-md border border-gray-100
-                       px-4 sm:px-8 py-6 sm:py-8 relative z-20"
+                       px-4 sm:px-8 py-6 sm:py-8 relative mb-12.5 z-20"
           >
             <h3 className="text-gray-800 text-center text-lg sm:text-xl md:text-2xl font-bold mb-6">
               راه‌های ارتباط با ما

@@ -39,19 +39,23 @@ function AppContent() {
   const [openModal, setOpenModal] = useState(false);
   const location = useLocation();
 
-  // مسیر واقعی از location.hash استخراج می‌شود
-  const [currentPath, setCurrentPath] = useState("");
-  useEffect(() => {
-    const hashPath = location.hash
-      ? location.hash.replace("#", "")
-      : window.location.hash.replace("#", "");
-    setCurrentPath(hashPath);
-  }, [location]);
+// مسیر واقعی از location.hash استخراج می‌شود
+const [currentPath, setCurrentPath] = useState("");
 
-  // مسیرهای /admin-dashboard و زیرمسیرها نوبار ندارند
-  const hideNavbar =
-    currentPath === "/" || currentPath.startsWith("/admin-dashboard");
+useEffect(() => {
+  const hashPath = location.hash
+    ? location.hash.replace("#", "")
+    : window.location.hash.replace("#", "");
 
+  setCurrentPath(hashPath || "/");
+}, [location]);
+
+// صفحه اصلی و پنل ادمین نوبار ندارند
+const hideNavbar =
+  currentPath === "/" ||
+  currentPath === "" ||
+  currentPath.startsWith("/admin-dashboard");
+  
   return (
     <div
       className="bg-gradient-to-bl from-sky-200/80 via-pink-100/60 to-sky-200/80
