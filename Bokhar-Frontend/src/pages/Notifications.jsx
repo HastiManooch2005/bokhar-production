@@ -58,7 +58,9 @@ export default function Notifications() {
   const unreadCount = reminders.filter((r) => !r.read).length;
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 max-w-3xl mx-auto text-gray-800 dark:text-gray-200">
+    <div 
+    dir="rtl"
+    className="p-3 sm:p-4 md:p-6 max-w-3xl mx-auto text-gray-800 dark:text-gray-200">
       <div className="bg-gradient-to-br from-sky-50 via-sky-100 to-sky-200 dark:from-sky-800 dark:via-sky-900 dark:to-sky-950 rounded-2xl sm:rounded-3xl shadow-lg p-4 mt-2 md:mt-16 sm:p-5 md:p-6 border border-sky-200 dark:border-sky-700 transition-colors">
         
         {/* Tabs */}
