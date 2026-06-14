@@ -19,7 +19,7 @@ export default function RegisterPhoneForm({ onNext, onSwitchLogin }) {
     if (loading) return;
 
     const trimmedName = fullname.trim();
-    
+
     if (!trimmedName) {
       return toast.error("نام و نام خانوادگی را وارد کنید");
     }
@@ -78,43 +78,45 @@ export default function RegisterPhoneForm({ onNext, onSwitchLogin }) {
         </span>
       </div>
 
-      {/* Fullname */}
-      <input
-        value={fullname}
-        onChange={handleNameChange}
-        placeholder="نام و نام خانوادگی"
-        className="
-          w-full border-b p-2 mb-6
-          bg-transparent
-          text-gray-800 dark:text-gray-100
-          focus:border-blue-500 dark:focus:border-purple-600 focus:border-b-2 outline-none
-        "
-      />
+      <form onSubmit={(e) => { e.preventDefault(); handleNext(); }}>
+        {/* Fullname */}
+        <input
+          value={fullname}
+          onChange={handleNameChange}
+          placeholder="نام و نام خانوادگی"
+          className="
+            w-full border-b p-2 mb-6
+            bg-transparent
+            text-gray-800 dark:text-gray-100
+            focus:border-blue-500 dark:focus:border-purple-600 focus:border-b-2 outline-none
+          "
+        />
 
-      {/* Phone */}
-      <PhoneInputBoxes
-        value={phone}
-        onChange={(val) => setPhone(val.replace(/\D/g, ""))}
-      />
+        {/* Phone */}
+        <PhoneInputBoxes
+          value={phone}
+          onChange={(val) => setPhone(val.replace(/\D/g, ""))}
+        />
 
-      <p className="text-gray-400 dark:text-gray-500 text-xs mt-2 text-center">
-        شماره همراه خود را وارد بفرمایید
-      </p>
+        <p className="text-gray-400 dark:text-gray-500 text-xs mt-2 text-center">
+          شماره همراه خود را وارد بفرمایید
+        </p>
 
-      <button
-        onClick={handleNext}
-        disabled={loading || phone.length < 11 || !fullname.trim()}
-        className={`w-full mt-6 py-3 rounded-xl text-white font-medium flex justify-center items-center gap-2 transition ${
-          loading || phone.length < 11 || !fullname.trim()
-            ? "bg-blue-400 dark:bg-purple-500 cursor-not-allowed"
-            : "bg-blue-600 dark:bg-purple-700 hover:bg-blue-700 dark:hover:bg-purple-900"
-        }`}
-      >
-        {loading && (
-          <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-        )}
-        {loading ? "در حال ارسال..." : "ارسال کد تأیید"}
-      </button>
+        <button
+          type="submit"
+          disabled={loading || phone.length < 11 || !fullname.trim()}
+          className={`w-full mt-6 py-3 rounded-xl text-white font-medium flex justify-center items-center gap-2 transition ${
+            loading || phone.length < 11 || !fullname.trim()
+              ? "bg-blue-400 dark:bg-purple-500 cursor-not-allowed"
+              : "bg-blue-600 dark:bg-purple-700 hover:bg-blue-700 dark:hover:bg-purple-900"
+          }`}
+        >
+          {loading && (
+            <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          )}
+          {loading ? "در حال ارسال..." : "ارسال کد تأیید"}
+        </button>
+      </form>
 
       <p className="text-center mt-4 text-sm text-gray-600 dark:text-gray-200">
         حساب دارید؟{" "}

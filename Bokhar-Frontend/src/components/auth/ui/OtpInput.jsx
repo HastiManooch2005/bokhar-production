@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useCallback } from "react";
 
 export default function OtpInput({ value, onChange, length = 5 }) {
   const inputsRef = useRef([]);
@@ -26,6 +26,24 @@ export default function OtpInput({ value, onChange, length = 5 }) {
     }
   };
 
+  // Handle paste on any input
+  const handlePaste = useCallback((e) => {
+    e.preventDefault();
+    const pasted = (e.clipboardData || window.clipboardData)
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, length);
+    
+    if (pasted) {
+      onChange(pasted);
+      // Focus the appropriate input
+      const focusIndex = Math.min(pasted.length, length - 1);
+      setTimeout(() => {
+        inputsRef.current[focusIndex]?.focus();
+      }, 0);
+    }
+  }, [length, onChange]);
+
   return (
     <div
       dir="ltr"
@@ -41,9 +59,10 @@ export default function OtpInput({ value, onChange, length = 5 }) {
           value={d}
           onChange={(e) => handleChange(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
+          onPaste={handlePaste}
           className="w-10 h-12 text-center border-b-2 outline-none bg-transparent text-xl font-semibold
-           border-gray-400 focus:border-blue-500  text-gray-800 dark:text-gray-100
-             dark:border-gray-100 dark:focus:border-purple-900 "
+           border-gray-400 focus:border-blue-500 text-gray-800 dark:text-gray-100
+           dark:border-gray-100 dark:focus:border-purple-900"
         />
       ))}
     </div>
