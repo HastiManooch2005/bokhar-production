@@ -3,9 +3,8 @@ from rest_framework import permissions
 
 class IsSeller(permissions.BasePermission):
     """
-    اجازه:
-    - همه کاربران می‌توانند GET بزنند
-    - فقط کاربرانی که role='seller' هستند اجازه POST, PUT, DELETE دارند
+    GET برای همه
+    POST/PUT/DELETE فقط seller و admin
     """
 
     def has_permission(self, request, view):
@@ -13,15 +12,9 @@ class IsSeller(permissions.BasePermission):
             return True
 
         return (
-            request.user.is_authenticated and 
-            request.user.role == "seller"
-        )
-
-    def has_object_permission(self, request, view, obj):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-
-        return (
-            request.user.is_authenticated and 
-            request.user.role == "seller"
+            request.user.is_authenticated and
+            (
+                request.user.role == "seller" or
+                request.user.is_admin
+            )
         )

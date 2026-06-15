@@ -1,4 +1,5 @@
 import { Search as SearchIcon } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 
 export default function Search({
   value,
@@ -9,22 +10,44 @@ export default function Search({
   loading = false,
   placeholder = "جستجو...",
 }) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef(null);
+
+  // بستن dropdown وقتی بیرون کلیک شد
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelect = (item) => {
+    onSelect(item);
+    setOpen(false); // ساجست می‌پره
+  };
+
   return (
-    <div className="relative w-full">
+    <div className="relative w-full" ref={wrapperRef}>
       <div
         dir="rtl"
-        className="flex items-center gap-2 shadow-lg px-3 py-3  rounded-3xl
+        className="flex items-center gap-2 shadow-lg px-3 py-3 rounded-3xl
         bg-white border border-sky-300/50
-        dark:bg-white/60 dark:border-white/80 
-        "
+        dark:bg-white/60 dark:border-white/80"
       >
         <SearchIcon className="text-gray-500 dark:text-gray-100" size={20} />
         <input
           type="text"
           placeholder={placeholder}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="flex-1 bg-transparent outline-none text-sm text-gray-800 "
+          onChange={(e) => {
+            onChange(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          className="flex-1 bg-transparent outline-none text-sm text-gray-800"
         />
       </div>
 
@@ -34,14 +57,15 @@ export default function Search({
         </div>
       )}
 
-      {items.length > 0 && (
-        <ul className="absolute w-full border rounded-2xl mt-2 z-50 shadow
-           bg-white dark:bg-gray-500/95 dark:text-white 
-         ">
+      {open && items.length > 0 && (
+        <ul
+          className="absolute w-full border rounded-2xl mt-2 z-50 shadow
+           bg-white dark:bg-gray-500/95 dark:text-white"
+        >
           {items.map((item, index) => (
             <li
               key={index}
-              onClick={() => onSelect(item)}
+              onClick={() => handleSelect(item)}
               className="px-4 py-2 rounded-xl hover:bg-sky-100 dark:hover:bg-purple-900 cursor-pointer"
             >
               {renderItem(item)}

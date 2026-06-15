@@ -70,6 +70,7 @@ Bokhar-Frontend/.env
 Bokhat-Frontend/.env
 .env.local
 .env.*.local
+.env.prod
 
 # Docker
 docker-compose.override.yml

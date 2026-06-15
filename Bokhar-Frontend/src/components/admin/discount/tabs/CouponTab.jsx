@@ -242,7 +242,7 @@ const handleEdit = (item) => {
       </div>
 
       {/* Refresh Button */}
-      <div className="flex justify-end">
+      <div className="flex justify-center">
         <button 
           onClick={loadCoupons}
           disabled={loading}

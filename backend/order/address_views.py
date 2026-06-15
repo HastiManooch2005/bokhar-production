@@ -1,24 +1,20 @@
 import logging
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from products.permission import IsSeller
-from django.core.cache import cache
-from django.db.models import Count, Q, Prefetch
 
-from products.models import Product
-
-from .models import Order, OrderStatus, Address, OrderStatusLog
 from .serializers import *
 from .session import OrderSession
+
+import requests
+from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
 class CreateAddressView(APIView):
-    #  permission_classes = [IsAuthenticated]
+  #  permission_classes = [IsAuthenticated]
     serializer_class = AddressSerializer
 
     def post(self, request):
@@ -30,7 +26,7 @@ class CreateAddressView(APIView):
 
 
 class ListAddressAPIView(APIView):
-    #  permission_classes = [IsAuthenticated]
+  #  permission_classes = [IsAuthenticated]
     serializer_class = AddressDetailSerializer
 
     def get(self, request):
@@ -40,7 +36,7 @@ class ListAddressAPIView(APIView):
 
 
 class UpdateAddressAPIView(APIView):
-    # permission_classes = [IsAuthenticated]
+   # permission_classes = [IsAuthenticated]
     serializer_class = UpdateAddressSerializer
 
     def put(self, request, id):
@@ -52,13 +48,12 @@ class UpdateAddressAPIView(APIView):
 
 
 class DeleteAddressAPIView(APIView):
-    #  permission_classes = [IsAuthenticated]
+  #  permission_classes = [IsAuthenticated]
 
     def delete(self, request, id):
         address = get_object_or_404(Address, id=id, user=request.user)
         address.delete()
         return Response({"message": "آدرس شما حذف شد."})
-
 
 class NeshanSearchAPIView(APIView):
     def get(self, request):
@@ -84,10 +79,9 @@ class NeshanSearchAPIView(APIView):
         )
 
         return Response(response.json(), status=response.status_code)
-
-
+    
 class NeshanReverseAPIView(APIView):
-    #  permission_classes = [IsAuthenticated]
+  #  permission_classes = [IsAuthenticated]
 
     def get(self, request):
         lat = request.GET.get("lat")

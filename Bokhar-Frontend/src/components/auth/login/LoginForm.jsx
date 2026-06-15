@@ -187,7 +187,7 @@ export default function LoginForm({ onSwitchRegister, onClose, onSuccess }) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="w-full border-b p-1 pr-2 bg-transparent outline-none transition
-           text-gray-800 border-gray-300 focus:border-blue-600
+           text-gray-800 border-gray-300 focus:border-blue-600 
            dark:border-gray-100 dark:focus:border-purple-600 dark:focus:border-b-2 dark:text-gray-100"
         />
         <button

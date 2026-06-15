@@ -412,7 +412,7 @@ export default function Landing() {
 
   {/* محتوای فوتر */}
   <div className="relative z-10 py-6 md:py-10 text-center  rounded-t-4xl">
-    ساخته شده توسط تیم پالس وب
+    ساخته شده توسط تیم رایبان
   </div>
 </footer>
     </div>

@@ -110,7 +110,7 @@ export default function AboutDryCleanig() {
             className="
               absolute z-20 object-contain
 
-              w-[70%] -top-4 -right-10
+              w-[70%] -top-10 -right-10
 
               min-[480px]:w-[74%]
               min-[480px]:-top-12
@@ -179,7 +179,7 @@ export default function AboutDryCleanig() {
             className="
               absolute z-10 object-contain
 
-              w-[150%] -left-26 -top-32
+              w-[150%] -left-26 -top-38
 
               min-[480px]:w-[148%]
               min-[480px]:-left-30
