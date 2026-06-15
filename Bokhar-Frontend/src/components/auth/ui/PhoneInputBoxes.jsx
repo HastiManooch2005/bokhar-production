@@ -103,7 +103,7 @@ export default function PhoneInputBoxes({ value, onChange }) {
           onChange={(e) => handleChange(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
           className="w-6 h-10 text-center font-semibold border-b-2 outline-none bg-transparent
-           border-gray-400 focus:border-blue-500 text-gray-800 
+           border-gray-400 focus:border-blue-500 text-gray-800
            dark:border-gray-100 dark:focus:border-purple-600 dark:text-gray-100"
         />
       ))}

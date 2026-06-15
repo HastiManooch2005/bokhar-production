@@ -14,7 +14,7 @@ RUN npm run build
 FROM nginx:stable-alpine
 
 # کپی کردن خروجی مرحله قبل به پوشه پیش‌فرض Nginx
-# (اگر از Vite استفاده می‌کنید dist و اگر از Create React App استفاده می‌کنید build بسازید)
+
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # کپی کردن کانفیگ اختصاصی Nginx برای مدیریت مسیرها (Routing)

@@ -1,5 +1,5 @@
 import logging
-from backend.products.permission import IsSeller
+from products.permission import IsSeller
 from django.core.cache import cache
 from django.db.models import Q
 

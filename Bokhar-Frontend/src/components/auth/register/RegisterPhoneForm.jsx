@@ -58,9 +58,9 @@ export default function RegisterPhoneForm({ onNext, onSwitchLogin }) {
       setFullname(value);
     } else {
       // اگر کاراکتر غیرمجاز وارد شد، به کاربر اطلاع بده (اختیاری)
-      toast.error("لطفاً فقط از حروف فارسی استفاده کنید", { 
+      toast.error("لطفاً فقط از حروف فارسی استفاده کنید", {
         id: 'persian-error',
-        duration: 1000 
+        duration: 1000
       });
     }
   };

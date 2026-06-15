@@ -43,4 +43,3 @@ export async function verifyRegisterOtp({ phone, otp, fullname }) {
   }
 }
 
-

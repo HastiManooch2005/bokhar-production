@@ -13,7 +13,6 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-
 class CreateAddressView(APIView):
   #  permission_classes = [IsAuthenticated]
     serializer_class = AddressSerializer
