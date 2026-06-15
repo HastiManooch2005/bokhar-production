@@ -11,11 +11,7 @@ SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
 DJANGO_ENV = config("DJANGO_ENV", default="local")  # "local" | "production"
 
-ALLOWED_HOSTS = [
-    "bokhar.online",
-    "www.bokhar.online",
-    "backend",
-]
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0',  'https://bokhar.online','bokhar.online','www.bokhar.online']
 
 if DEBUG:
     ALLOWED_HOSTS += ["localhost", "127.0.0.1"]
