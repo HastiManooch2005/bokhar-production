@@ -192,8 +192,8 @@ export default function ManageOrders({
     <div className="w-full">
       {/* تب‌ها */}
       <div className="relative mb-6">
-        <div className="absolute left-0 top-0 bottom-4 w-12 bg-gradient-to-r from-gray-50 dark:from-gray-900 to-transparent z-10 pointer-events-none sm:hidden" />
-        <div className="absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-gray-50 dark:from-gray-900 to-transparent z-10 pointer-events-none sm:hidden" />
+        <div className="absolute left-0 top-0 bottom-4 w-12 z-10 pointer-events-none sm:hidden" />
+        <div className="absolute right-0 top-0 bottom-4 w-12 z-10 pointer-events-none sm:hidden" />
         
         <div 
           ref={tabsScrollRef}

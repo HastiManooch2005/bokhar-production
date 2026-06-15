@@ -39,6 +39,7 @@ urlpatterns = [
     path("api/discounts/", include("discounts.urls")),
     path("api/cart/", include("order.urls_app.cart_urls")),
     path("api/order/", include("order.urls_app.capacity_urls")),
+    path("api/order/", include("order.urls_app.address_urls")),
     path("api/notifications/", include("notifications.urls")),
     path("api/report/", include("report.urls")),
     path("metrics/", include("django_prometheus.urls")),

@@ -33,7 +33,7 @@ export default function OtpInput({ value, onChange, length = 5 }) {
       .getData("text")
       .replace(/\D/g, "")
       .slice(0, length);
-
+    
     if (pasted) {
       onChange(pasted);
       // Focus the appropriate input

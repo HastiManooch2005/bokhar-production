@@ -173,8 +173,8 @@ export default function CustomersDashboard() {
   title="درباره رایبان"
   icon={
     <img
-      src="/Logo.png"
-      alt="Logo"
+      src="/rayban-dark2.png"
+      alt="rayban"
       className="h-7 w-7 object-contain"
     />
   }
