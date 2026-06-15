@@ -103,6 +103,7 @@ services:
       - /etc/nginx/ssl:/etc/nginx/ssl:ro
 
 volumes:
-  postgres_data:
-  redis_data:
-  static_volume:
+    postgres_data:
+    redis_data:
+    static_volume:
+    media_volume:
