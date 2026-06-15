@@ -3,6 +3,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from decouple import config
+NESHAN_API_KEY = config("NESHAN_API_KEY")
 
 # ---------------- BASE ----------------
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -12,7 +13,6 @@ DEBUG = config("DEBUG", default=False, cast=bool)
 DJANGO_ENV = config("DJANGO_ENV", default="local")  # "local" | "production"
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0',  'https://bokhar.online','bokhar.online','www.bokhar.online']
-
 if DEBUG:
     ALLOWED_HOSTS += ["localhost", "127.0.0.1"]
 
@@ -75,6 +75,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "bokhar.wsgi.application"
+
 
 # ---------------- DATABASE ----------------
 if DJANGO_ENV == "production":
