@@ -5,12 +5,12 @@ import { useModal } from "../../context/ModalContext";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
-import AuthModal from "../auth/AuthModal"; 
-import { 
-  fetchCart, 
-  removeCartItem, 
+import AuthModal from "../auth/AuthModal";
+import {
+  fetchCart,
+  removeCartItem,
   updateCartQuantity,
-  syncGuestCartWithServer  // ⭐ اضافه شد
+  syncGuestCartWithServer
 } from "../../api/cartService";
 
 export default function Factor({ onTotalChange, goToTimeStep }) {
@@ -25,22 +25,14 @@ export default function Factor({ onTotalChange, goToTimeStep }) {
   } = useCart();
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  
-  // ⭐ ذخیره snapshot سبد مهمان قبل از باز شدن مودال ورود
   const guestCartSnapshot = useRef([]);
 
   const totalPrice = useMemo(() => {
-    return cartItems?.reduce(
-      (sum, item) => sum + (item.finalLineTotal || 0),
-      0
-    );
+    return cartItems?.reduce((sum, item) => sum + (item.finalLineTotal || 0), 0);
   }, [cartItems]);
 
   const originalTotalPrice = useMemo(() => {
-    return cartItems?.reduce(
-      (sum, item) => sum + (item.originalLineTotal || 0),
-      0
-    );
+    return cartItems?.reduce((sum, item) => sum + (item.originalLineTotal || 0), 0);
   }, [cartItems]);
 
   const hasAnyDiscount = originalTotalPrice > totalPrice;
@@ -48,22 +40,42 @@ export default function Factor({ onTotalChange, goToTimeStep }) {
 
   useEffect(() => {
     if (onTotalChange) {
-      onTotalChange({ 
-        total: totalPrice, 
-        originalTotal: originalTotalPrice 
-      });
+      onTotalChange({ total: totalPrice, originalTotal: originalTotalPrice });
     }
   }, [totalPrice, originalTotalPrice, onTotalChange]);
+
+  /* ------------------------------------------------------------------
+   * 🟢 اصلاح شده: handleAuthSuccess - حتماً بعد از sync رفرش کن
+   * ------------------------------------------------------------------ */
+  const handleAuthSuccess = useCallback(async () => {
+    setIsAuthModalOpen(false);
+
+    const itemsToSync = guestCartSnapshot.current;
+    
+    if (itemsToSync.length > 0) {
+      try {
+        await syncGuestCartWithServer(itemsToSync);
+        addToast("سبد خرید با حساب کاربری ادغام شد", "success");
+      } catch (err) {
+        console.error("Sync error:", err);
+        addToast("خطا در ادغام سبد خرید", "error");
+      }
+    }
+
+    // ✅ حتماً سبد را از سرور دوباره بگیر
+    await refreshCart();
+    
+    // بعد از رفرش کامل، برو به مرحله بعد
+    goToTimeStep?.();
+    guestCartSnapshot.current = [];
+  }, [refreshCart, goToTimeStep, addToast]);
 
   const handleGoToTimeStep = () => {
     if (authLoading) return;
 
     if (!isAuthenticated) {
       addToast("برای ادامه فرایند خرید باید ورود/ثبت نام بکنید", "error");
-      
-      // ⭐ ذخیره snapshot سبد فعلی قبل از باز شدن مودال
       guestCartSnapshot.current = [...cartItems];
-      
       setIsAuthModalOpen(true);
       return;
     }
@@ -73,157 +85,86 @@ export default function Factor({ onTotalChange, goToTimeStep }) {
     }
   };
 
-  // ✅ اصلاح شده: استفاده از snapshot به جای cartItems فعلی
-const handleAuthSuccess = async () => {
-  setIsAuthModalOpen(false);
-
-  // ✅ استفاده از snapshot ذخیره شده
-  const itemsToSync = guestCartSnapshot.current;
-
-  if (itemsToSync.length > 0) {
-    const payload = itemsToSync.map(item => ({
-      productId: item.productId,
-      qty: item.qty,
-      service: item.service,
-      material: item.material,
-      size: item.sizeDisplay !== "-" ? item.sizeDisplay : null,
-    }));
-
-    await syncGuestCartWithServer(payload);
-  }
-
-  // ✅ فقط بعد از sync اجازه loadCart داده می‌شود
-  markCartSyncedAfterLogin();
-
-  // ✅ ادامه فرایند (انتخاب مکان)
-  goToTimeStep?.();
-
-  // ✅ پاک کردن snapshot
-  guestCartSnapshot.current = [];
-};
-
-
+  /* ------------------------------------------------------------------
+   * Increase Quantity
+   * ------------------------------------------------------------------ */
   const handleIncreaseQty = async (item) => {
     const newQty = item.qty + 1;
-    
-    // ✅ حالت مهمان
+
     if (!isAuthenticated) {
       const updated = cartItems.map(i =>
         i.id_unique === item.id_unique
-          ? {
-              ...i,
-              qty: newQty,
-              finalLineTotal: newQty * i.unitPrice,
-              originalLineTotal: newQty * i.originalUnitPrice
-            }
+          ? { ...i, qty: newQty, finalLineTotal: newQty * i.unitPrice, originalLineTotal: newQty * i.originalUnitPrice }
           : i
       );
-
       updateCartLocal(updated);
       return;
     }
 
-    // ✅ حالت کاربر لاگین
     if (!item.id_unique) {
       addToast("خطا: شناسه آیتم نامعتبر است", "error");
       return;
     }
 
-    // optimistic update
     const optimisticUpdate = cartItems.map(i =>
       i.id_unique === item.id_unique
-        ? {
-            ...i,
-            qty: newQty,
-            finalLineTotal: newQty * (i.unitPrice || 0),
-            originalLineTotal: newQty * (i.originalUnitPrice || i.unitPrice || 0)
-          }
+        ? { ...i, qty: newQty, finalLineTotal: newQty * (i.unitPrice || 0), originalLineTotal: newQty * (i.originalUnitPrice || i.unitPrice || 0) }
         : i
     );
     updateCartLocal(optimisticUpdate);
 
     try {
       const result = await updateCartQuantity(item.id_unique, newQty);
-
-      if (!result.success) {
-        if (result.unauthorized) {
-          addToast("لطفاً ابتدا وارد حساب کاربری شوید", "error");
-          return;
-        }
-        throw new Error(result.error || "خطا در به‌روزرسانی");
-      }
-
-      if (result.data?.items || result.data?.cart) {
-        const fresh = transformBackendCart(result.data.items || result.data.cart);
-        updateCartLocal(fresh);
-      }
+      if (!result.success) throw new Error(result.error || "خطا در به‌روزرسانی");
+      await refreshCart();
     } catch (error) {
       addToast(error.message || "خطا در افزایش تعداد", "error");
-      refreshCart();  // rollback
+      refreshCart();
     }
   };
 
+  /* ------------------------------------------------------------------
+   * Decrease Quantity
+   * ------------------------------------------------------------------ */
   const handleDecreaseQty = async (item) => {
     if (item.qty <= 1) return;
     const newQty = item.qty - 1;
 
-    // ✅ حالت مهمان
     if (!isAuthenticated) {
       const updated = cartItems.map(i =>
         i.id_unique === item.id_unique
-          ? {
-              ...i,
-              qty: newQty,
-              finalLineTotal: newQty * i.unitPrice,
-              originalLineTotal: newQty * i.originalUnitPrice
-            }
+          ? { ...i, qty: newQty, finalLineTotal: newQty * i.unitPrice, originalLineTotal: newQty * i.originalUnitPrice }
           : i
       );
-
       updateCartLocal(updated);
       return;
     }
 
-    // ✅ حالت کاربر لاگین
     if (!item.id_unique) {
       addToast("خطا: شناسه آیتم نامعتبر است", "error");
       return;
     }
 
-    // optimistic update
     const optimisticUpdate = cartItems.map(i =>
       i.id_unique === item.id_unique
-        ? {
-            ...i,
-            qty: newQty,
-            finalLineTotal: newQty * (i.unitPrice || 0),
-            originalLineTotal: newQty * (i.originalUnitPrice || i.unitPrice || 0)
-          }
+        ? { ...i, qty: newQty, finalLineTotal: newQty * (i.unitPrice || 0), originalLineTotal: newQty * (i.originalUnitPrice || i.unitPrice || 0) }
         : i
     );
     updateCartLocal(optimisticUpdate);
 
     try {
       const result = await updateCartQuantity(item.id_unique, newQty);
-
-      if (!result.success) {
-        if (result.unauthorized) {
-          addToast("لطفاً ابتدا وارد حساب کاربری شوید", "error");
-          return;
-        }
-        throw new Error(result.error || "خطا در به‌روزرسانی");
-      }
-
-      if (result.data?.items || result.data?.cart) {
-        const fresh = transformBackendCart(result.data.items || result.data.cart);
-        updateCartLocal(fresh);
-      }
+      if (!result.success) throw new Error(result.error || "خطا در به‌روزرسانی");
+      await refreshCart();
     } catch (error) {
       addToast(error.message || "خطا در کاهش تعداد", "error");
       refreshCart();
     }
   };
 
+  /* ------------------------------------------------------------------
+   * Remove Item
+   * ------------------------------------------------------------------ */
   const handleRemove = (item) => {
     const name = item.name || "محصول";
     const itemKey = item.id_unique;
@@ -233,7 +174,6 @@ const handleAuthSuccess = async () => {
       return;
     }
 
-    // ✅ حالت مهمان
     if (!isAuthenticated) {
       const updated = cartItems.filter(i => i.id_unique !== itemKey);
       updateCartLocal(updated);
@@ -241,7 +181,6 @@ const handleAuthSuccess = async () => {
       return;
     }
 
-    // ✅ حالت کاربر لاگین
     showConfirm({
       title: "حذف آیتم",
       message: `می‌خوای «${name}» رو از سبد حذف کنی؟`,
@@ -251,23 +190,12 @@ const handleAuthSuccess = async () => {
       onConfirm: async () => {
         try {
           const result = await removeCartItem(itemKey);
-
-          if (result.success) {
-            const updated = cartItems.filter(i => i.id_unique !== itemKey);
-            updateCartLocal(updated);
-            addToast(`«${name}» حذف شد`, "success");
-
-            if (result.data?.items || result.data?.cart) {
-              const fresh = transformBackendCart(result.data.items || result.data.cart);
-              updateCartLocal(fresh);
-            }
-          } else {
-            if (result.unauthorized) {
-              addToast("لطفاً ابتدا وارد حساب کاربری شوید", "error");
-            } else {
-              throw new Error(result.error || "خطا در حذف");
-            }
-          }
+          if (!result.success) throw new Error(result.error || "خطا در حذف");
+          
+          const updated = cartItems.filter(i => i.id_unique !== itemKey);
+          updateCartLocal(updated);
+          addToast(`«${name}» حذف شد`, "success");
+          await refreshCart();
         } catch (error) {
           addToast(error.message || "خطا در حذف آیتم", "error");
           refreshCart();
@@ -299,7 +227,6 @@ const handleAuthSuccess = async () => {
             فاکتور خرید
           </h2>
 
-          {/* Scrollable Content Area */}
           <div className="flex-1 overflow-y-auto min-h-0 pr-1">
             {/* Desktop Table */}
             <div className="hidden md:block">
@@ -316,7 +243,6 @@ const handleAuthSuccess = async () => {
                     <th className="py-3 px-4 text-center"></th>
                   </tr>
                 </thead>
-
                 <tbody>
                   <AnimatePresence>
                     {cartItems.length > 0 ? (
@@ -341,94 +267,54 @@ const handleAuthSuccess = async () => {
                                 {item.name}
                                 {hasDiscount && (
                                   <span className="bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
-                                    <FiTag size={10} />
-                                    تخفیف
+                                    <FiTag size={10} /> تخفیف
                                   </span>
                                 )}
                               </div>
                             </td>
-
                             <td className="py-4 px-4 text-center">
                               <div className="flex items-center justify-center gap-2">
                                 <button
                                   onClick={() => handleDecreaseQty(item)}
                                   disabled={item.qty <= 1}
-                                  className={`
-                                    w-8 h-8 flex items-center justify-center rounded-lg text-lg
-                                    transition 
-                                    ${item.qty <= 1
+                                  className={`w-8 h-8 flex items-center justify-center rounded-lg text-lg transition ${
+                                    item.qty <= 1
                                       ? "bg-slate-200 dark:bg-slate-700 cursor-not-allowed opacity-45"
                                       : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
-                                    }
-                                  `}
-                                >
-                                  −
-                                </button>
-
-                                <span className="text-base font-bold text-slate-700 dark:text-slate-200 w-6 text-center">
-                                  {item.qty}
-                                </span>
-
+                                  }`}
+                                >−</button>
+                                <span className="text-base font-bold text-slate-700 dark:text-slate-200 w-6 text-center">{item.qty}</span>
                                 <button
                                   onClick={() => handleIncreaseQty(item)}
                                   className="w-8 h-8 flex items-center justify-center rounded-lg text-lg transition bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
-                                >
-                                  +
-                                </button>
+                                >+</button>
                               </div>
                             </td>
-
-                            <td className="py-4 px-4 text-center text-slate-700 dark:text-slate-300">
-                              {item.sizeDisplay || "-"}
-                            </td>
-
-                            <td className="py-4 px-4 text-center text-slate-700 dark:text-slate-300">
-                              {item.service || "-"}
-                            </td>
-
-                            <td className="py-4 px-4 text-center text-slate-700 dark:text-slate-300">
-                              {item.material || "-"}
-                            </td>
-
+                            <td className="py-4 px-4 text-center text-slate-700 dark:text-slate-300">{item.sizeDisplay || "-"}</td>
+                            <td className="py-4 px-4 text-center text-slate-700 dark:text-slate-300">{item.service || "-"}</td>
+                            <td className="py-4 px-4 text-center text-slate-700 dark:text-slate-300">{item.material || "-"}</td>
                             <td className="py-4 px-4 text-right">
                               {hasDiscount ? (
                                 <div className="flex flex-col gap-0.5">
-                                  <span className="text-xs line-through text-slate-400 dark:text-slate-500 decoration-slate-400">
-                                    {originalUnitPrice.toLocaleString()}
-                                  </span>
-                                  <span className="text-green-600 dark:text-green-400 font-bold">
-                                    {finalUnitPrice.toLocaleString()}
-                                  </span>
+                                  <span className="text-xs line-through text-slate-400 dark:text-slate-500 decoration-slate-400">{originalUnitPrice.toLocaleString()}</span>
+                                  <span className="text-green-600 dark:text-green-400 font-bold">{finalUnitPrice.toLocaleString()}</span>
                                 </div>
                               ) : (
-                                <span className="text-slate-800 dark:text-slate-200 font-semibold">
-                                  {finalUnitPrice.toLocaleString()}
-                                </span>
+                                <span className="text-slate-800 dark:text-slate-200 font-semibold">{finalUnitPrice.toLocaleString()}</span>
                               )}
                             </td>
-
                             <td className="py-4 px-4 text-right">
                               {hasDiscount ? (
                                 <div className="flex flex-col gap-0.5 items-end">
-                                  <span className="text-xs line-through text-slate-400 dark:text-slate-500 decoration-slate-400 font-normal">
-                                    {originalLineTotal.toLocaleString()}
-                                  </span>
-                                  <span className="text-green-600 dark:text-green-400 font-extrabold text-base">
-                                    {finalLineTotal.toLocaleString()}
-                                  </span>
+                                  <span className="text-xs line-through text-slate-400 dark:text-slate-500 decoration-slate-400 font-normal">{originalLineTotal.toLocaleString()}</span>
+                                  <span className="text-green-600 dark:text-green-400 font-extrabold text-base">{finalLineTotal.toLocaleString()}</span>
                                 </div>
                               ) : (
-                                <span className="text-slate-900 dark:text-white font-bold text-base">
-                                  {finalLineTotal.toLocaleString()}
-                                </span>
+                                <span className="text-slate-900 dark:text-white font-bold text-base">{finalLineTotal.toLocaleString()}</span>
                               )}
                             </td>
-
                             <td className="py-4 px-4 text-center">
-                              <button
-                                onClick={() => handleRemove(item)}
-                                className="text-red-500 hover:text-red-600 transition"
-                              >
+                              <button onClick={() => handleRemove(item)} className="text-red-500 hover:text-red-600 transition">
                                 <FiTrash2 size={20} />
                               </button>
                             </td>
@@ -436,14 +322,8 @@ const handleAuthSuccess = async () => {
                         );
                       })
                     ) : (
-                      <motion.tr
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                      >
-                        <td
-                          colSpan={8}
-                          className="py-10 text-center text-slate-400 dark:text-slate-300"
-                        >
+                      <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                        <td colSpan={8} className="py-10 text-center text-slate-400 dark:text-slate-300">
                           سبد خرید خالی است
                         </td>
                       </motion.tr>
@@ -473,54 +353,33 @@ const handleAuthSuccess = async () => {
                     >
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex flex-col">
-                          <span className="font-bold text-slate-900 dark:text-white text-sm">
-                            {item.name}
-                          </span>
+                          <span className="font-bold text-slate-900 dark:text-white text-sm">{item.name}</span>
                           {hasDiscount && (
-                            <span className="text-[10px] text-red-500 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-full mt-1 w-fit">
-                              تخفیف دار
-                            </span>
+                            <span className="text-[10px] text-red-500 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-full mt-1 w-fit">تخفیف دار</span>
                           )}
                           {item.sizeDisplay && item.sizeDisplay !== "-" && (
-                            <span className="text-xs text-slate-500 mt-1">
-                              سایز: {item.sizeDisplay}
-                            </span>
+                            <span className="text-xs text-slate-500 mt-1">سایز: {item.sizeDisplay}</span>
                           )}
                         </div>
-                        
                         <div className="flex flex-col items-end">
                           {hasDiscount && (
-                            <span className="text-xs line-through text-slate-400 dark:text-slate-500 mb-0.5">
-                              {originalLineTotal.toLocaleString()} تومان
-                            </span>
+                            <span className="text-xs line-through text-slate-400 dark:text-slate-500 mb-0.5">{originalLineTotal.toLocaleString()} تومان</span>
                           )}
                           <span className={`font-bold text-sm ${hasDiscount ? "text-green-600 dark:text-green-400" : "text-slate-900 dark:text-white"}`}>
                             {finalLineTotal.toLocaleString()} تومان
                           </span>
                         </div>
                       </div>
-
                       <div className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed mb-3 space-y-1">
-                        <div className="flex justify-between">
-                          <span>خدمت:</span>
-                          <span>{item.service || "-"}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>جنس:</span>
-                          <span>{item.material || "-"}</span>
-                        </div>
-                        
+                        <div className="flex justify-between"><span>خدمت:</span><span>{item.service || "-"}</span></div>
+                        <div className="flex justify-between"><span>جنس:</span><span>{item.material || "-"}</span></div>
                         <div className="flex justify-between pt-1 border-t border-slate-100 dark:border-slate-800 mt-1">
                           <span>قیمت واحد:</span>
                           <div className="flex flex-col items-end">
                             {hasDiscount ? (
                               <>
-                                <span className="line-through text-slate-400 text-[10px]">
-                                  {originalUnitPrice.toLocaleString()}
-                                </span>
-                                <span className="text-green-600 dark:text-green-400 font-semibold">
-                                  {finalUnitPrice.toLocaleString()}
-                                </span>
+                                <span className="line-through text-slate-400 text-[10px]">{originalUnitPrice.toLocaleString()}</span>
+                                <span className="text-green-600 dark:text-green-400 font-semibold">{finalUnitPrice.toLocaleString()}</span>
                               </>
                             ) : (
                               <span>{finalUnitPrice.toLocaleString()}</span>
@@ -528,39 +387,22 @@ const handleAuthSuccess = async () => {
                           </div>
                         </div>
                       </div>
-
                       <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleDecreaseQty(item)}
                             disabled={item.qty <= 1}
-                            className={`
-                              w-8 h-8 rounded-lg flex items-center justify-center text-base
-                              ${item.qty <= 1
-                                ? "bg-slate-300 dark:bg-slate-700 opacity-40"
-                                : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200"
-                              }
-                            `}
-                          >
-                            −
-                          </button>
-
-                          <span className="text-slate-900 dark:text-white text-base font-bold w-6 text-center">
-                            {item.qty}
-                          </span>
-
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center text-base ${
+                              item.qty <= 1 ? "bg-slate-300 dark:bg-slate-700 opacity-40" : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200"
+                            }`}
+                          >−</button>
+                          <span className="text-slate-900 dark:text-white text-base font-bold w-6 text-center">{item.qty}</span>
                           <button
                             onClick={() => handleIncreaseQty(item)}
                             className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center text-base"
-                          >
-                            +
-                          </button>
+                          >+</button>
                         </div>
-
-                        <button
-                          onClick={() => handleRemove(item)}
-                          className="text-red-500 hover:text-red-600 p-2"
-                        >
+                        <button onClick={() => handleRemove(item)} className="text-red-500 hover:text-red-600 p-2">
                           <FiTrash2 size={18} />
                         </button>
                       </div>
@@ -568,27 +410,18 @@ const handleAuthSuccess = async () => {
                   );
                 })}
               </AnimatePresence>
-              
               {cartItems.length === 0 && !loading && (
-                <div className="text-center py-10 text-slate-400 dark:text-slate-300">
-                  سبد خرید خالی است
-                </div>
+                <div className="text-center py-10 text-slate-400 dark:text-slate-300">سبد خرید خالی است</div>
               )}
             </div>
           </div>
 
           {/* Fixed Bottom Section */}
           {cartItems.length > 0 && (
-            <div className="border border-gray-300 dark:border-slate-700 pt-4 pb-4 mt-5 shrink-0 bg-white/90 dark:bg-slate-900/60 
-                            shadow-lg rounded-2xl backdrop-blur-xl px-4 md:px-6">
+            <div className="border border-gray-300 dark:border-slate-700 pt-4 pb-4 mt-5 shrink-0 bg-white/90 dark:bg-slate-900/60 shadow-lg rounded-2xl backdrop-blur-xl px-4 md:px-6">
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                
-                {/* سمت چپ در دسکتاپ (بخش سود) */}
                 <div className="md:order-2 flex items-center gap-2 flex-wrap justify-center md:justify-start">
-                  <span className="text-slate-500 dark:text-slate-400 text-xs md:hidden">
-                    مبلغ قابل پرداخت:
-                  </span>
-                  
+                  <span className="text-slate-500 dark:text-slate-400 text-xs md:hidden">مبلغ قابل پرداخت:</span>
                   {hasAnyDiscount && (
                     <span className="inline-flex items-center gap-1 text-[11px] md:text-xs font-semibold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full border border-green-100 dark:border-green-800">
                       <span>💰 سود شما از خرید: {savingsAmount.toLocaleString()}</span>
@@ -598,19 +431,11 @@ const handleAuthSuccess = async () => {
                     </span>
                   )}
                 </div>
-
-                {/* سمت راست در دسکتاپ (بخش قیمت) */}
                 <div className="md:order-1 flex items-center gap-2 flex-wrap justify-center md:justify-end">
-                  <span className="hidden md:block text-slate-500 dark:text-slate-400 text-xs md:text-sm whitespace-nowrap">
-                    مبلغ قابل پرداخت:
-                  </span>
-                  
+                  <span className="hidden md:block text-slate-500 dark:text-slate-400 text-xs md:text-sm whitespace-nowrap">مبلغ قابل پرداخت:</span>
                   {hasAnyDiscount && (
-                    <span className="text-sm text-slate-400 dark:text-slate-500 line-through decoration-slate-400">
-                      {originalTotalPrice.toLocaleString()}
-                    </span>
+                    <span className="text-sm text-slate-400 dark:text-slate-500 line-through decoration-slate-400">{originalTotalPrice.toLocaleString()}</span>
                   )}
-                  
                   <div className="flex items-baseline gap-1">
                     <span className={`text-xl md:text-2xl font-bold ${hasAnyDiscount ? "text-green-600 dark:text-green-400" : "text-slate-900 dark:text-white"}`}>
                       {totalPrice.toLocaleString()}
@@ -619,20 +444,11 @@ const handleAuthSuccess = async () => {
                   </div>
                 </div>
               </div>
-
               {goToTimeStep && (
                 <button
                   onClick={handleGoToTimeStep}
                   disabled={cartItems.length === 0}
-                  className="
-                    w-full h-11 md:h-12 mt-4 rounded-xl
-                    bg-sky-600 hover:bg-sky-700 active:scale-[0.98]
-                    dark:bg-sky-700 dark:hover:bg-sky-600
-                    text-white font-bold text-sm md:text-base
-                    shadow-lg shadow-sky-600/30 
-                    transition-all
-                    disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100
-                  "
+                  className="w-full h-11 md:h-12 mt-4 rounded-xl bg-sky-600 hover:bg-sky-700 active:scale-[0.98] dark:bg-sky-700 dark:hover:bg-sky-600 text-white font-bold text-sm md:text-base shadow-lg shadow-sky-600/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
                 >
                   انتخاب مکان
                 </button>
@@ -642,76 +458,11 @@ const handleAuthSuccess = async () => {
         </div>
       </motion.div>
 
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
+      <AuthModal
+        isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={handleAuthSuccess}
       />
     </>
   );
-}
-
-function transformGuestCart(items) {
-  if (!Array.isArray(items)) return [];
-
-  return items.map(item => {
-    const unitPrice = Number(
-      item.unitPrice ??
-      item.discount_price ??
-      item.price ??
-      0
-    );
-
-    const originalUnitPrice = Number(
-      item.originalUnitPrice ??
-      item.original_price ??
-      item.price_before_discount ??
-      unitPrice
-    );
-
-    const qty = Number(item.qty || item.quantity || 1);
-
-    return {
-      id_unique: item.id_unique || `guest-${item.productId || item.product_id}-${Date.now()}`,
-      productId: item.productId || item.product_id,
-      name: item.name || item.product_name || "محصول",
-      qty,
-      unitPrice,
-      originalUnitPrice,
-      finalLineTotal: unitPrice * qty,
-      originalLineTotal: originalUnitPrice * qty,
-      hasDiscount: originalUnitPrice > unitPrice,
-      sizeDisplay: item.sizeDisplay || item.size || "-",
-      service: item.service || "-",
-      material: item.material || "-",
-    };
-  });
-}
-
-function transformBackendCart(backendItems) {
-  if (!Array.isArray(backendItems)) return [];
-  
-  return backendItems.map((item) => {
-    const unitPrice = parseInt(item.unit_price || item.price || 0);
-    const originalPrice = parseInt(item.original_price || unitPrice);
-    const quantity = parseInt(item.quantity || item.qty || 1);
-    
-    const totalPrice = item.total_price || (unitPrice * quantity);
-    const originalTotal = item.original_total || (originalPrice * quantity);
-    
-    return {
-      id_unique: item.id_unique,
-      productId: item.product_id,
-      name: item.product_name || "محصول",
-      qty: quantity,
-      unitPrice: unitPrice,           
-      originalUnitPrice: originalPrice, 
-      finalLineTotal: totalPrice,     
-      originalLineTotal: originalTotal, 
-      hasDiscount: originalPrice > unitPrice,
-      sizeDisplay: item.size_display || (item.size ? `سایز ${item.size}` : "-"),
-      service: item.service || "-",
-      material: item.material || "-",
-    };
-  });
 }

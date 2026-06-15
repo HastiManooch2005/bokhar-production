@@ -1,26 +1,29 @@
+import logging
+
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from products.models import *
+from products.models import Product, ProductPricingTab, MaterialPrice, Size
 
 from .cart_serializer import *
+from .session import OrderSession
 
 logger = logging.getLogger(__name__)
 
 
 class CartAPIView(APIView):
-    permission_classes = [IsAuthenticated]  # اضافه شد
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         cart = OrderSession(request)
         return Response({"cart": list(cart)})
 
 
-# حذف کل سبد خرید
 class DeleteCartAPIView(APIView):
-    permission_classes = [IsAuthenticated]  # اضافه شد
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         cart = OrderSession(request)
@@ -31,7 +34,6 @@ class DeleteCartAPIView(APIView):
         )
 
 
-# افزودن محصول به Cart (Session)
 class AddOrderSessionAPIView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = AddToCartSerializer
@@ -93,7 +95,7 @@ class AddOrderSessionAPIView(APIView):
 
 
 class UpdateCartItemAPIView(APIView):
-    permission_classes = [IsAuthenticated]  # اضافه شد
+    permission_classes = [IsAuthenticated]
 
     def patch(self, request, id_unique, *args, **kwargs):
         try:
@@ -139,7 +141,7 @@ class UpdateCartItemAPIView(APIView):
 
 
 class RemoveCartAPIView(APIView):
-    permission_classes = [IsAuthenticated]  # اضافه شد
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, id_unique=None, *args, **kwargs):
         return self._remove_item(request, id_unique)
@@ -151,31 +153,29 @@ class RemoveCartAPIView(APIView):
         try:
             if not id_unique:
                 return Response(
-                    {"error": "id_unique required"}, 
+                    {"error": "id_unique required"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
             cart = OrderSession(request)
-            
-            # بررسی وجود آیتم (دسترسی به دیکشنری داخلی cart)
+
             if id_unique not in cart.cart:
                 return Response(
-                    {"error": "Item not found in cart"}, 
+                    {"error": "Item not found in cart"},
                     status=status.HTTP_404_NOT_FOUND
                 )
 
-            # استفاده از delete_item برای حذف کامل (نه فقط کاهش تعداد)
             cart.delete_item(id_unique)
-            
+
             return Response({
                 "message": "Item removed successfully",
                 "items": list(cart),
                 "total_price": cart.total_price()
             }, status=status.HTTP_200_OK)
-            
+
         except Exception as e:
             logger.error(f"Error removing cart item: {e}")
             return Response(
-                {"error": str(e)}, 
+                {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
