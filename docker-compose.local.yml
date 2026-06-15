@@ -1,0 +1,86 @@
+services:
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      args:
+        ENV: local
+        PIP_INDEX: https://package-mirror.liara.ir/repository/pypi/simple/
+
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    command: >
+      sh -c "
+      python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:8000
+      "
+    environment:
+      - DJANGO_SETTINGS_MODULE=bokhar.settings
+      - DJANGO_ENV=local
+      - DEBUG=True
+
+    volumes:
+      - ./backend:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+
+
+
+
+  celery:
+    build:
+      context: ./backend
+      args:
+        ENV: local
+    restart: unless-stopped
+    command: celery -A bokhar worker --loglevel=debug --concurrency=2
+    env_file:
+      - .env.local
+    environment:
+      - DJANGO_ENV=local
+      - DEBUG=True
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+
+  celery_beat:
+    build:
+      context: ./backend
+      args:
+        ENV: local
+    restart: unless-stopped
+    command: celery -A bokhar beat --loglevel=debug --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    env_file:
+      - .env.local
+    environment:
+      - DJANGO_ENV=local
+      - DEBUG=True
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:

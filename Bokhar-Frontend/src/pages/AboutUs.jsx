@@ -178,7 +178,7 @@ const AboutUs = () => {
         className="w-full flex flex-col justify-center relative overflow-hidden mt-8 sm:mt-12"
       >
         <div className="flex flex-col-reverse w-full">
-          
+
           {/* باکس پایینی (در نمایش): راه‌های ارتباط - z-index بالاتر */}
           <div
             className="w-full bg-sky-50 justify-center rounded-t-4xl shadow-md border border-gray-100

@@ -30,7 +30,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
               items-center justify-center
               w-9 h-9 rounded-full
               hover:bg-white text-black
-              dark:hover:bg-gray-200 dark:text-white dark:hover:text-black 
+              dark:hover:bg-gray-200 dark:text-white dark:hover:text-black
               transition
               z-10
             "
@@ -70,7 +70,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
             <LoginForm
               onSwitchRegister={() => setMode("register-phone")}
               onClose={onClose}
-              onSuccess={onSuccess}  
+              onSuccess={onSuccess}
             />
           )}
         </div>
