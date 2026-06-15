@@ -83,22 +83,24 @@ export default function RegisterOtpForm({ phone, fullname, onBack, onSuccess }) 
         کد ارسال‌شده به شماره <span className="font-medium">{phone}</span> را وارد کنید
       </p>
 
-      <OtpInput value={otp} onChange={(val) => setOtp(val.replace(/\D/g, ""))} />
+      <form onSubmit={(e) => { e.preventDefault(); handleVerify(); }}>
+        <OtpInput value={otp} onChange={(val) => setOtp(val.replace(/\D/g, ""))} />
 
-      <button
-        onClick={handleVerify}
-        disabled={loading || otp.length < 5}
-        className={`w-full mt-6 py-3 rounded-xl text-white font-medium flex justify-center items-center gap-2 transition ${
-          loading || otp.length < 5
-            ? "bg-blue-400 dark:bg-purple-500 cursor-not-allowed"
-            : "bg-blue-600 dark:bg-purple-700 hover:bg-blue-700 dark:hover:bg-purple-900"
-        }`}
-      >
-        {loading && (
-          <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-        )}
-        {loading ? "در حال بررسی..." : "تأیید و ثبت‌نام"}
-      </button>
+        <button
+          type="submit"
+          disabled={loading || otp.length < 5}
+          className={`w-full mt-6 py-3 rounded-xl text-white font-medium flex justify-center items-center gap-2 transition ${
+            loading || otp.length < 5
+              ? "bg-blue-400 dark:bg-purple-500 cursor-not-allowed"
+              : "bg-blue-600 dark:bg-purple-700 hover:bg-blue-700 dark:hover:bg-purple-900"
+          }`}
+        >
+          {loading && (
+            <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          )}
+          {loading ? "در حال بررسی..." : "تأیید و ثبت‌نام"}
+        </button>
+      </form>
 
       <p className="text-center mt-4 text-sm text-gray-500">
         {!canResend ? (
