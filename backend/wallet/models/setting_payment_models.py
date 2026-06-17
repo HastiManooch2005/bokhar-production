@@ -1,12 +1,9 @@
-from django.db import models
+"""from django.db import models
 
 from backend.users.models import User
 
 
 class PaymentTerminal(models.Model):
-    """
-    مدل درگاه پرداخت (Terminal) مطابق با API زرین‌پال
-    """
 
     class Status(models.TextChoices):
         PENDING = "pending", "در انتظار پرداخت"
@@ -77,9 +74,7 @@ class PaymentTerminal(models.Model):
 
 
 class TerminalAllowedDomain(models.Model):
-    """
-    دامنه‌های مجاز برای درگاه (مطابق API، هر درگاه یک دامنه اصلی دارد ولی اینجا چندتا مجاز است)
-    """
+
 
     terminal = models.ForeignKey(
         PaymentTerminal, on_delete=models.CASCADE, related_name="allowed_domains"
@@ -93,9 +88,7 @@ class TerminalAllowedDomain(models.Model):
 
 
 class BankAccount(models.Model):
-    """
-    حساب بانکی مطابق
-    """
+
 
     class Status(models.TextChoices):
         PENDING = "pending", "در انتظار"
@@ -146,10 +139,7 @@ class BankAccount(models.Model):
 
 
 class TerminalBankAccount(models.Model):
-    """
-    اتصال حساب بانکی به درگاه با درصد و اولویت تسویه
-    (انعطاف بیشتر نسبت به یک حساب preferred)
-    """
+
 
     class SettlementType(models.TextChoices):
         PRIMARY = "primary", "اصلی"
@@ -209,3 +199,4 @@ class Settlement(models.Model):  # برای تسویه حساب
     raw_response = models.JSONField(default=dict)
 
     created_at = models.DateTimeField(auto_now_add=True)
+"""

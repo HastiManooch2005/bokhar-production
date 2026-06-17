@@ -1,5 +1,3 @@
-# services/zarinpal_service.py
-import json
 import logging
 
 import requests
@@ -9,406 +7,198 @@ logger = logging.getLogger(__name__)
 
 
 class ZarinPalService:
-    """سرویس ارتباط با زرین‌پال"""
+    """
+    سرویس ارتباط با زرین‌پال
+
+    متدها:
+        request_payment  → درخواست پرداخت، دریافت authority
+        verify_payment   → تأیید پرداخت بعد از redirect کاربر
+        request_refund   → استرداد وجه به کارت/شبا (نیاز به ACCESS_TOKEN)
+
+    نکته: زرین‌پال API عمومی برای انتقال به حساب (پایا) ندارد.
+    برداشت از کیف پول داخل اپ (WithdrawalRequest) باید
+    توسط ادمین از پنل زرین‌پال انجام شود.
+    """
 
     def __init__(self):
-        self.merchant_id = settings.ZARINPAL["MERCHANT_ID"]
-
-        self.request_url = settings.ZARINPAL["REQUEST_URL"]
-        self.verify_url = settings.ZARINPAL["VERIFY_URL"]
-        self.payment_url = settings.ZARINPAL["PAYMENT_URL"]
-        self.callback_url = settings.ZARINPAL["CALLBACK_URL"]
-
-        self.access_token = settings.ZARINPAL.get("ACCESS_TOKEN")
-
-        self.refund_url = settings.ZARINPAL.get(
+        zp = settings.ZARINPAL
+        self.merchant_id  = zp["MERCHANT_ID"]
+        self.request_url  = zp["REQUEST_URL"]
+        self.verify_url   = zp["VERIFY_URL"]
+        self.payment_url  = zp["PAYMENT_URL"]
+        self.callback_url = zp["CALLBACK_URL"]
+        self.refund_url   = zp.get(
             "REFUND_URL",
-            "https://api.zarinpal.com/pg/v4/payment/refund.json"
+            "https://api.zarinpal.com/pg/v4/payment/refund.json",
         )
+        # فقط برای refund لازم است
+        self.access_token = zp.get("ACCESS_TOKEN")
 
-    # متد کمکی برای استخراج خطا (در هر دو حالت)
-    def _extract_error(self, result: dict, default_message: str = "خطای ناشناخته"):
+    # ------------------------------------------------------------------
+    # PRIVATE
+    # ------------------------------------------------------------------
+    def _extract_error(self, result: dict, default: str = "خطای ناشناخته") -> dict:
         """
-        استخراج پیام خطا از پاسخ زرین‌پال
-        زرین‌پال errors رو هم به صورت دیکشنری و هم لیست برمیگردونه
+        زرین‌پال errors را هم به صورت dict و هم list برمی‌گرداند.
+        این متد هر دو حالت را handle می‌کند.
         """
         errors = result.get("errors", {})
+        if isinstance(errors, list) and errors:
+            return {"message": errors[0].get("message", default), "code": errors[0].get("code", -1)}
+        if isinstance(errors, dict) and errors:
+            return {"message": errors.get("message", default), "code": errors.get("code", -1)}
+        return {"message": default, "code": -1}
 
-        if isinstance(errors, list) and len(errors) > 0:
-            # حالت لیستی
-            return {
-                "message": errors[0].get("message", default_message),
-                "code": errors[0].get("code", -1),
-            }
-        elif isinstance(errors, dict):
-            # حالت دیکشنری
-            return {
-                "message": errors.get("message", default_message),
-                "code": errors.get("code", -1),
-            }
-        else:
-            # هیچی
-            return {"message": default_message, "code": -1}
+    def _post(self, url: str, payload: dict, headers: dict = None) -> tuple[bool, dict]:
+        """
+        wrapper مشترک برای همه درخواست‌های POST.
+        برمی‌گرداند: (ok: bool, data: dict)
+        """
+        _headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        if headers:
+            _headers.update(headers)
+        try:
+            resp = requests.post(url, json=payload, headers=_headers, timeout=30)
+        except requests.exceptions.Timeout:
+            return False, {"message": "وقفه در ارتباط با درگاه", "code": -1}
+        except requests.exceptions.ConnectionError:
+            return False, {"message": "عدم اتصال به درگاه", "code": -2}
+        except Exception as e:
+            logger.exception(f"Unexpected HTTP error: {e}")
+            return False, {"message": "خطای غیرمنتظره", "code": -3}
 
-    # --------------------------------------------------------
-    def request_payment(self, amount: int, description: str, mobile: str = None):
+        if resp.status_code != 200:
+            logger.error(f"HTTP {resp.status_code} from ZarinPal — url={url}")
+            return False, {"message": f"خطای سرور (HTTP {resp.status_code})", "code": resp.status_code}
+
+        try:
+            return True, resp.json()
+        except ValueError:
+            return False, {"message": "پاسخ نامعتبر از سرور", "code": -4}
+
+    # ------------------------------------------------------------------
+    # PUBLIC
+    # ------------------------------------------------------------------
+    def request_payment(self, amount: int, description: str, mobile: str = None) -> dict:
         """
-        درخواست ایجاد تراکنش در زرین‌پال
+        مرحله اول پرداخت: دریافت authority و لینک درگاه.
+
+        :param amount:      مبلغ به ریال
+        :param description: توضیح تراکنش
+        :param mobile:      شماره موبایل (اختیاری، برای pre-fill در درگاه)
+        :return:
+            موفق  → {"success": True,  "authority": "...", "payment_url": "..."}
+            خطا   → {"success": False, "error": "...",     "code": ...}
         """
-        data = {
-            "merchant_id": self.merchant_id,
-            "amount": amount,
-            "description": description,
-            "callback_url": self.callback_url,
+        payload = {
+            "merchant_id":  self.merchant_id,
+            "amount":        amount,
+            "description":   description,
+            "callback_url":  self.callback_url,
         }
-
         if mobile:
-            data["mobile"] = mobile
+            payload["mobile"] = mobile
 
-        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        ok, result = self._post(self.request_url, payload)
+        if not ok:
+            return {"success": False, "error": result["message"], "code": result["code"]}
 
-        try:
-            response = requests.post(
-                self.request_url, data=json.dumps(data), headers=headers, timeout=30
-            )
-
-            # ⭐ بررسی HTTP Status
-            if response.status_code != 200:
-                logger.error(f"❌ HTTP {response.status_code} from Zarinpal")
-                return {
-                    "success": False,
-                    "error": f"خطای سرور (HTTP {response.status_code})",
-                    "code": response.status_code,
-                }
-
-            result = response.json()
-
-            if result.get("data") and result["data"].get("authority"):
-                authority = result["data"]["authority"]
-                payment_url = f"{self.payment_url}{authority}"
-
-                logger.info(f"✅ authority={authority}, amount={amount}")
-
-                return {
-                    "success": True,
-                    "authority": authority,
-                    "payment_url": payment_url,
-                    "data": result["data"],
-                }
-            else:
-                # ⭐ استفاده از متد کمکی
-                error = self._extract_error(result)
-                logger.error(f"❌ code={error['code']}, message={error['message']}")
-
-                return {
-                    "success": False,
-                    "error": error["message"],
-                    "code": error["code"],
-                }
-
-        except requests.exceptions.Timeout:
-            logger.error("Timeout")
+        authority = result.get("data", {}).get("authority")
+        if authority:
+            logger.info(f"ZarinPal request OK — authority={authority} amount={amount}")
             return {
-                "success": False,
-                "error": "وقفه در ارتباط با درگاه پرداخت",
-                "code": -100,
+                "success":     True,
+                "authority":   authority,
+                "payment_url": f"{self.payment_url}{authority}",
             }
 
-        except requests.exceptions.ConnectionError:
-            logger.error("Connection error")
-            return {
-                "success": False,
-                "error": "عدم اتصال به درگاه پرداخت",
-                "code": -101,
-            }
+        error = self._extract_error(result)
+        logger.error(f"ZarinPal request failed — code={error['code']} msg={error['message']}")
+        return {"success": False, "error": error["message"], "code": error["code"]}
 
-        except json.JSONDecodeError:
-            logger.error("Invalid JSON")
-            return {"success": False, "error": "پاسخ نامعتبر از سرور", "code": -102}
-
-        except Exception as e:
-            logger.error(f"Unexpected: {str(e)}")
-            return {"success": False, "error": "خطای غیرمنتظره", "code": -103}
-
-    def verify_payment(self, authority: str, amount: int):
+    # ------------------------------------------------------------------
+    def verify_payment(self, authority: str, amount: int) -> dict:
         """
-        تایید تراکنش در زرین‌پال
+        مرحله دوم: تأیید پرداخت بعد از بازگشت کاربر از درگاه.
+
+        کد ۱۰۰ = پرداخت موفق
+        کد ۱۰۱ = قبلاً تأیید شده (idempotent، باز هم موفق حساب می‌شود)
+
+        :return:
+            موفق  → {"success": True, "ref_id": "...", "already_verified": bool}
+            خطا   → {"success": False, "error": "...", "code": ...}
         """
-        data = {
+        payload = {
             "merchant_id": self.merchant_id,
-            "amount": amount,
-            "authority": authority,
+            "amount":       amount,
+            "authority":    authority,
         }
 
-        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        ok, result = self._post(self.verify_url, payload)
+        if not ok:
+            return {"success": False, "error": result["message"], "code": result["code"]}
 
-        try:
-            response = requests.post(
-                self.verify_url, data=json.dumps(data), headers=headers, timeout=30
-            )
+        data = result.get("data", {})
+        code = data.get("code")
 
-            if response.status_code != 200:
-                logger.error(f"❌ HTTP {response.status_code}")
-                return {
-                    "success": False,
-                    "error": f"خطای سرور (HTTP {response.status_code})",
-                    "code": response.status_code,
-                }
-
-            result = response.json()
-
-            if result.get("data") and result["data"].get("ref_id"):
-                ref_id = result["data"]["ref_id"]
-                logger.info(f"✅ ref_id={ref_id}")
-
-                return {"success": True, "ref_id": ref_id, "data": result["data"]}
-            else:
-                #  استفاده از متد کمکی
-                error = self._extract_error(result, "تایید پرداخت ناموفق")
-                logger.error(f"❌ code={error['code']}, message={error['message']}")
-
-                return {
-                    "success": False,
-                    "error": error["message"],
-                    "code": error["code"],
-                }
-
-        except requests.exceptions.Timeout:
-            return {"success": False, "error": "وقفه در تایید پرداخت", "code": -200}
-
-        except requests.exceptions.ConnectionError:
-            return {"success": False, "error": "عدم اتصال به درگاه", "code": -201}
-
-        except Exception as e:
-            logger.error(f"Verify error: {str(e)}")
-            return {"success": False, "error": "خطا در تایید پرداخت", "code": -202}
-
-    def request_settlement(
-        self, account_id: str, amount: int, description: str
-    ) -> dict:
-        """
-        ارسال درخواست تسویه (برداشت) به حساب بانکی مشخص
-
-        :param account_id: شناسه حساب بانکی در زرین‌پال (IBAN یا gateway_account_id)
-        :param amount: مبلغ به ریال (عدد صحیح)
-        :param description: توضیحات تراکنش
-        :return: دیکشنری شامل:
-            - success: True/False
-            - reference_id: شناسه پیگیری زرین‌پال (در صورت موفقیت)
-            - error: پیام خطا (در صورت شکست)
-        """
-        data = {
-            "merchant_id": self.merchant_id,
-            "amount": amount,
-            "iban": account_id,  # در زرین‌پال معمولاً حساب با IBAN مشخص می‌شود
-            "description": description,
-        }
-
-        headers = {"Content-Type": "application/json", "Accept": "application/json"}
-
-        try:
-            response = requests.post(
-                self.settlement_url, data=json.dumps(data), headers=headers, timeout=30
-            )
-
-            # بررسی HTTP Status
-            if response.status_code != 200:
-                logger.error(f"❌ Settlement HTTP {response.status_code} from Zarinpal")
-                return {
-                    "success": False,
-                    "error": f"خطای سرور (HTTP {response.status_code})",
-                    "code": response.status_code,
-                }
-
-            result = response.json()
-
-            # زرین‌پال معمولاً برای تسویه هم کد 100 (موفق) برمی‌گرداند
-            if result.get("data") and result["data"].get("code") == 100:
-                # شناسه پیگیری تسویه (id یا ref_id)
-                reference_id = result["data"].get("id") or result["data"].get(
-                    "ref_id", ""
-                )
-                logger.info(
-                    f"✅ Settlement request created, reference_id={reference_id}"
-                )
-
-                return {
-                    "success": True,
-                    "reference_id": reference_id,
-                    "data": result["data"],
-                }
-            else:
-                # خطای سمت زرین‌پال
-                error = self._extract_error(result, "تسویه ناموفق")
-                logger.error(
-                    f"❌ Settlement failed: code={error['code']}, message={error['message']}"
-                )
-
-                return {
-                    "success": False,
-                    "error": error["message"],
-                    "code": error["code"],
-                }
-
-        except requests.exceptions.Timeout:
-            logger.error("Settlement timeout")
+        if code in (100, 101):
+            already = (code == 101)
+            logger.info(f"ZarinPal verify OK — ref_id={data.get('ref_id')} already_verified={already}")
             return {
-                "success": False,
-                "error": "وقفه در ارتباط با درگاه تسویه",
-                "code": -300,
+                "success":          True,
+                "ref_id":           str(data.get("ref_id", "")),
+                "card_pan":         data.get("card_pan", ""),
+                "already_verified": already,
             }
 
-        except requests.exceptions.ConnectionError:
-            logger.error("Settlement connection error")
-            return {"success": False, "error": "عدم اتصال به درگاه تسویه", "code": -301}
+        error = self._extract_error(result, "تأیید پرداخت ناموفق")
+        logger.error(f"ZarinPal verify failed — code={error['code']} msg={error['message']}")
+        return {"success": False, "error": error["message"], "code": error["code"]}
 
-        except json.JSONDecodeError:
-            logger.error("Invalid JSON in settlement response")
-            return {"success": False, "error": "پاسخ نامعتبر از سرور", "code": -302}
+    # ------------------------------------------------------------------
+    def request_refund(self, session_id: str, amount: int, description: str = "CUSTOMER_REQUEST") -> dict:
+        """
+        استرداد وجه به روش زرین‌پال (برگشت به کارت بانکی اصلی).
+        نیاز به ACCESS_TOKEN دارد (از پنل زرین‌پال بگیرید).
 
-        except Exception as e:
-            logger.exception("Unexpected settlement error")
-            return {"success": False, "error": "خطای غیرمنتظره در تسویه", "code": -303}
+        ⚠️  این متد فقط برای RefundRequest با destination=bank استفاده می‌شود.
+            برای destination=wallet، موجودی کیف پول داخل اپ شارژ می‌شود
+            و نیازی به فراخوانی زرین‌پال نیست.
 
-    def request_refund(
-            self,
-            session_id: str,
-            amount: int,
-            method: str,
-            description: str = "CUSTOMER_REQUEST",
-    ) -> dict:
+        :param session_id:  شناسه session پرداخت در زرین‌پال
+        :param amount:      مبلغ به ریال
+        :param description: دلیل استرداد
+        :return:
+            موفق  → {"success": True, "refund_id": "..."}
+            خطا   → {"success": False, "error": "...", "code": ...}
+        """
+        if not self.access_token:
+            logger.error("ZarinPal ACCESS_TOKEN is not configured")
+            return {"success": False, "error": "تنظیمات استرداد ناقص است (ACCESS_TOKEN)", "code": -412}
 
         if not session_id:
-            return {
-                "success": False,
-                "error": "session_id الزامی است",
-                "code": -410,
-            }
+            return {"success": False, "error": "session_id الزامی است", "code": -410}
 
         if amount <= 0:
-            return {
-                "success": False,
-                "error": "مبلغ استرداد نامعتبر است",
-                "code": -411,
-            }
-
-        if not self.access_token:
-            logger.error("ACCESS_TOKEN is missing")
-
-            return {
-                "success": False,
-                "error": "تنظیمات استرداد ناقص است",
-                "code": -412,
-            }
-
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
+            return {"success": False, "error": "مبلغ استرداد نامعتبر است", "code": -411}
 
         payload = {
-            "session_id": session_id,
-            "amount": amount,
-            "method": method,
-            "description": description,
+            "session_id":  session_id,
+            "amount":       amount,
+            "description":  description,
         }
+        headers = {"Authorization": f"Bearer {self.access_token}"}
 
-        try:
+        ok, result = self._post(self.refund_url, payload, headers)
+        if not ok:
+            return {"success": False, "error": result["message"], "code": result["code"]}
 
-            response = requests.post(
-                self.refund_url,
-                json=payload,
-                headers=headers,
-                timeout=30,
-            )
+        data = result.get("data")
+        if data:
+            refund_id = data.get("id") or data.get("refund_id") or data.get("reference_id")
+            logger.info(f"ZarinPal refund OK — refund_id={refund_id} amount={amount}")
+            return {"success": True, "refund_id": refund_id}
 
-            if response.status_code != 200:
-                logger.error(
-                    f"Refund HTTP Error: {response.status_code}"
-                )
-
-                return {
-                    "success": False,
-                    "error": f"خطای HTTP {response.status_code}",
-                    "code": response.status_code,
-                }
-
-            result = response.json()
-
-            data = result.get("data")
-
-            if data:
-                refund_id = (
-                        data.get("id")
-                        or data.get("refund_id")
-                        or data.get("reference_id")
-                )
-
-                return {
-                    "success": True,
-                    "refund_id": refund_id,
-                    "refund_amount": data.get(
-                        "refund_amount",
-                        amount,
-                    ),
-                    "data": data,
-                }
-
-            error = self._extract_error(
-                result,
-                "استرداد وجه ناموفق بود",
-            )
-
-            logger.error(
-                f"Refund failed: "
-                f"{error['code']} - {error['message']}"
-            )
-
-            return {
-                "success": False,
-                "error": error["message"],
-                "code": error["code"],
-            }
-
-        except requests.exceptions.Timeout:
-
-            logger.error("Refund timeout")
-
-            return {
-                "success": False,
-                "error": "وقفه در ارتباط با زرین پال",
-                "code": -400,
-            }
-
-        except requests.exceptions.ConnectionError:
-
-            logger.error("Refund connection error")
-
-            return {
-                "success": False,
-                "error": "عدم اتصال به زرین پال",
-                "code": -401,
-            }
-
-        except json.JSONDecodeError:
-
-            logger.error("Refund invalid JSON")
-
-            return {
-                "success": False,
-                "error": "پاسخ نامعتبر از زرین پال",
-                "code": -402,
-            }
-
-        except Exception as e:
-
-            logger.exception(
-                f"Unexpected refund error: {str(e)}"
-            )
-
-            return {
-                "success": False,
-                "error": "خطای غیرمنتظره در استرداد وجه",
-                "code": -403,
-            }
+        error = self._extract_error(result, "استرداد وجه ناموفق")
+        logger.error(f"ZarinPal refund failed — code={error['code']} msg={error['message']}")
+        return {"success": False, "error": error["message"], "code": error["code"]}

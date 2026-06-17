@@ -2,6 +2,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from celery.schedules import crontab
 from decouple import config
 NESHAN_API_KEY = config("NESHAN_API_KEY")
 
@@ -33,6 +34,7 @@ INSTALLED_APPS = [
     "django_celery_results",
     "django_prometheus",
     "drf_spectacular",
+    "django_celery_beat",
 
     # Local Apps
     "users",
@@ -96,7 +98,21 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+#-----------------CELERY---------------
 
+CELERY_BEAT_SCHEDULE = {
+    'clear-expired-tokens': {
+        'task': 'users.tasks.clear_expired_blacklisted_tokens',
+        'schedule': crontab(hour=3, minute=0),
+
+    },
+    'clear-report-daily': {
+        'task': 'notifications.tasks.send_sms_to_seller_daily_report',
+        'schedule': crontab(hour=8, minute=0),
+
+    },
+
+}
 # ---------------- AUTH ----------------
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

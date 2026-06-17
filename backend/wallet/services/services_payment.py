@@ -1,18 +1,17 @@
 import logging
 from time import perf_counter
+
 from django.db import transaction
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
-from backend.order import OrderCreateSerializer
-from backend.order import Order, OrderItem, OrderStatus, OrderStatusLog
-from backend.wallet.utils.utils import (check_payment_cooldown, record_payment_failure,
-                                        reset_payment_cooldown)
-
-# ۱. اصلاح آدرس‌دهی ماژول متریک‌ها بر اساس فایل ارسالی شما
-from backend.wallet.monitoring import (
-    PAYMENT_TOTAL, PAYMENT_SUCCESS, PAYMENT_FAILED, VERIFY_DURATION, GATEWAY_REQUEST_DURATION
-)
-from ..utils.lock_utils import DistributedLock
+from order.models import Order, OrderItem, OrderStatus, OrderStatusLog
+from order.serializers import OrderCreateSerializer
+from users.models import User
+from  wallet.models import PaymentSession, Wallet, WalletTransaction, WithdrawalRequest
+from wallet.monitoring import *
+from wallet.utils.lock_utils import DistributedLock
+from wallet.utils.utils import *
 from service_helper import create_audit_log
 
 logger = logging.getLogger(__name__)
@@ -23,29 +22,14 @@ class PaymentService:
     def __init__(self, zarinpal_client):
         self.gateway = zarinpal_client
 
-    # =====================================================
-    # HELPER: Get Client IP
-    # =====================================================
-    def _get_client_ip(self, request):
-        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-        if x_forwarded_for:
-            return x_forwarded_for.split(",")[0].strip()
-        return request.META.get("REMOTE_ADDR", "")
-
-    # =====================================================
-    # PRICING SNAPSHOT (NO RECALC IN VERIFY)
-    # =====================================================
-    def _calculate_pricing(self, validated_data, request):
-        serializer = OrderCreateSerializer(
-            data=validated_data, context={"request": request}
-        )
-        serializer.is_valid(raise_exception=True)
-        return serializer.save()
-
-    # =====================================================
-    # IDEMPOTENT ORDER CREATION
-    # =====================================================
-    def _create_order(self, user, pricing):
+    # ------------------------------------------------------------------
+    # PRIVATE HELPERS
+    # ------------------------------------------------------------------
+    def _create_order(self, user: User, pricing: dict) -> Order:
+        """
+        سفارش را داخل یک تراکنش اتمیک می‌سازد.
+        فقط بعد از تأیید پرداخت فراخوانی می‌شود.
+        """
         order = Order.objects.create(
             user=user,
             address=pricing["address"],
@@ -58,22 +42,18 @@ class PaymentService:
             final_price=pricing["final_price"],
             paid_at=timezone.now(),
         )
-
-        OrderItem.objects.bulk_create(
-            [
-                OrderItem(
-                    order=order,
-                    product=i["product"],
-                    size=i["size"],
-                    pricing_tab=i["pricing_tab"],
-                    material=i["material_name"],
-                    quantity=i["quantity"],
-                    price=i["final_item_price"],
-                )
-                for i in pricing["computed_items"]
-            ]
-        )
-
+        OrderItem.objects.bulk_create([
+            OrderItem(
+                order=order,
+                product=i["product"],
+                size=i["size"],
+                pricing_tab=i["pricing_tab"],
+                material=i["material_name"],
+                quantity=i["quantity"],
+                price=i["final_item_price"],
+            )
+            for i in pricing["computed_items"]
+        ])
         system_user, _ = User.objects.get_or_create(
             phone="12345678900", defaults={"fullname": "system"}
         )
@@ -85,137 +65,146 @@ class PaymentService:
         )
         return order
 
-    # =====================================================
-    # INITIATE GATEWAY PAYMENT
-    # =====================================================
+    # ------------------------------------------------------------------
+    # 1. INITIATE PAYMENT — درخواست پرداخت به زرین‌پال
+    # ------------------------------------------------------------------
     @transaction.atomic
-    def initiate_payment(self, user, cart, validated_data, terminal_id):
+    def initiate_payment(self, user: User, validated_data: dict, request) -> dict:
+        """
+        مرحله اول: اعتبارسنجی سبد، محاسبه قیمت، ساخت PaymentSession و
+        دریافت لینک درگاه از زرین‌پال.
+
+        ⚠️  سفارش اینجا ساخته نمی‌شود — فقط بعد از تأیید پرداخت ساخته می‌شود.
+        snapshot قیمت داخل gateway_request ذخیره می‌شود تا در verify استفاده شود.
+        """
         PAYMENT_TOTAL.inc()
         check_payment_cooldown(user.id, "gateway_pay")
 
-        cart_items = list(cart)
-        if not cart_items:
+        # اعتبارسنجی و محاسبه قیمت
+        serializer = OrderCreateSerializer(data=validated_data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        pricing = serializer.save()
+
+        if not pricing.get("computed_items"):
             PAYMENT_FAILED.inc()
             record_payment_failure(user.id, "gateway_pay")
             raise ValidationError("سبد خرید خالی است")
 
-        serializer = OrderCreateSerializer(
-            data=validated_data,
-            context={"request": cart.request}
-        )
-        serializer.is_valid(raise_exception=True)
-        pricing = serializer.save()
-
-        terminal = PaymentTerminal.objects.get(id=terminal_id, is_active=True)
-
+        # ساخت session — بدون terminal چون حذف شد
         payment = PaymentSession.objects.create(
             user=user,
-            terminal=terminal,
+            type=PaymentSession.Type.ORDER,
             amount=pricing["final_price"],
-            type_pay=PaymentSession.Type.GATEWAY,
             status=PaymentSession.Status.INITIATED,
             gateway_request={"pricing_snapshot": pricing},
-            card_hash="",
         )
 
         create_audit_log(
             action="PAYMENT_INITIATED",
             user=user,
             payment=payment,
-            new_data={"amount": payment.amount, "status": payment.status},
+            new_data={"amount": payment.amount},
         )
 
-        gateway_started = perf_counter()
+        # درخواست به زرین‌پال
+        t0 = perf_counter()
         result = self.gateway.request_payment(
             amount=payment.amount,
-            description="Order Payment",
-            mobile=user.phone,
+            description=f"پرداخت سفارش خشکشویی - کاربر {user.id}",
+            mobile=getattr(user, "phone", None),
         )
-        GATEWAY_REQUEST_DURATION.observe(perf_counter() - gateway_started)
+        GATEWAY_REQUEST_DURATION.observe(perf_counter() - t0)
 
         if not result["success"]:
             PAYMENT_FAILED.inc()
+            record_payment_failure(user.id, "gateway_pay")
             payment.status = PaymentSession.Status.FAILED
             payment.fail_reason = result.get("error", "gateway error")
-            payment.save()
+            payment.save(update_fields=["status", "fail_reason"])
             raise ValidationError(result["error"])
 
         payment.authority = result["authority"]
         payment.gateway_response = result
         payment.status = PaymentSession.Status.PENDING
         payment.save(update_fields=["authority", "gateway_response", "status"])
-        PAYMENT_SUCCESS.inc()
 
         return {
-            "url": result["payment_url"],
-            "authority": payment.authority,
-            "payment_id": payment.id,
+            "payment_url": result["payment_url"],
+            "authority":   payment.authority,
+            "payment_uuid": str(payment.uuid),
         }
 
-    # =====================================================
-    # VERIFY GATEWAY PAYMENT (IDEMPOTENT + ORDER CREATION)
-    # =====================================================
-    def verify_payment(self, *, authority, callback_payload=None, payer_ip=None):
-        verify_started = perf_counter()
-
-        # ۲. استفاده بهینه از قابلیت Context Manager قفل توزیع‌شده با ساختار with
-        # این کار ریسک Deadlock را صفر کرده و نیازی به بلوک try/finally و کدهای اضافه ندارد.
+    # ------------------------------------------------------------------
+    # 2. VERIFY PAYMENT — تأیید پرداخت بعد از redirect کاربر
+    # ------------------------------------------------------------------
+    def verify_payment(self, *, authority: str, callback_payload: dict = None) -> dict:
+        """
+        مرحله دوم: تأیید با زرین‌پال، ساخت سفارش، ثبت تراکنش کیف پول.
+        Idempotent است — اگر قبلاً تأیید شده باشد همان نتیجه را برمی‌گرداند.
+        """
         with DistributedLock(key=f"verify:{authority}", timeout=60, blocking_timeout=1):
             with transaction.atomic():
-                payment = PaymentSession.objects.select_for_update().filter(authority=authority).first()
-
+                payment = (
+                    PaymentSession.objects
+                    .select_for_update()
+                    .filter(authority=authority)
+                    .first()
+                )
                 if not payment:
-                    raise ValidationError("Payment not found.")
+                    raise ValidationError("تراکنش یافت نشد.")
 
+                # idempotent: قبلاً تأیید شده
                 if payment.is_verified:
-                    VERIFY_DURATION.observe(perf_counter() - verify_started)
                     return {
-                        "success": True,
-                        "message": "already verified",
+                        "success":  True,
+                        "verified": True,
                         "order_id": payment.order_id,
-                        "ref_id": payment.ref_id,
+                        "ref_id":   payment.ref_id,
                     }
 
+                # تأیید با زرین‌پال
+                t0 = perf_counter()
                 verify_result = self.gateway.verify_payment(
                     authority=authority,
                     amount=payment.amount,
                 )
+                VERIFY_DURATION.observe(perf_counter() - t0)
+
                 payment.verify_response = verify_result
 
                 if not verify_result["success"]:
                     PAYMENT_FAILED.inc()
                     payment.status = PaymentSession.Status.FAILED
-                    payment.save(update_fields=["status", "verify_response"])
-
+                    payment.fail_reason = verify_result.get("error", "verify failed")
+                    payment.save(update_fields=["status", "verify_response", "fail_reason"])
                     create_audit_log(
                         action="PAYMENT_FAILED",
                         user=payment.user,
                         payment=payment,
                         new_data={"status": payment.status},
-                        ip=payer_ip,
                     )
-                    VERIFY_DURATION.observe(perf_counter() - verify_started)
-                    return {"success": False}
+                    return {"success": False, "error": verify_result.get("error")}
 
+                # بعد از تأیید زرین‌پال، یک‌بار دیگر چک می‌کنیم (race condition)
                 payment.refresh_from_db()
                 if payment.is_verified:
-                    VERIFY_DURATION.observe(perf_counter() - verify_started)
                     return {
-                        "success": True,
-                        "message": "already verified",
+                        "success":  True,
+                        "verified": True,
                         "order_id": payment.order_id,
-                        "ref_id": payment.ref_id,
+                        "ref_id":   payment.ref_id,
                     }
 
-                PAYMENT_SUCCESS.inc()
-                payment.status = PaymentSession.Status.PAID
+                # ثبت نتیجه پرداخت
+                payment.status      = PaymentSession.Status.PAID
                 payment.is_verified = True
-                payment.ref_id = verify_result["ref_id"]
+                payment.ref_id      = verify_result["ref_id"]
+                payment.card_pan    = verify_result.get("card_pan", "")
                 payment.callback_payload = callback_payload or {}
-                payment.payer_ip = payer_ip
-                payment.paid_at = timezone.now()
+                payment.paid_at     = timezone.now()
                 payment.verified_at = timezone.now()
 
+                # ساخت سفارش (فقط اینجا، نه در initiate)
                 if not payment.order_id:
                     pricing = payment.gateway_request.get("pricing_snapshot")
                     order = self._create_order(payment.user, pricing)
@@ -223,129 +212,100 @@ class PaymentService:
 
                 payment.save()
 
+                # ثبت تراکنش کیف پول (تاریخچه)
                 wallet, _ = Wallet.objects.get_or_create(
                     user=payment.user,
-                    defaults={"is_active": True}
+                    defaults={"is_active": True},
                 )
-
-                Transaction.objects.get_or_create(
-                    payment=payment,
-                    transaction_type=Transaction.TransactionType.PAYMENT,
+                WalletTransaction.objects.get_or_create(
+                    payment_session=payment,
+                    transaction_type=WalletTransaction.Type.PAYMENT,
                     defaults={
-                        "wallet": wallet,
-                        "order": payment.order,
-                        "amount": payment.amount,
-                        "status": Transaction.Status.SUCCESS,
-                    }
+                        "wallet":  wallet,
+                        "order":   payment.order,
+                        "amount":  payment.amount,
+                        "status":  WalletTransaction.Status.SUCCESS,
+                        "description": f"پرداخت سفارش #{payment.order_id}",
+                    },
                 )
 
-                # ۳. رفع خطای سینتکسی (Indentation Error) و کامای غایب در ساخت آبجکت تمپت
-                PaymentAttempt.objects.create(
-                    payment=payment,
-                    authority=authority,
-                    status=PaymentAttempt.Status.VERIFIED,
-                    ref_id=payment.ref_id,
-                    callback_payload=callback_payload or {},
-                    payer_ip=payer_ip,
-                    gateway_response=verify_result,
-                )
-
+                PAYMENT_SUCCESS.inc()
+                reset_payment_cooldown(payment.user_id, "gateway_pay")
                 create_audit_log(
                     action="PAYMENT_VERIFIED",
                     user=payment.user,
                     payment=payment,
-                    new_data={
-                        "status": payment.status,
-                        "ref_id": payment.ref_id,
-                        "order_id": payment.order_id,
-                    },
-                    ip=payer_ip,
+                    new_data={"ref_id": payment.ref_id, "order_id": payment.order_id},
                 )
 
-                reset_payment_cooldown(payment.user_id, "gateway_pay")
-                VERIFY_DURATION.observe(perf_counter() - verify_started)
-
                 return {
-                    "success": True,
+                    "success":  True,
                     "order_id": payment.order_id,
-                    "ref_id": payment.ref_id,
+                    "ref_id":   payment.ref_id,
                 }
 
-    # =====================================================
-    # WITHDRAW FROM WALLET TO BANK ACCOUNT
-    # =====================================================
+    # ------------------------------------------------------------------
+    # 3. WITHDRAW TO BANK — برداشت آزاد از کیف پول به حساب بانکی
+    # ------------------------------------------------------------------
     @transaction.atomic
-    def withdraw_to_bank(self, *, user, amount, deposit_payment_uuid, method, request=None):
-        # از شمارنده‌های پرومتئوس که بالاتر ایمپورت شدند استفاده می‌شود
-        # برای بخش withdraw شمارنده‌ای در فایل مانیتورینگ شما تعریف نشده بود، در صورت نیاز می‌توانید به آن اضافه کنید
+    def withdraw_to_bank(self, *, user: User, amount: int, iban: str, account_holder: str) -> dict:
+        """
+        کاربر می‌تواند موجودی کیف پولش را به حساب بانکی خودش منتقل کند.
+
+        ⚠️  این عملیات مستقل از هر سفارش است و ربطی به request_refund ندارد.
+            درخواست ثبت می‌شود و ادمین/تسک آن را از طریق پنل زرین‌پال پردازش می‌کند.
+        """
+        self._check_withdrawal_eligibility(user)
         check_payment_cooldown(user.id, "withdraw")
 
         wallet = Wallet.objects.select_for_update().get(user=user, is_active=True)
 
         if wallet.available_balance < amount:
             record_payment_failure(user.id, "withdraw")
-            raise ValidationError("موجودی کافی نیست")
+            raise ValidationError("موجودی کافی نیست.")
 
-        if not self.validate_withdrawal_eligibility(user):
-            raise ValidationError("برداشت موقتاً غیر فعال است")
-
-        deposit_payment = PaymentSession.objects.get(
-            uuid=deposit_payment_uuid,
-            user=user,
-            status=PaymentSession.Status.PAID,
-        )
-
-        if amount > deposit_payment.amount:
-            raise ValidationError("مبلغ درخواستی بیشتر از تراکنش مرجع است")
-
+        # قفل موجودی تا پردازش توسط ادمین
         wallet.available_balance -= amount
-        wallet.save()
+        wallet.locked_balance    += amount
+        wallet.save(update_fields=["available_balance", "locked_balance"])
 
         withdrawal = WithdrawalRequest.objects.create(
             user=user,
             wallet=wallet,
             amount=amount,
-            deposit_payment=deposit_payment,
-            method=method,
+            iban=iban,
+            account_holder=account_holder,
             status=WithdrawalRequest.Status.PENDING,
         )
 
-        txn = Transaction.objects.create(
+        WalletTransaction.objects.create(
             wallet=wallet,
-            payment=deposit_payment,
             amount=amount,
-            transaction_type=Transaction.TransactionType.WITHDRAWAL,
-            status=Transaction.Status.PENDING,
+            transaction_type=WalletTransaction.Type.WITHDRAWAL,
+            status=WalletTransaction.Status.PENDING,
+            description=f"درخواست برداشت #{withdrawal.id} — {iban}",
         )
 
-        refund_result = self.gateway.request_refund(
-            session_id=deposit_payment.authority,
-            amount=amount,
-            method=method,
+        create_audit_log(
+            action="WITHDRAWAL_REQUESTED",
+            user=user,
+            new_data={"amount": amount, "iban": iban, "withdrawal_id": withdrawal.id},
         )
 
-        if refund_result["success"]:
-            withdrawal.status = WithdrawalRequest.Status.COMPLETED
-            withdrawal.save(update_fields=["status"])
+        # پردازش واقعی توسط ادمین یا Celery task انجام می‌شود
+        return {
+            "success":       True,
+            "withdrawal_id": str(withdrawal.uuid),
+            "message":       "درخواست برداشت ثبت شد و در صف پردازش قرار گرفت.",
+        }
 
-            txn.status = Transaction.Status.SUCCESS
-            txn.save(update_fields=["status"])
-
-            return {"success": True}
-
-        # با بروز خطا، خط پایین اتمیک عمل کرده و کل دیتابیس (جمله کسر موجودی) را رول‌بک می‌کند.
-        raise ValidationError("عملیات استرداد وجه از طریق درگاه با خطا مواجه شد.")
-
-    # =====================================================
-    # VALIDATION HELPER FOR WITHDRAWAL
-    # =====================================================
-    def validate_withdrawal_eligibility(self, user):
+    # ------------------------------------------------------------------
+    # PRIVATE: WITHDRAWAL ELIGIBILITY CHECK
+    # ------------------------------------------------------------------
+    def _check_withdrawal_eligibility(self, user: User) -> None:
         wallet = getattr(user, "wallet", None)
         if not wallet or not wallet.is_active:
-            raise ValidationError("کیف پول فعال برای شما یافت نشد.")
-
+            wallet = Wallet.objects.create(user=user, is_active=True)
         if wallet.withdraw_blocked_util and timezone.now() < wallet.withdraw_blocked_util:
-            remaining = wallet.withdraw_blocked_util - timezone.now()
-            hours = remaining.total_seconds() / 3600
-            raise ValidationError(f"برداشت تا {hours:.1f} ساعت دیگر امکان‌پذیر نیست.")
-        return True
+            remaining_hours = (wallet.withdraw_blocked_util - timezone.now()).total_seconds() / 3600
+            raise ValidationError(f"برداشت تا {remaining_hours:.1f} ساعت دیگر امکان‌پذیر نیست.")

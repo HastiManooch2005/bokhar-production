@@ -1,4 +1,4 @@
-from rest_framework import generics, status
+"""from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -6,9 +6,8 @@ from django.shortcuts import get_object_or_404
 
 
 class TerminalBankAccountCreateView(generics.CreateAPIView):
-    """
-    اتصال یک حساب بانکی به درگاه
-    """
+
+
     permission_classes = [IsAuthenticated]
     serializer_class = TerminalBankAccountWriteSerializer
 
@@ -22,9 +21,7 @@ class TerminalBankAccountCreateView(generics.CreateAPIView):
 
 
 class SettlementListView(APIView):
-    """
-    لیست تسویه‌های انجام‌شده مربوط به درگاه‌های کاربر
-    """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
@@ -35,9 +32,7 @@ class SettlementListView(APIView):
 
 
 class SettlementTriggerView(APIView):
-    """
-    راه‌اندازی دستی تسویه روزانه برای یک درگاه مشخص
-    """
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request, terminal_id):
@@ -63,3 +58,4 @@ class SettlementTriggerView(APIView):
             logger.exception(f"Settlement trigger failed: {e}")
             return Response({"detail": "خطای داخلی در فرآیند تسویه."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+"""
