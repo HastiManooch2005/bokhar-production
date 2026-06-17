@@ -1,4 +1,3 @@
-  GNU nano 7.2                                           Dockerfile
 ARG ENV=local
 ARG PIP_INDEX=https://pypi.org/simple/
 
