@@ -1,37 +1,25 @@
 ARG ENV=local
-ARG PIP_INDEX
-
-FROM docker-mirror.liara.ir/library/python:3.12-slim-bookworm AS base-production
-ONBUILD RUN echo "deb http://linux-mirror.liara.ir/repository/debian bookworm main non-free-firmware" > /etc/apt/sources.list && \
-    rm -f /etc/apt/sources.list.d/debian.sources
+ARG PIP_INDEX=https://pypi.org/simple/
 
 FROM python:3.12-slim-bookworm AS base-local
 
+FROM python:3.12-slim-bookworm AS base-production
+
 FROM base-${ENV} AS final
+
+ARG PIP_INDEX
+ARG ENV
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-        gcc \
-        python3-dev \
-        libpq-dev \
-        libssl-dev \
-        libffi-dev \
-        build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-ARG PIP_INDEX=https://pypi.org/simple/
-
 COPY requirements-base.txt .
-RUN pip install --no-cache-dir -r requirements-base.txt \
-    --index-url ${PIP_INDEX}
-
 COPY requirements-extra.txt .
-RUN pip install --no-cache-dir -r requirements-extra.txt \
-    --index-url ${PIP_INDEX}
 
-RUN pip install --no-cache-dir gunicorn \
-    --index-url ${PIP_INDEX}
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --only-binary=grpcio grpcio==1.81.0 --index-url ${PIP_INDEX} && \
+    pip install --no-cache-dir -r requirements-base.txt --index-url ${PIP_INDEX} && \
+    pip install --no-cache-dir -r requirements-extra.txt --index-url ${PIP_INDEX} && \
+    pip install --no-cache-dir gunicorn --index-url ${PIP_INDEX}
 
 COPY . /app
 
