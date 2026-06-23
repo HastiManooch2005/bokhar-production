@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class CreateAddressView(APIView):
-  #  permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     serializer_class = AddressSerializer
 
     def post(self, request):
@@ -26,7 +26,7 @@ class CreateAddressView(APIView):
 
 
 class ListAddressAPIView(APIView):
-  #  permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     serializer_class = AddressDetailSerializer
 
     def get(self, request):
@@ -36,7 +36,7 @@ class ListAddressAPIView(APIView):
 
 
 class UpdateAddressAPIView(APIView):
-   # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     serializer_class = UpdateAddressSerializer
 
     def put(self, request, id):
@@ -48,7 +48,7 @@ class UpdateAddressAPIView(APIView):
 
 
 class DeleteAddressAPIView(APIView):
-  #  permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def delete(self, request, id):
         address = get_object_or_404(Address, id=id, user=request.user)
@@ -81,7 +81,7 @@ class NeshanSearchAPIView(APIView):
         return Response(response.json(), status=response.status_code)
     
 class NeshanReverseAPIView(APIView):
-  #  permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         lat = request.GET.get("lat")

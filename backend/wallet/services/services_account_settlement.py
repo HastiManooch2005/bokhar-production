@@ -1,4 +1,4 @@
-import logging
+"""import logging
 from django.db import transaction
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -14,9 +14,7 @@ class ZarinpalSettlementService:
         self.gateway = gateway_client
 
     def process_daily_settlement(self, terminal_id):
-        """
-        محاسبه سهم هر حساب و ثبت درخواست تسویه روزانه به صورت کاملاً امن
-        """
+
         try:
             terminal = PaymentTerminal.objects.get(id=terminal_id, is_deleted=False)
         except PaymentTerminal.DoesNotExist:
@@ -103,4 +101,4 @@ class ZarinpalSettlementService:
                     settlement.save()
                     logger.error(f"خطا در تسویه حساب {link.bank_account.id}: {zarinpal_result.get('error')}")
 
-        return settlements_created
+        return settlements_created"""

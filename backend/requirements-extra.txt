@@ -30,8 +30,11 @@ opentelemetry-instrumentation-wsgi==0.63b1
 opentelemetry-semantic-conventions==0.63b1
 opentelemetry-util-http==0.63b1
 faker
+
 grpcio==1.81.0
 protobuf==6.33.6
 googleapis-common-protos==1.75.0
 
 Pygments==2.19.2
+
+django-celery-beat

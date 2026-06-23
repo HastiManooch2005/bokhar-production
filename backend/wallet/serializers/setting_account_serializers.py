@@ -1,18 +1,18 @@
-from rest_framework import serializers
+"""from rest_framework import serializers
 
 
 # ==========================================
 # ۱. سریالایزرهای حساب بانکی (BankAccount)
 # ==========================================
 class BankAccountListSerializer(serializers.ModelSerializer):
-    """سریالایزر مختصر برای استفاده در لیست‌ها و روابط"""
+
     class Meta:
         model = BankAccount
         fields = ["id", "iban", "holder_name", "bank_name", "status", "is_default"]
 
 
 class BankAccountDetailSerializer(serializers.ModelSerializer):
-    """سریالایزر کامل برای ثبت و مشاهده جزئیات حساب بانکی"""
+
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = BankAccount
@@ -35,7 +35,7 @@ class TerminalAllowedDomainSerializer(serializers.ModelSerializer):
 # ۳. سریالایزرهای اتصال حساب به درگاه (TerminalBankAccount)
 # ==========================================
 class TerminalBankAccountReadSerializer(serializers.ModelSerializer):
-    """نمایش حساب‌های متصل به همراه جزئیات خود حساب بانکی"""
+
     bank_account = BankAccountListSerializer(read_only=True)
     class Meta:
         model = TerminalBankAccount
@@ -48,7 +48,7 @@ class TerminalBankAccountReadSerializer(serializers.ModelSerializer):
             "is_active",
         ]
 class TerminalBankAccountWriteSerializer(serializers.ModelSerializer):
-    """استفاده برای اتصال یا ویرایش یک حساب به درگاه"""
+
     class Meta:
         model = TerminalBankAccount
         fields = [
@@ -75,12 +75,12 @@ class TerminalBankAccountWriteSerializer(serializers.ModelSerializer):
 # ۴. سریالایزرهای درگاه پرداخت (PaymentTerminal)
 # ==========================================
 class PaymentTerminalListSerializer(serializers.ModelSerializer):
-    """نمایش لیست درگاه‌ها با اطلاعات کلیدی"""
+
     class Meta:
         model = PaymentTerminal
         fields = ["id", "name", "terminal_id", "status", "mode", "created_at"]
 class PaymentTerminalDetailSerializer(serializers.ModelSerializer):
-    """نمایش کامل جزئیات درگاه به همراه دامنه‌ها و حساب‌های متصل به آن"""
+
     owner = serializers.ReadOnlyField(source="owner.phone")
     allowed_domains = TerminalAllowedDomainSerializer(many=True, read_only=True)
     terminal_bank_accounts = TerminalBankAccountReadSerializer(
@@ -110,7 +110,7 @@ class PaymentTerminalDetailSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 class PaymentTerminalCreateUpdateSerializer(serializers.ModelSerializer):
-    """سریالایزر ساخت و ویرایش درگاه توسط کاربر"""
+
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = PaymentTerminal
@@ -162,3 +162,4 @@ class SettlementSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "__all__"
         ]  # تسویه حساب‌ها معمولا فقط خواندنی هستند و توسط سیستم صادر می‌شوند
+"""

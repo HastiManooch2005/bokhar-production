@@ -1,136 +1,152 @@
 from rest_framework import serializers
 
-from backend.order import Order
-from backend.wallet.models.models import RefundRequest, Transaction, WithdrawalRequest
+from order.models import Order
+from wallet.models import RefundRequest, WalletTransaction, WithdrawalRequest
 
 
 # =========================================================
-# 1. Payment Create (درگاه بانکی)
+# 1. پرداخت سفارش از درگاه
 # =========================================================
 class PaymentCreateSerializer(serializers.Serializer):
-    terminal_id = serializers.IntegerField(help_text="شناسه ترمینال پرداخت فعال")
+    """
+    فقط داده‌های سفارش لازمه — terminal حذف شده.
+    داده‌های سفارش (آدرس، آیتم‌ها و ...) از OrderCreateSerializer پردازش میشه.
+    """
+    pass  # در صورت نیاز فیلدهای extra مثل description اینجا اضافه کن
 
-    # در صورتی که آدرس یا اقلام سبد خرید مستقیماً در درگاه نیاز به ارسال دارند،
-    # می‌توانید فیلدهای زیر را از کامنت خارج کنید:
-    # address_id = serializers.IntegerField(required=True)
-    # description = serializers.CharField(required=False, allow_blank=True)
+
 # =========================================================
-# 2. Payment Verify (کال‌بک درگاه)
+# 2. تأیید پرداخت (callback زرین‌پال)
 # =========================================================
 class PaymentVerifySerializer(serializers.Serializer):
-    authority = serializers.CharField(
-        max_length=255, help_text="شناسه خرید ارسالی از زرین‌پال"
-    )
-    status = serializers.CharField(
-        max_length=30, help_text="وضعیت ارسالی از کال‌بک درگاه"
-    )
-    amount = serializers.IntegerField(
-        required=False, help_text="مبلغ تراکنش جهت تطابق امنیتی بیشتر"
-    )
+    """
+    زرین‌پال فقط Authority و Status را در query string برمی‌گرداند.
+    amount را نمی‌فرستد — از PaymentSession خوانده می‌شود.
+    """
+    Authority = serializers.CharField(max_length=255)
+    Status    = serializers.CharField(max_length=10)
 
-    def validate_status(self, value):
-        # تبدیل به حروف بزرگ برای جلوگیری از حساسیت به حروف کوچک و بزرگ در ساختار URL
-        normalized_value = value.upper()
-        if normalized_value not in ["OK", "NOK"]:
+    def validate_Status(self, value: str) -> str:
+        normalized = value.upper()
+        if normalized not in ("OK", "NOK"):
             raise serializers.ValidationError(
                 "وضعیت ارسالی از درگاه نامعتبر است (باید OK یا NOK باشد)."
             )
-        return normalized_value
+        return normalized
 
 
 # =========================================================
-# 3. Refund Request (درخواست بازگشت وجه سفارش)
+# 3. شارژ کیف پول از درگاه
 # =========================================================
-class RefundRequestSerializer(serializers.ModelSerializer):
-    # استفاده از PrimaryKeyRelatedField برای تطابق کامل با فیلد order در مدل
-    order = serializers.PrimaryKeyRelatedField(
-        queryset=Order.objects.all(), write_only=True
+class WalletChargeSerializer(serializers.Serializer):
+    amount = serializers.IntegerField(
+        min_value=100_000,
+        max_value=10_000_000,
+        error_messages={
+            "min_value": "حداقل مبلغ شارژ ۱۰۰٬۰۰۰ ریال است.",
+            "max_value": "حداکثر مبلغ شارژ ۱۰٬۰۰۰٬۰۰۰ ریال است.",
+        },
     )
 
+
+# =========================================================
+# 4. پرداخت سفارش از کیف پول
+# =========================================================
+class WalletPaymentSerializer(serializers.Serializer):
+    """
+    داده‌های سفارش از OrderCreateSerializer پردازش میشه.
+    این serializer در صورت نیاز به فیلد extra قابل گسترش است.
+    """
+    pass
+
+
+# =========================================================
+# 5. درخواست استرداد سفارش
+# =========================================================
+class RefundRequestSerializer(serializers.ModelSerializer):
+    order       = serializers.PrimaryKeyRelatedField(queryset=Order.objects.all())
+    destination = serializers.ChoiceField(choices=RefundRequest.Destination.choices)
+
     class Meta:
-        model = RefundRequest
-        fields = [
-            "order",
-            "amount",
-            "reason",
-        ]
+        model  = RefundRequest
+        fields = ["order", "amount", "destination", "reason"]
 
     def validate(self, attrs):
-        order = attrs.get("order")
-        amount = attrs.get("amount")
+        order  = attrs["order"]
+        amount = attrs["amount"]
 
-        # ۱. بررسی اینکه سفارش حتماً پرداخت شده باشد تا امکان ریفاند وجود داشته باشد
-        # توجه: نام OrderStatus.PAID را بر اساس الگوهای متداول خود سفارش مطابقت دهید.
         if order.status != "paid":
             raise serializers.ValidationError(
-                {
-                    "order": "تنها برای سفارش‌های پرداخت شده می‌توان درخواست بازگشت وجه ثبت کرد."
-                }
+                {"order": "فقط سفارش‌های پرداخت‌شده قابل استرداد هستند."}
             )
 
-        # ۲. اعتبارسنجی مبلغ ریفاند (نباید بیشتر از مبلغ پرداختی سفارش باشد)
-        # فرض بر این است که مدل Order فیلدی به نام final_price یا مبلغ پرداختی دارد.
-        if hasattr(order, "final_price") and amount > order.final_price:
+        if amount > order.final_price:
             raise serializers.ValidationError(
-                {
-                    "amount": "مبلغ درخواستی برای بازگشت وجه نمی‌تواند بیشتر از مبلغ سفارش باشد."
-                }
+                {"amount": "مبلغ استرداد نمی‌تواند بیشتر از مبلغ سفارش باشد."}
+            )
+
+        # جلوگیری از ثبت چند درخواست موازی برای یه سفارش
+        pending_exists = RefundRequest.objects.filter(
+            order=order,
+            status__in=[
+                RefundRequest.Status.PENDING,
+                RefundRequest.Status.APPROVED,
+                RefundRequest.Status.PROCESSING,
+            ],
+        ).exists()
+        if pending_exists:
+            raise serializers.ValidationError(
+                {"order": "یک درخواست استرداد در حال پردازش برای این سفارش وجود دارد."}
             )
 
         return attrs
 
 
 # =========================================================
-# 4. Withdrawal Request (برداشت از کیف پول به بانک)
+# 6. درخواست برداشت از کیف پول به حساب بانکی
 # =========================================================
 class WithdrawalRequestSerializer(serializers.ModelSerializer):
-    # در سریالایزر:
-    deposit_payment_uuid = serializers.UUIDField(required=True, write_only=True)
-    method = serializers.ChoiceField(
-        choices=WithdrawalRequest.Method.choices, default=WithdrawalRequest.Method.CARD
-    )
+    """
+    کاربر IBAN و نام صاحب حساب را وارد می‌کند.
+    پردازش توسط ادمین یا Celery task انجام می‌شود.
+    """
 
     class Meta:
-        model = WithdrawalRequest
-        fields = ["amount", "bank_name", "method", "deposit_payment_uuid"]
+        model  = WithdrawalRequest
+        fields = ["amount", "iban", "account_holder"]
 
-    def validate_amount(self, value):
+    def validate_amount(self, value: int) -> int:
         if value <= 0:
+            raise serializers.ValidationError("مبلغ برداشت باید بزرگ‌تر از صفر باشد.")
+        if value < 100_000:
+            raise serializers.ValidationError("حداقل مبلغ برداشت ۱۰۰٬۰۰۰ ریال است.")
+        return value
+
+    def validate_iban(self, value: str) -> str:
+        # شبا ایران: IR + 24 رقم = 26 کاراکتر
+        value = value.strip().upper()
+        if not value.startswith("IR") or len(value) != 26 or not value[2:].isdigit():
             raise serializers.ValidationError(
-                "مبلغ درخواست برداشت باید بزرگتر از صفر باشد."
+                "شماره شبا نامعتبر است. فرمت صحیح: IR + 24 رقم"
             )
         return value
 
 
 # =========================================================
-# 5. Wallet Charge (شارژ کیف پول از درگاه)
+# 7. تاریخچه تراکنش‌های کیف پول
 # =========================================================
-class WalletChargeSerializer(serializers.Serializer):
-    # تنظیم حداقل مبلغ بر اساس واحد پولی سیستم شما (تومان/ریال)
-    amount = serializers.IntegerField(
-        min_value=100000,
-        max_value=10000000,
-        error_messages={
-            "min_value": "حداقل مبلغ جهت شارژ کیف پول 100000 واحد می‌باشد و حداکثر مقدار 10000000 است."
-        },
-    )
-
-
-# =========================================================
-# 6. Transaction History (نمایش تراکنش‌های کیف پول)
-# =========================================================
-class TransactionSerializer(serializers.ModelSerializer):
-    # برای نمایش خوانا و متنی وضعیت و نوع تراکنش بجای کلیدهای دیتابیسی
+class WalletTransactionSerializer(serializers.ModelSerializer):
     transaction_type_display = serializers.CharField(
         source="get_transaction_type_display", read_only=True
     )
-    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    status_display = serializers.CharField(
+        source="get_status_display", read_only=True
+    )
 
     class Meta:
-        model = Transaction
+        model  = WalletTransaction
         fields = [
             "uuid",
-            "trace_id",
             "amount",
             "transaction_type",
             "transaction_type_display",
