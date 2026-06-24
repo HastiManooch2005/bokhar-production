@@ -195,7 +195,7 @@ SIMPLE_JWT = {
     "AUTH_COOKIE_HTTP_ONLY": True,
     "AUTH_COOKIE_SECURE": _IS_PRODUCTION,
     "AUTH_COOKIE_SAMESITE": "Lax",
-    "ACCESS_TOKEN_LIFETIME_SECONDS": int(timedelta(hours=1).total_seconds()),
+    "ACCESS_TOKEN_LIFETIME_SECONDS": int(timedelta(minutes=15).total_seconds()),
     "REFRESH_TOKEN_LIFETIME_SECONDS": int(timedelta(days=7).total_seconds()),
 }
 

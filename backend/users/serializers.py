@@ -139,70 +139,120 @@ class EditFullNameSerializer(serializers.Serializer):
         return instance
 
 class EditPasswordSerializer(serializers.Serializer):
-    old_password = serializers.CharField(write_only=True, required=False, allow_blank=True)
-    otp_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    old_password = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=True
+    )
+
+    otp_code = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=True
+    )
+
     password = serializers.CharField(write_only=True)
     password2 = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
         user = self.context["request"].user
-        password = attrs.get("password")
+
         old_password = attrs.get("old_password")
         otp_code = attrs.get("otp_code")
+        password = attrs.get("password")
 
-        # اگر کاربر رمز دارد، باید یا old_password یا otp_code ارائه دهد
+        # فقط یکی از این دو باید ارسال شود
+        if old_password and otp_code:
+            raise serializers.ValidationError({
+                "detail": "فقط یکی از رمز فعلی یا کد تایید را وارد کنید."
+            })
+
+        # اگر کاربر قبلا رمز داشته
         if user.has_usable_password():
+
             if not old_password and not otp_code:
-                raise serializers.ValidationError(
-                    {"detail": "برای تغییر رمز، باید رمز فعلی یا کد تایید را وارد کنید"}
-                )
-            
-            if old_password and not user.check_password(old_password):
-                raise serializers.ValidationError(
-                    {"old_password": "رمز عبور فعلی اشتباه است"}
-                )
-            
-            if otp_code and not old_password:
-                # بررسی OTP بدون consume (چون در save دوباره چک می‌کنیم و consume می‌کنیم)
-                is_valid, message = validate_otp(user.phone, otp_code, consume=False)
-                if not is_valid:
-                    raise serializers.ValidationError({"otp_code": message})
-        else:
-            # اگر رمز ندارد، نباید old_password بفرستد
+                raise serializers.ValidationError({
+                    "detail": "رمز فعلی یا کد تایید الزامی است."
+                })
+
             if old_password:
-                raise serializers.ValidationError(
-                    {"old_password": "شما رمز عبور تنظیم نکرده‌اید"}
+                if not user.check_password(old_password):
+                    raise serializers.ValidationError({
+                        "old_password": "رمز عبور فعلی اشتباه است."
+                    })
+
+            if otp_code:
+                is_valid, message = validate_otp(
+                    user.phone,
+                    otp_code,
+                    consume=False
                 )
 
-        # اعتبارسنجی قدرت رمز
+                if not is_valid:
+                    raise serializers.ValidationError({
+                        "otp_code": message
+                    })
+
+        else:
+            # اگر قبلاً رمزی نداشته
+            if old_password:
+                raise serializers.ValidationError({
+                    "old_password": "شما هنوز رمز عبور ندارید."
+                })
+
+            if otp_code:
+                is_valid, message = validate_otp(
+                    user.phone,
+                    otp_code,
+                    consume=False
+                )
+
+                if not is_valid:
+                    raise serializers.ValidationError({
+                        "otp_code": message
+                    })
+
+        # اعتبارسنجی رمز
+
         if len(password) < 8:
-            raise serializers.ValidationError(
-                {"password": "حداقل طول رمز عبور 8 کاراکتر است"}
-            )
+            raise serializers.ValidationError({
+                "password": "حداقل طول رمز عبور ۸ کاراکتر است."
+            })
 
-        rules = [
-            re.search(r"\d", password),
-            re.search(r"[A-Z]", password),
-            re.search(r"[a-z]", password),
-        ]
-        if not all(rules):
-            raise serializers.ValidationError(
-                {"password": "رمز باید شامل حروف بزرگ، کوچک و عدد باشد"}
-            )
+        if not re.search(r"\d", password):
+            raise serializers.ValidationError({
+                "password": "رمز عبور باید حداقل یک عدد داشته باشد."
+            })
 
-        if password != attrs["password2"]:
-            raise serializers.ValidationError(
-                {"password2": "رمز عبور و تکرار آن یکسان نیست"}
-            )
+        if not re.search(r"[A-Z]", password):
+            raise serializers.ValidationError({
+                "password": "رمز عبور باید حداقل یک حرف بزرگ داشته باشد."
+            })
+
+        if not re.search(r"[a-z]", password):
+            raise serializers.ValidationError({
+                "password": "رمز عبور باید حداقل یک حرف کوچک داشته باشد."
+            })
+
+        if password != attrs.get("password2"):
+            raise serializers.ValidationError({
+                "password2": "رمز عبور و تکرار آن یکسان نیست."
+            })
 
         return attrs
 
     def update(self, instance, validated_data):
-        # اگر OTP استفاده شده، آن را consume کن
+
         otp_code = validated_data.get("otp_code")
-        if otp_code and not validated_data.get("old_password"):
-            validate_otp(instance.phone, otp_code, consume=True)
-            
+
+        if otp_code:
+            validate_otp(
+                instance.phone,
+                otp_code,
+                consume=True
+            )
+
         instance.set_password(validated_data["password"])
         instance.save()
+
         return instance

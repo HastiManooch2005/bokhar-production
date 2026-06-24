@@ -1,25 +1,13 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views import (
-    SendOTPView,
-    RegisterOTPView,
-    LoginOTPView,
-    LoginPasswordView,
-    EditFullNameView,
-    EditPasswordView,
-    RefreshTokenView,
-    VerifyTokenView,
-    LogOutView,
-     VerifyOTPView,
-    CustomerViewSet,
-    get_csrf_token,
-)
+from .views import *
 
 app_name = "users"
 
 urlpatterns = [
     path("send/otp/", SendOTPView.as_view(), name="otp"),
+    path("send/otp/password",SendPasswordOTPView.as_view(), name="password"),
     path("verify/otp/", VerifyOTPView.as_view(), name="verify-otp"),  
     path("register/otp/", RegisterOTPView.as_view(), name="register"),
     path("login/otp/", LoginOTPView.as_view(), name="login_otp"),

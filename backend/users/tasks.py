@@ -17,7 +17,44 @@ def send_sms(phone: str, code: str):
         "password": settings.PAYAMAK_API_KEY,
         "to": phone,
         "from": settings.PAYAMAK_SENDER,
-        "text": f"کد تایید شما: {code}\nلغو11",
+        "text": (
+            f"کد تایید شما: {code}\n"
+            "برای ورود به پنل خشکشویی افشار\n"
+            "لغو11"
+        ),
+        "isFlash": False,
+    }
+
+    try:
+        response = requests.post(url, json=payload, timeout=15)
+        response.raise_for_status()
+
+        data = response.json()
+
+        if data.get("RetStatus") != 1:
+            raise Exception(
+                f"SMS Error: {data.get('StrRetStatus')} - {data}"
+            )
+
+        return data
+
+    except requests.RequestException as exc:
+        raise Exception(f"Payamak request failed: {exc}")
+
+
+
+@shared_task
+def send_password_otp(phone: str, code: str):
+    url = "https://rest.payamak-panel.com/api/SendSMS/SendSMS"
+
+    payload = {
+        "username": settings.PAYAMAK_USERNAME,
+        "password": settings.PAYAMAK_API_KEY,
+        "to": phone,
+        "from": settings.PAYAMAK_SENDER,
+        "text":f"کد تایید برای تغییر رمز عبور:\n{code}"
+        " خشکشویی افشار\n",
+        "لغو11"
         "isFlash": False,
     }
 
