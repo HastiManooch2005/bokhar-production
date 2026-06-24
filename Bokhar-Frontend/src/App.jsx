@@ -58,7 +58,7 @@ const hideNavbar =
   
   return (
     <div
-      className="bg-gradient-to-bl from-sky-900/80 via-pink-100/60 to-sky-900/80
+      className="bg-gradient-to-bl from-sky-200/80 via-pink-100/60 to-sky-200/80
                     dark:from-sky-950 dark:via-purple-900/70 dark:to-sky-900
                     min-h-screen"
     >

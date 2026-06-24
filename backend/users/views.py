@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie, csrf_protect
 from django.utils.decorators import method_decorator
 from django.contrib.auth import get_user_model
-
+from .tasks import *
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -68,7 +68,7 @@ class SendOTPView(APIView):
         if serializer.is_valid():
             phone = serializer.validated_data["phone"]
             code = generate_otp(phone)
-            # send_sms.delay(phone, code)  # celery task
+            send_sms.delay(phone, code)  # celery task
             print(f"OTP for {phone}: {code}", flush=True)  # flush=True اضافه شود
             return Response({"detail": "کد ارسال شد"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -229,6 +229,25 @@ class EditFullNameView(APIView):
             serializer.save()
             return Response({"detail": "نام با موفقیت بروزرسانی شد"})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#send sms برای تعییر رمز عبور
+@method_decorator(csrf_protect, name="dispatch")
+class SendPasswordOTPView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        phone = request.user.phone
+
+        code = generate_otp(phone)
+
+        send_password_otp.delay(
+            phone,
+            code
+        )
+
+        return Response(
+            {"detail": "کد تایید ارسال شد."},
+            status=status.HTTP_200_OK
+        )
 
 @method_decorator(csrf_protect, name="dispatch")
 class EditPasswordView(APIView):
@@ -241,11 +260,14 @@ class EditPasswordView(APIView):
             data=request.data,
             context={"request": request},
         )
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"detail": "رمز عبور با موفقیت تغییر کرد"})
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(
+            {"detail": "رمز عبور با موفقیت تغییر کرد."},
+            status=status.HTTP_200_OK
+        )
 @ensure_csrf_cookie
 def get_csrf_token(request):
     return JsonResponse({'detail': 'CSRF cookie set'})

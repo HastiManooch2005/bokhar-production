@@ -195,7 +195,7 @@ SIMPLE_JWT = {
     "AUTH_COOKIE_HTTP_ONLY": True,
     "AUTH_COOKIE_SECURE": _IS_PRODUCTION,
     "AUTH_COOKIE_SAMESITE": "Lax",
-    "ACCESS_TOKEN_LIFETIME_SECONDS": int(timedelta(hours=1).total_seconds()),
+    "ACCESS_TOKEN_LIFETIME_SECONDS": int(timedelta(minutes=15).total_seconds()),
     "REFRESH_TOKEN_LIFETIME_SECONDS": int(timedelta(days=7).total_seconds()),
 }
 
@@ -268,3 +268,11 @@ if _IS_PRODUCTION:
     )
     provider.add_span_processor(processor)
     trace.set_tracer_provider(provider)
+
+
+
+#------------------fara payamak----------------------------------------
+PAYAMAK_USERNAME = config("PAYAMAK_USERNAME")
+PAYAMAK_API_KEY = config("PAYAMAK_API_KEY")
+PAYAMAK_SENDER = config("PAYAMAK_SENDER")
+
