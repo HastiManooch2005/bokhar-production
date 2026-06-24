@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from order.models import *
 
 from .models import *
+from .sms_services import *
 
 User = get_user_model()
 
@@ -45,7 +46,7 @@ def send_sms_to_seller_canceled(order_data):
         object_id=order.id,
     )
     try:
-        # send_sms(to=seller.phone, message=message)  # سرویس واقعی
+        send_sms(to=seller.phone, message=message)  # سرویس واقعی
         # فعلاً برای تست موفقیت شبیه‌سازی می‌کنیم
         log.mark_sent(response="test success")
         sent_count += 1
@@ -91,7 +92,7 @@ def send_sms_to_seller_daily_report():
             status="pending",
         )
         try:
-            # send_sms(to=seller.phone, message=full_message)
+            send_sms(to=seller.phone, message=full_message)
             log.mark_sent(response="test success")
             sent_count += 1
         except Exception as e:

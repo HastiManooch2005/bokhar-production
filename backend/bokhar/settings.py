@@ -268,3 +268,11 @@ if _IS_PRODUCTION:
     )
     provider.add_span_processor(processor)
     trace.set_tracer_provider(provider)
+
+
+
+#------------------fara payamak----------------------------------------
+PAYAMAK_USERNAME = config("PAYAMAK_USERNAME")
+PAYAMAK_API_KEY = config("PAYAMAK_API_KEY")
+PAYAMAK_SENDER = config("PAYAMAK_SENDER")
+

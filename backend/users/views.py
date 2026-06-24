@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie, csrf_protect
 from django.utils.decorators import method_decorator
 from django.contrib.auth import get_user_model
-
+from .tasks import *
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -68,8 +68,8 @@ class SendOTPView(APIView):
         if serializer.is_valid():
             phone = serializer.validated_data["phone"]
             code = generate_otp(phone)
-            # send_sms.delay(phone, code)  # celery task
-            print(f"OTP for {phone}: {code}", flush=True)  # flush=True اضافه شود
+            send_sms.delay(phone, code)  # celery task
+         #   print(f"OTP for {phone}: {code}", flush=True)  # flush=True اضافه شود
             return Response({"detail": "کد ارسال شد"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

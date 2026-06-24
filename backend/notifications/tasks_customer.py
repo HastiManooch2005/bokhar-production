@@ -1,8 +1,8 @@
 from celery import shared_task
 from django.contrib.auth import get_user_model
-
+from discounts.models import *
 from .models import *
-
+from .sms_services import *
 User = get_user_model()
 
 
@@ -46,7 +46,7 @@ def send_sms_coupon(coupon_id):
         object_id=coupon.id,
     )
     try:
-        # send_sms(to=coupon.user.phone, message=full_message)
+        send_sms(to=coupon.user.phone, message=full_message)
         log.mark_sent(response="test success")
         return f"پیامک کوپن برای {coupon.user.fullname} ارسال شد"
     except Exception as e:
@@ -103,7 +103,7 @@ def send_sms_global_discount(discount_id):
             object_id=discount.id,
         )
         try:
-            # send_sms(to=user.phone, message=message)
+            send_sms(to=user.phone, message=message)
             log.mark_sent(response="test success")
             sent_count += 1
         except Exception as e:
@@ -147,7 +147,7 @@ def send_sms_to_customer_delivered(
         object_id=object_id,
     )
     try:
-        # send_sms(phone_number=customer_phone, message=message)
+        send_sms(phone_number=customer_phone, message=message)
         log.mark_sent(response="test success")
         return f"SMS sent to {customer_phone} for order {id}"
     except Exception as e:
@@ -191,7 +191,7 @@ def send_sms_to_customer_paid(order_data):
         object_id=order.id,
     )
     try:
-        # send_sms(to=order.user.phone, message=message)
+        send_sms(to=order.user.phone, message=message)
         log.mark_sent(response="test success")
         return f"پیامک پرداخت موفق برای {order.user.fullname} ارسال شد"
     except Exception as e:
@@ -232,7 +232,7 @@ def send_sms_to_customer_canceled(order_data):
         object_id=order.id,
     )
     try:
-        # send_sms(to=order.user.phone, message=message)
+        send_sms(to=order.user.phone, message=message)
         log.mark_sent(response="test success")
         return f"برگشت به کیف پول موفق برای {order.user.fullname} ارسال شد"
     except Exception as e:
@@ -279,7 +279,7 @@ def send_sms_for_advertising(id):
             object_id=notification.id,
         )
         try:
-            # send_sms(user.phone, text)
+            send_sms(user.phone, text)
             log.mark_sent(response="test success")
             sent_count += 1
         except Exception as e:
@@ -315,7 +315,7 @@ def send_sms_for_late(notif_id):
         object_id=notify.id,
     )
     try:
-        # send_sms(user.phone, text)
+        send_sms(user.phone, text)
         log.mark_sent(response="test success")
         print(f"پیامک یادآوری برای {user.phone} ارسال شد")
         return f"پیامک یادآوری برای {user.phone} ارسال شد"
