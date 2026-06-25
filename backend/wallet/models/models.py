@@ -5,8 +5,8 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 
-from backend.users.models import User
-from backend.order.models import Order
+from users.models import User
+from order.models import Order
 
 
 # =========================================================

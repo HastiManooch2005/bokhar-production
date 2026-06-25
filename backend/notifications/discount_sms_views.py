@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from discounts.models import Coupon, GlobalDiscount
+from discounts.models import *
 from products.permission import IsSeller
 
 from .serializers import CouponSerializer, GlobalDiscountSerializer

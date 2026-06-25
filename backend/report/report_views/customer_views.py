@@ -2,9 +2,10 @@ from django.db.models import Prefetch
 from rest_framework import status
 
 from products.permission import IsSeller
-
+from products.models import *
+from wallet.models.models import *
 from ..pagination import Pagination  # Import pagination class
-
+from users.models import *
 
 # لیست مشتریان و تعداد سفارششونو نشون میده و تلقنو اسمشونو
 from django.db.models import Count, Sum
