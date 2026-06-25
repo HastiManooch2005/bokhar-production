@@ -172,7 +172,7 @@ class LogOutView(APIView):
             except (TokenError, InvalidToken):
                 pass
         response.delete_cookie(settings.SIMPLE_JWT.get("AUTH_COOKIE", "access"), path="/")
-        response.delete_cookie(refresh_name, path="/")
+        response.delete_cookie(refresh_name, path="/api/refresh/")
         return response
 
 @method_decorator(csrf_protect, name="dispatch")
@@ -191,20 +191,21 @@ class RefreshTokenView(APIView):
 
         try:
             old_refresh = RefreshToken(old_refresh_token)
-            user = User.objects.get(id=old_refresh["user_id"])
-            new_refresh = RefreshToken.for_user(user)
-            
-            response = Response(
-                {"detail": "توکن نوسازی شد"},
-                status=status.HTTP_200_OK,
-            )
+            new_refresh = old_refresh.rotate()
+
+            response = Response({"detail": "توکن نوسازی شد"}, status=status.HTTP_200_OK)
             return _set_jwt_cookies(response, new_refresh)
 
-        except (TokenError, InvalidToken, User.DoesNotExist):
-            return Response(
+        except (TokenError, InvalidToken):
+            response = Response(
                 {"detail": "اعتبارنامه نامعتبر است"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
+            response.delete_cookie(
+                settings.SIMPLE_JWT.get("AUTH_COOKIE", "access"), path="/"
+            )
+            response.delete_cookie(refresh_name, path="/api/refresh/")
+            return response
 
 @method_decorator(csrf_protect, name="dispatch")
 class VerifyTokenView(APIView):
