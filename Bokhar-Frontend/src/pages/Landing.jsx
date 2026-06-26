@@ -17,6 +17,7 @@ import iron1 from "../assets/iron1.png";
 import iron2 from "../assets/iron2.png";
 import Group from "../assets/Group.png";
 import Group2 from "../assets/Group2.png";
+import lebas from "../assets/lebas.png";
 
 export default function Landing() {
   const { scrollY } = useScroll();
@@ -215,24 +216,41 @@ export default function Landing() {
       
 <div className="flex flex-col items-end gap-3 pr-6 sm:pr-10 md:pr-20 mt-5 sm:mt-0 relative z-10">
   {/* دکمه اصلی */}
-  <button
-    onClick={() => navigate("/shop")}
-    className="px-10 py-3 sm:px-14 sm:py-6 md:px-18 md:py-7 rounded-full bg-purple-50 text-[#202374] text-md sm:text-lg md:text-2xl font-semibold hover:bg-white transition duration-300 shadow-lg cursor-pointer"
-  >
-    ثبت سفارش
-  </button>
+<button
+  onClick={() => navigate("/shop")}
+  className="
+    cta-button
+    relative
+    overflow-hidden
+    px-10 py-3
+    sm:px-14 sm:py-6
+    md:px-18 md:py-7
+    rounded-full
+    border-2 border-indigo-200
+    text-gray-100
+    font-semibold
+    shadow-lg
+    cursor-pointer
+    hover:scale-105
+    transition-all
+    duration-300
+  "
+>
+  <span className="relative z-10">ثبت سفارش</span>
+</button>
 
   {/* ردیف دکمه‌های فرعی */}
   <div className="flex flex-row mt-4 gap-2 sm:gap-3 w-full justify-end">
     <button
       onClick={() => navigate("/aboutDryCleaning")}
-      className="px-6 py-3 sm:px-12 sm:py-5 md:px-16 md:py-6 rounded-full bg-[#D2D9ED] hover:bg-[#e5e8f0] text-[#6B7EB7] font-semibold border border-[#2949A9] transition duration-300 shadow-md text-sm sm:text-base whitespace-nowrap"
+      className="px-6 py-3 sm:px-12 sm:py-5 md:px-16 md:py-6 rounded-full bg-[#D2D9ED] hover:bg-[#e5e8f0] text-[#6B7EB7] font-semibold border border-[#2949A9] transition duration-300 shadow-md text-sm sm:text-base whitespace-nowrap cursor-pointer
+"
     >
       درباره خشکشویی
     </button>
     <button
       onClick={() => navigate("/aboutUs")}
-      className="px-6 py-3 sm:px-12 sm:py-5 md:px-16 md:py-6 rounded-full bg-[#D2D9ED] hover:bg-[#e5e8f0] text-[#6B7EB7] font-semibold border border-[#2949A9] transition duration-300 shadow-md text-sm sm:text-base whitespace-nowrap"
+      className="px-6 py-3 sm:px-12 sm:py-5 md:px-16 md:py-6 rounded-full bg-[#D2D9ED] hover:bg-[#e5e8f0] text-[#6B7EB7] font-semibold border border-[#2949A9] transition duration-300 shadow-md text-sm sm:text-base whitespace-nowrap cursor-pointer"
     >
       درباره ما
     </button>
@@ -261,7 +279,7 @@ export default function Landing() {
             <img
               src={Group}
               alt=""
-              className="w-full bg-amber-50 p-3 sm:p-4 rounded-3xl shadow-xl object-contain"
+              className="w-full p-3 sm:p-4 rounded-3xl object-contain"
             />
 
             {/* متن پایین عکس */}
@@ -340,9 +358,9 @@ export default function Landing() {
           >
             <h2 className="text-lg font-bold mb-2 text-center">خشکشویی سریع</h2>
             <img
-              src={Group2}
+              src={lebas}
               alt="خدمات خشکشویی"
-              className="w-full bg-amber-50 p-3 sm:p-4 rounded-3xl shadow-xl object-contain"
+              className="w-full p-3 sm:p-4 rounded-3xl object-contain"
             />
             <p className="mt-2 text-center text-sm text-gray-600">
               تحویل و دریافت آسان برای صرفه‌جویی در وقت شما. نظافت با کیفیت بالا
@@ -410,10 +428,17 @@ export default function Landing() {
     </svg>
   </div>
 
-  {/* محتوای فوتر */}
-  <div className="relative z-10 py-6 md:py-10 text-center  rounded-t-4xl">
-    ساخته شده توسط تیم رایبان
+{/* محتوای فوتر */}
+<div className="relative z-10 py-6 md:py-10">
+  <div className="flex items-center justify-center">
+    <img
+      src="/rayban-dark2.png"
+      alt="Rayban Team"
+      className="h-8 md:h-10 w-auto"
+    />
+     <span>ساخته شده توسط تیم رایبان</span>
   </div>
+</div>
 </footer>
     </div>
   );
