@@ -115,3 +115,24 @@ class Address(models.Model):
         super().save(*args, **kwargs)
 
 
+
+
+# برای اینکه هر کاربر با چه دستگاهی وارد میش.د اصلاعات اصافش برای امنیت ذخیره شه
+
+class UserSession(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sessions")
+    ip_address = models.GenericIPAddressField()
+    user_agent = models.TextField()
+    device = models.CharField(max_length=255, blank=True)
+    os = models.CharField(max_length=100, blank=True)
+    browser = models.CharField(max_length=100, blank=True)
+    refresh_token_jti = models.CharField(max_length=255, unique=True)  # شناسه یکتای توکن
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-last_used"]
+
+    def __str__(self):
+        return f"{self.user} - {self.device} - {self.ip_address}"

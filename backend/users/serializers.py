@@ -256,3 +256,12 @@ class EditPasswordSerializer(serializers.Serializer):
         instance.save()
 
         return instance
+
+
+from .models import UserSession
+
+
+class UserSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserSession
+        fields = ["id", "ip_address", "device", "os", "browser", "is_active", "created_at", "last_used"]

@@ -1,6 +1,6 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
-
+from .ticker_views import *
 from .views import *
 
 app_name = "users"
@@ -18,6 +18,18 @@ urlpatterns = [
     path("verify/", VerifyTokenView.as_view(), name="verify"),
     path("logout/", LogOutView.as_view(), name="logout"),
     path("csrf/", get_csrf_token, name="get-csrf-token"),
+# کاربر
+    path("tickets/", TicketListCreateView.as_view(), name="ticket-list-create"),
+    path("tickets/<int:pk>/", TicketDetailView.as_view(), name="ticket-detail"),
+
+    # ادمین
+    path("admin/tickets/", AdminTicketListView.as_view(), name="admin-ticket-list"),
+    path("admin/tickets/<int:pk>/reply/", AdminTicketReplyView.as_view(), name="admin-ticket-reply"),
+
+path("sessions/", UserSessionListView.as_view(), name="session-list"),
+path("sessions/<int:pk>/", UserSessionDeleteView.as_view(), name="session-delete"),
+
+
 ]
 
 # ------------------------------------------------------------------
