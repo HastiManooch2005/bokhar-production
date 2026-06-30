@@ -29,7 +29,8 @@ urlpatterns = [
 path("sessions/", UserSessionListView.as_view(), name="session-list"),
 path("sessions/<int:pk>/", UserSessionDeleteView.as_view(), name="session-delete"),
 
-
+ 
+ 
 ]
 
 # ------------------------------------------------------------------
