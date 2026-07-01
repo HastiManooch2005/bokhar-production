@@ -26,10 +26,9 @@ urlpatterns = [
     path("admin/tickets/", AdminTicketListView.as_view(), name="admin-ticket-list"),
     path("admin/tickets/<int:pk>/reply/", AdminTicketReplyView.as_view(), name="admin-ticket-reply"),
 
-path("sessions/", UserSessionListView.as_view(), name="session-list"),
-path("sessions/<int:pk>/", UserSessionDeleteView.as_view(), name="session-delete"),
-
-
+ path("sessions/", UserSessionListView.as_view(), name="session-list"),
+    path("sessions/<int:pk>/", UserSessionDeleteView.as_view(), name="session-delete"),
+ 
 ]
 
 # ------------------------------------------------------------------

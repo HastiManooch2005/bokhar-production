@@ -1,28 +1,44 @@
-// src/api/cartService.js
-
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 const GUEST_CART_KEY = "guest_cart";
+const CART_BACKUP_KEY = "cart_backup";
+const CART_EXPIRY_HOURS = 24;
 
-/* ======================= */
-/*  Cart Key Generator     */
-/* ======================= */
-
-/**
- * ساخت کلید یکتا برای آیتم سبد خرید
- * این کلید برای شناسایی آیتم‌های یکسان با سرویس/متریال/سایز متفاوت استفاده می‌شود
- */
 export const buildCartKey = (productId, service, material, size) => {
-  // تبدیل null/undefined به رشته استاندارد برای سازگاری
   const svc = service || "-";
   const mat = material || "-";
   const sz = size === null || size === undefined || size === "-" ? "null" : String(size);
-  
   return `${productId}_${svc}_${mat}_${sz}`;
 };
 
-/* ======================= */
-/*  Guest Cart Helpers     */
-/* ======================= */
+export const saveCartBackup = (items) => {
+  try {
+    const data = { items, timestamp: Date.now(), version: 1 };
+    localStorage.setItem(CART_BACKUP_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.error("Error saving cart backup:", e);
+  }
+};
+
+export const getCartBackup = () => {
+  try {
+    const raw = localStorage.getItem(CART_BACKUP_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data?.timestamp) return null;
+    const ageHours = (Date.now() - data.timestamp) / (1000 * 60 * 60);
+    if (ageHours > CART_EXPIRY_HOURS) {
+      localStorage.removeItem(CART_BACKUP_KEY);
+      return null;
+    }
+    return data.items || [];
+  } catch {
+    return null;
+  }
+};
+
+export const clearCartBackup = () => {
+  localStorage.removeItem(CART_BACKUP_KEY);
+};
 
 export const getGuestCart = () => {
   try {
@@ -40,29 +56,21 @@ export const saveGuestCart = (cart) => {
 const generateGuestId = () =>
   `guest_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 
-/* ======================= */
-/*  Fetch Cart             */
-/* ======================= */
-
 export const fetchCart = async () => {
   try {
-     const res = await fetch(`${API_BASE}/cart/?_t=${Date.now()}`, {
+    const res = await fetch(`${API_BASE}/cart/?_t=${Date.now()}`, {
       method: "GET",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
     });
 
-    // 🔴 مهمان
     if (res.status === 401) {
       const guestCart = getGuestCart();
       return {
         success: true,
         data: {
           items: guestCart,
-          total: guestCart.reduce(
-            (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
-            0
-          ),
+          total: guestCart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0),
           is_guest: true,
         },
       };
@@ -77,20 +85,14 @@ export const fetchCart = async () => {
   }
 };
 
-/* ======================= */
-/*  Add To Cart            */
-/* ======================= */
-
 export const addToCart = async (productId, quantity = 1, options = {}, skipGuestFallback = false) => {
   try {
-    // ⭐ تمیز کردن و تبدیل تایپ‌های صحیح
     const payload = {
       quantity: Number(quantity),
       service: options.service || "",
       material: options.material || "",
-      // ⭐ مهم: اگر size "-" یا خالی است، null بفرست؛ در غیر این صورت به عدد تبدیل کن
-      size: (options.size && options.size !== "-" && options.size !== "" && options.size !== undefined && options.size !== null) 
-        ? Number(options.size)  
+      size: (options.size && options.size !== "-" && options.size !== "" && options.size !== undefined && options.size !== null)
+        ? Number(options.size)
         : null,
     };
 
@@ -104,13 +106,10 @@ export const addToCart = async (productId, quantity = 1, options = {}, skipGuest
       body: JSON.stringify(payload),
     });
 
-    // 🔴 مهمان → ذخیره در localStorage (فقط اگر skipGuestFallback false باشد)
     if (res.status === 401 && !skipGuestFallback) {
       const guestCart = getGuestCart();
-      
-      // ⭐ تمیز کردن size برای ذخیره در localStorage
-      const cleanSize = (options.size && options.size !== "-" && options.size !== "") 
-        ? options.size 
+      const cleanSize = (options.size && options.size !== "-" && options.size !== "")
+        ? options.size
         : null;
 
       const index = guestCart.findIndex(
@@ -123,33 +122,32 @@ export const addToCart = async (productId, quantity = 1, options = {}, skipGuest
 
       if (index >= 0) {
         guestCart[index].quantity += Number(quantity);
-        // ⭐ بروزرسانی قیمت خط در صورت تغییر
         guestCart[index].finalLineTotal = guestCart[index].quantity * (guestCart[index].price || options.price || 0);
       } else {
         const unitPrice = options.price || 0;
         const qty = Number(quantity);
-        
+
         guestCart.push({
           id_unique: generateGuestId(),
           product_id: productId,
           product_name: options.product_name || "",
-          quantity: qty,                          // ⭐ برای سازگاری با سرویس
-          qty: qty,                               // ⭐ برای سازگاری با Factor.jsx
+          quantity: qty,
+          qty: qty,
           price: unitPrice,
           unit_price: unitPrice,
-          unitPrice: unitPrice,                   // ⭐ برای سازگاری با Factor
+          unitPrice: unitPrice,
           original_price: options.original_price || unitPrice,
-          originalUnitPrice: options.original_price || unitPrice, // ⭐ برای Factor
-          finalLineTotal: unitPrice * qty,        // ⭐ محاسبه خط
+          originalUnitPrice: options.original_price || unitPrice,
+          finalLineTotal: unitPrice * qty,
           originalLineTotal: (options.original_price || unitPrice) * qty,
           has_discount: options.has_discount || false,
-          hasDiscount: options.has_discount || false, // ⭐ برای Factor
+          hasDiscount: options.has_discount || false,
           discount_type: options.discount_type,
           discount_value: options.discount_value,
           service: options.service || "",
           material: options.material || "",
           size: cleanSize,
-          sizeDisplay: cleanSize || "-",          // ⭐ برای Factor
+          sizeDisplay: cleanSize || "-",
           image: options.image || null,
         });
       }
@@ -158,10 +156,12 @@ export const addToCart = async (productId, quantity = 1, options = {}, skipGuest
     }
 
     if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.detail || errorData.message || "Add to cart failed");
+      const errorText = await res.text();
+      let errorData = {};
+      try { errorData = JSON.parse(errorText); } catch { errorData = { detail: errorText || `Server error ${res.status}` }; }
+      throw new Error(errorData.detail || errorData.message || `Add to cart failed (${res.status})`);
     }
-    
+
     return { success: true, is_guest: false, data: await res.json() };
 
   } catch (err) {
@@ -170,19 +170,11 @@ export const addToCart = async (productId, quantity = 1, options = {}, skipGuest
   }
 };
 
-/* ======================= */
-/*  Remove & Update        */
-/* ======================= */
-
 export const removeCartItem = async (idUnique) => {
   try {
     const res = await fetch(
       `${API_BASE}/cart/remove/${encodeURIComponent(idUnique)}/`,
-      { 
-        method: "POST", 
-        credentials: "include", 
-        headers: { "X-CSRFToken": getCookie("csrftoken") } 
-      }
+      { method: "POST", credentials: "include", headers: { "X-CSRFToken": getCookie("csrftoken") } }
     );
 
     if (res.status === 401) {
@@ -190,7 +182,7 @@ export const removeCartItem = async (idUnique) => {
       saveGuestCart(cart);
       return { success: true, is_guest: true };
     }
-    
+
     if (!res.ok) throw new Error("Remove failed");
     return { success: true, is_guest: false };
   } catch (err) {
@@ -222,8 +214,7 @@ export const updateCartQuantity = async (idUnique, quantity) => {
           cart.splice(index, 1);
         } else {
           cart[index].quantity = qty;
-          cart[index].qty = qty; // ⭐ همگام‌سازی با Factor
-          // ⭐ بروزرسانی قیمت خط
+          cart[index].qty = qty;
           const price = cart[index].price || cart[index].unitPrice || 0;
           cart[index].finalLineTotal = price * qty;
           cart[index].originalLineTotal = (cart[index].original_price || price) * qty;
@@ -232,7 +223,7 @@ export const updateCartQuantity = async (idUnique, quantity) => {
       }
       return { success: true, is_guest: true };
     }
-    
+
     if (!res.ok) throw new Error("Update failed");
     return { success: true, is_guest: false };
   } catch (err) {
@@ -250,51 +241,42 @@ export const clearCart = async () => {
 
     if (res.status === 401) {
       localStorage.removeItem(GUEST_CART_KEY);
+      clearCartBackup();
       return { success: true, is_guest: true };
     }
-    
+
     if (!res.ok) throw new Error("Clear failed");
+    clearCartBackup();
     return { success: true, is_guest: false };
   } catch (err) {
     return { success: false, error: err.message };
   }
 };
 
-/* ======================= */
-/*  ⭐ SYNC GUEST CART     */
-/* ======================= */
-
 export const syncGuestCartWithServer = async (guestCartItems = null) => {
   const itemsToSync = guestCartItems || getGuestCart();
-  
+
   if (!itemsToSync || itemsToSync.length === 0) {
     return { success: true, merged: false, message: "No guest items to sync" };
   }
 
-  // ⭐ پاک کردن فوری guest cart برای جلوگیری از دوبرابر شدن در صورت خطای 401
-  // آیتم‌ها در حافظه نگهداری می‌شوند
   localStorage.removeItem(GUEST_CART_KEY);
 
   const results = await Promise.allSettled(
     itemsToSync.map((item) => {
-      // ⭐ تبدیل نام فیلدها به فرمت استاندارد (هماهنگ با addToCart)
       const productId = item.product_id || item.productId;
       const quantity = item.quantity || item.qty || 1;
-      
-      // ⭐ تمیز کردن size (مهم برای جلوگیری از خطای 500)
-      // اگر sizeDisplay داریم و عددی نیست، سعی کن عدد را استخراج کنی یا null بگذار
+
       let rawSize = item.size;
       if ((rawSize === undefined || rawSize === null) && item.sizeDisplay) {
-        // تلاش برای استخراج عدد از sizeDisplay (مثلاً "10 عدد" → 10)
         const match = String(item.sizeDisplay).match(/^(\d+)/);
         rawSize = match ? parseInt(match[1]) : null;
       }
-      
-      const cleanSize = (rawSize && rawSize !== "-" && rawSize !== "" && rawSize !== undefined && !isNaN(Number(rawSize))) 
-        ? Number(rawSize) 
+
+      const cleanSize = (rawSize && rawSize !== "-" && rawSize !== "" && rawSize !== undefined && !isNaN(Number(rawSize)))
+        ? Number(rawSize)
         : null;
 
-      // ⭐ فراخوانی با skipGuestFallback=true تا در صورت 401، آیتم به guest cart اضافه نشود
       return addToCart(productId, quantity, {
         service: item.service || "",
         material: item.material || "",
@@ -306,7 +288,7 @@ export const syncGuestCartWithServer = async (guestCartItems = null) => {
         discount_type: item.discount_type,
         discount_value: item.discount_value,
         image: item.image,
-      }, true); // ⭐ true = skipGuestFallback
+      }, true);
     })
   );
 
@@ -315,7 +297,6 @@ export const syncGuestCartWithServer = async (guestCartItems = null) => {
     if (r.status === 'fulfilled' && r.value?.success && !r.value?.is_guest) {
       return true;
     } else {
-      // ⭐ اگر خطا بود یا is_guest بود، آیتم را نگه دار
       failedItems.push(itemsToSync[idx]);
       return false;
     }
@@ -325,14 +306,12 @@ export const syncGuestCartWithServer = async (guestCartItems = null) => {
     console.log(`Guest cart synced successfully: ${successfulCount} items`);
     return { success: true, merged: true, count: successfulCount };
   } else {
-    // ⭐ ذخیره آیتم‌های ناموفق (شامل موارد 401) برای تلاش بعدی
     saveGuestCart(failedItems);
     console.warn(`Partial sync: ${successfulCount} succeeded, ${failedItems.length} failed`);
-    
-    return { 
-      success: true, 
-      merged: true, 
-      partial: true, 
+    return {
+      success: true,
+      merged: true,
+      partial: true,
       failedCount: failedItems.length,
       successfulCount,
       failedItems
@@ -340,14 +319,8 @@ export const syncGuestCartWithServer = async (guestCartItems = null) => {
   }
 };
 
-/* ======================= */
-/*  Cookie Helper          */
-/* ======================= */
-
 function getCookie(name) {
-  const cookie = document.cookie
-    .split("; ")
-    .find((c) => c.startsWith(name + "="));
+  const cookie = document.cookie.split("; ").find((c) => c.startsWith(name + "="));
   return cookie ? decodeURIComponent(cookie.split("=")[1]) : null;
 }
 
@@ -360,5 +333,8 @@ export default {
   syncGuestCartWithServer,
   getGuestCart,
   saveGuestCart,
-  buildCartKey,  // ⭐ اضافه شد
+  saveCartBackup,
+  getCartBackup,
+  clearCartBackup,
+  buildCartKey,
 };

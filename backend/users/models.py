@@ -109,30 +109,66 @@ class Address(models.Model):
         return f"{self.user.fullname} - {self.city}"
 
     def save(self, *args, **kwargs):
-        # اگر این آدرس به عنوان پیش‌فرض انتخاب شد، سایر آدرس‌های کاربر را غیرفعال کن
         if self.is_default:
             Address.objects.filter(user=self.user).update(is_default=False)
         super().save(*args, **kwargs)
 
 
-
-
-# برای اینکه هر کاربر با چه دستگاهی وارد میش.د اصلاعات اصافش برای امنیت ذخیره شه
-
+# ===============================
+# UserSession Model (Updated with device_name & client hints)
+# ===============================
 class UserSession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sessions")
     ip_address = models.GenericIPAddressField()
     user_agent = models.TextField()
-    device = models.CharField(max_length=255, blank=True)
-    os = models.CharField(max_length=100, blank=True)
-    browser = models.CharField(max_length=100, blank=True)
-    refresh_token_jti = models.CharField(max_length=255, unique=True)  # شناسه یکتای توکن
+
+    # Client Hints fields for accurate device detection
+    device_name = models.CharField(max_length=255, blank=True, verbose_name="نام دستگاه")
+    device_brand = models.CharField(max_length=100, blank=True, verbose_name="برند دستگاه")
+    device_model = models.CharField(max_length=100, blank=True, verbose_name="مدل دستگاه")
+
+    # Parsed from User-Agent (fallback)
+    device = models.CharField(max_length=255, blank=True, verbose_name="دستگاه (User-Agent)")
+    os = models.CharField(max_length=100, blank=True, verbose_name="سیستم عامل")
+    os_version = models.CharField(max_length=50, blank=True, verbose_name="نسخه OS")
+    browser = models.CharField(max_length=100, blank=True, verbose_name="مرورگر")
+    browser_version = models.CharField(max_length=50, blank=True, verbose_name="نسخه مرورگر")
+
+    refresh_token_jti = models.CharField(max_length=255, unique=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_used = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-last_used"]
+        verbose_name = "نشست کاربر"
+        verbose_name_plural = "نشست‌های کاربر"
 
     def __str__(self):
-        return f"{self.user} - {self.device} - {self.ip_address}"
+        display_name = self.device_name or self.device or "Unknown"
+        return f"{self.user} - {display_name} - {self.ip_address}"
+
+    @property
+    def display_name(self):
+        """Return the best available device name"""
+        if self.device_name:
+            return self.device_name
+        if self.device_brand and self.device_model:
+            return f"{self.device_brand} {self.device_model}"
+        if self.device:
+            return self.device
+        return "دستگاه ناشناس"
+
+    @property
+    def display_os(self):
+        """Return formatted OS string"""
+        if self.os_version:
+            return f"{self.os} {self.os_version}"
+        return self.os or "Unknown"
+
+    @property
+    def display_browser(self):
+        """Return formatted browser string"""
+        if self.browser_version:
+            return f"{self.browser} {self.browser_version}"
+        return self.browser or "Unknown"

@@ -4,6 +4,10 @@ import {
   HelpCircle,
   ChevronDown,
   ArrowLeft,
+  MessageSquare,
+  Clock,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +16,7 @@ export default function Support() {
   const navigate = useNavigate();
 
   const [message, setMessage] = useState("");
+  const [subject, setSubject] = useState("");
   const [openFAQ, setOpenFAQ] = useState(null);
   const faqRefs = useRef([]);
 
@@ -26,10 +31,61 @@ export default function Support() {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  const sendMessage = () => {
-    if (!message) return;
-    alert("پیام شما ارسال شد ✅");
-    setMessage("");
+  const [tickets, setTickets] = useState([]);
+
+  const fetchTickets = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/tickets/`,
+        {
+          credentials: "include",
+        }
+      );
+
+      const data = await response.json();
+      setTickets(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchTickets();
+  }, []);
+
+  const sendMessage = async () => {
+    if (!message.trim() || !subject.trim()) return;
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/tickets/`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            subject: subject,
+            body: message,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.detail || "خطا در ارسال تیکت");
+      }
+
+      alert("پیام شما با موفقیت ارسال شد ✅");
+
+      setMessage("");
+      setSubject("");
+      await fetchTickets();
+    } catch (error) {
+      console.error(error);
+      alert(error.message);
+    }
   };
 
   const faqs = [
@@ -46,6 +102,45 @@ export default function Support() {
       }
     });
   }, [openFAQ]);
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "answered":
+        return <CheckCircle2 size={16} className="text-green-500" />;
+      case "pending":
+        return <Clock size={16} className="text-amber-500" />;
+      case "closed":
+        return <XCircle size={16} className="text-gray-400" />;
+      default:
+        return <Clock size={16} className="text-amber-500" />;
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case "answered":
+        return "پاسخ داده شده";
+      case "pending":
+        return "در انتظار پاسخ";
+      case "closed":
+        return "بسته شده";
+      default:
+        return "در انتظار پاسخ";
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "answered":
+        return "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700";
+      case "pending":
+        return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700";
+      case "closed":
+        return "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700";
+      default:
+        return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700";
+    }
+  };
 
   return (
     <div dir="rtl" className="min-h-screen p-4 md:p-8">
@@ -91,6 +186,20 @@ export default function Support() {
             <MessageCircle className="text-blue-600 dark:text-blue-400" />
             <p className="font-medium text-gray-900 dark:text-gray-100">ارسال پیام</p>
           </div>
+
+          {/* Subject Input */}
+          <input
+            type="text"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="عنوان تیکت..."
+            className="
+              w-full border rounded-xl p-3 mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500
+              bg-white dark:bg-sky-900/60 border-sky-300 dark:border-sky-700 text-gray-900 dark:text-white
+              placeholder:text-gray-400 dark:placeholder:text-gray-300
+            "
+          />
+
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -103,10 +212,67 @@ export default function Support() {
           />
           <button
             onClick={sendMessage}
-            className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white rounded-xl p-3 mt-3 transition font-medium"
+            disabled={!message.trim() || !subject.trim()}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed dark:bg-purple-700 dark:hover:bg-purple-800 dark:disabled:bg-gray-600 text-white rounded-xl p-3 mt-3 transition font-medium"
           >
             ارسال پیام
           </button>
+        </div>
+
+        {/* لیست تیکت‌ها */}
+        <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-sky-800 dark:via-sky-900 dark:to-sky-950 border border-sky-200 dark:border-sky-700 rounded-2xl shadow p-4 transition">
+          <div className="flex items-center gap-3 mb-4">
+            <MessageSquare className="text-purple-600 dark:text-purple-400" />
+            <p className="font-medium text-gray-900 dark:text-gray-100">تیکت‌های من</p>
+            <span className="mr-auto text-sm text-gray-500 dark:text-gray-400">
+              {tickets.length} تیکت
+            </span>
+          </div>
+
+          {tickets.length === 0 ? (
+            <div className="text-center py-8 text-gray-400 dark:text-gray-500">
+              <MessageSquare size={40} className="mx-auto mb-2 opacity-50" />
+              <p>هنوز تیکتی ارسال نکرده‌اید</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {tickets.map((ticket) => (
+                <div
+                  key={ticket.id}
+                  className="bg-white dark:bg-sky-900/40 border border-sky-200 dark:border-sky-700 rounded-xl p-4 hover:shadow-md transition cursor-pointer"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                        {ticket.subject}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                        {ticket.body}
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border shrink-0 ${getStatusColor(ticket.status)}`}
+                    >
+                      {getStatusIcon(ticket.status)}
+                      {getStatusText(ticket.status)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 mt-3 text-xs text-gray-400 dark:text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <Clock size={12} />
+                      {new Date(ticket.created_at).toLocaleDateString("fa-IR")}
+                    </span>
+                    {ticket.updated_at && ticket.updated_at !== ticket.created_at && (
+                      <span className="flex items-center gap-1">
+                        <MessageCircle size={12} />
+                        آخرین بروزرسانی: {new Date(ticket.updated_at).toLocaleDateString("fa-IR")}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* سوالات متداول */}

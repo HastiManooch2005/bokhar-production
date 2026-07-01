@@ -282,11 +282,14 @@ export default function ServiceModal({
       // 🔵 حالت لاگین شده
       const toastId = toast.loading("در حال افزودن به سبد...");
 
+      // ⭐ فقط فیلدهای مورد نیاز API را بفرست
       const promises = selectedItems.map((item) =>
         addToCartAPI(item.product_id, item.quantity, {
           service: item.options.service,
           material: item.options.material,
           size: item.options.size,
+          // ⭐ فیلدهای اضافی فقط برای Guest Cart لازم هستند
+          // در حالت لاگین شده، سرور خودش قیمت و تخفیف را محاسبه می‌کند
           product_name: item.product_name,
           price: item.price,
           original_price: item.original_price,
@@ -300,16 +303,18 @@ export default function ServiceModal({
 
       const hasError = results.some((r) => !r.success);
       if (hasError) {
-        throw new Error("خطا در افزودن برخی آیتم‌ها");
+        // ⭐ نمایش خطای دقیق‌تر
+        const firstError = results.find((r) => !r.success);
+        throw new Error(firstError?.error || "خطا در افزودن برخی آیتم‌ها");
       }
 
       // ⭐ ساخت آیتم‌های جدید از پاسخ سرور
       const newCartItems = selectedItems.map((item, index) => {
         const serverItem = results[index]?.data?.item || results[index]?.data;
-        
+
         // ✅ ساخت cart_key یکسان
         const cartKey = `${item.product_id}-${item.options.service}-${item.options.material}-null`;
-        
+
         return {
           cart_key: cartKey,
           id_unique: serverItem?.id_unique || `temp-${cartKey}`,
