@@ -93,7 +93,7 @@ export default function Card({
     >
       <DiscountBadgeClient product={{ id, title, image, base_price, pricing, category }} />
 
-      <div className="w-full aspect-[3/3] md:aspect-[2/1.5] sm:aspect-square mb-2 sm:mb-3 overflow-hidden rounded-xl border border-sky-200 dark:border-indigo-600 shadow">
+      <div className="w-full aspect-[3/3] md:aspect-[2/1.8] sm:aspect-square mb-2 sm:mb-3 overflow-hidden rounded-xl border border-sky-200 dark:border-indigo-600 shadow">
         <img
           src={image}
           alt={title}

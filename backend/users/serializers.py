@@ -1,7 +1,7 @@
 import re
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import User
+from .models import User, UserSession
 from .utils import can_send_otp, is_phone_blocked, validate_otp, verify_otp
 
 def safe_divmod(seconds):
@@ -40,18 +40,18 @@ class VerifyOTPSerializer(serializers.Serializer):
     def validate(self, attrs):
         phone = attrs["phone"]
         code = attrs["code"]
-        
+
         blocked, remaining = is_phone_blocked(phone)
         if blocked:
             minutes, seconds = safe_divmod(remaining)
             raise serializers.ValidationError({
                 "detail": f"شماره بلاک است. {minutes} دقیقه و {seconds} ثانیه صبر کنید."
             })
-        
+
         is_valid, message = validate_otp(phone, code, consume=False)
         if not is_valid:
             raise serializers.ValidationError({"detail": message})
-        
+
         return attrs
 
 class RegisterOTPSerializer(serializers.Serializer):
@@ -258,10 +258,29 @@ class EditPasswordSerializer(serializers.Serializer):
         return instance
 
 
-from .models import UserSession
-
-
 class UserSessionSerializer(serializers.ModelSerializer):
+    """Serializer with display_name for frontend"""
+    name = serializers.CharField(source="display_name", read_only=True)
+    display_os = serializers.CharField(read_only=True)
+    display_browser = serializers.CharField(read_only=True)
+
     class Meta:
         model = UserSession
-        fields = ["id", "ip_address", "device", "os", "browser", "is_active", "created_at", "last_used"]
+        fields = [
+            "id", 
+            "ip_address", 
+            "name",
+            "device", 
+            "device_name",
+            "device_brand",
+            "device_model",
+            "os", 
+            "os_version",
+            "browser", 
+            "browser_version",
+            "display_os",
+            "display_browser",
+            "is_active", 
+            "created_at", 
+            "last_used"
+        ]

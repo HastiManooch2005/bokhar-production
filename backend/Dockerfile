@@ -4,6 +4,8 @@ ARG PIP_INDEX=https://pypi.org/simple/
 FROM python:3.12-slim-bookworm AS base-local
 FROM docker-mirror.liara.ir/library/python:3.12-slim-bookworm AS base-production
 
+FROM python:3.12-slim-bookworm AS base-production
+
 FROM base-${ENV} AS final
 
 ARG PIP_INDEX
