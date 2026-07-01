@@ -1,5 +1,3 @@
-# views.py - فایل کامل
-
 from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie, csrf_protect
@@ -101,7 +99,7 @@ class RegisterOTPView(APIView):
         if serializer.is_valid():
             user = serializer.save()
             refresh = RefreshToken.for_user(user)
-            create_user_session(request, user, refresh)  # ✅
+            create_user_session(request, user, refresh)
             response = Response(
                 {
                     "phone": user.phone,
@@ -153,7 +151,7 @@ class LoginPasswordView(APIView):
         if serializer.is_valid():
             user = serializer.validated_data["user"]
             refresh = RefreshToken.for_user(user)
-            create_user_session(request, user, refresh)  # ✅
+            create_user_session(request, user, refresh)
             response = Response(
                 {
                     "phone": user.phone,
@@ -302,7 +300,9 @@ class CustomerViewSet(ReadOnlyModelViewSet):
         return User.objects.filter(role="user").order_by("-created_at")
 
 
-# ─── Session Views ───────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════
+# Session Views
+# ═══════════════════════════════════════════════════════════
 
 @method_decorator(csrf_protect, name="dispatch")
 class UserSessionListView(APIView):
@@ -315,12 +315,9 @@ class UserSessionListView(APIView):
         return Response(serializer.data)
 
 
-
-
-
 @method_decorator(csrf_protect, name="dispatch")
 class UserSessionDeleteView(APIView):
-    """خروج از یه دستگاه خاص"""
+    """خروج از یک دستگاه خاص"""
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, pk):
