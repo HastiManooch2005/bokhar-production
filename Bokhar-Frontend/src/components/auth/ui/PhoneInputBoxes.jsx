@@ -75,7 +75,7 @@ export default function PhoneInputBoxes({ value, onChange }) {
 
       <div className="flex gap-1">
         <div
-          className="w-6 h-10 border-b-2 border-gray-400 dark:border-gray-400
+          className="w-6 h-10 border-b-2 border-gray-400 dark:border-gray-600
     flex items-center justify-center text-gray-600 dark:text-gray-400
     font-semibold select-none pointer-events-none cursor-not-allowed"
         >
@@ -83,7 +83,7 @@ export default function PhoneInputBoxes({ value, onChange }) {
         </div>
 
         <div
-          className="w-6 h-10 border-b-2 border-gray-400 dark:border-gray-400
+          className="w-6 h-10 border-b-2 border-gray-400 dark:border-gray-600
     flex items-center justify-center text-gray-600 dark:text-gray-400
     font-semibold select-none pointer-events-none cursor-not-allowed"
         >
@@ -104,7 +104,7 @@ export default function PhoneInputBoxes({ value, onChange }) {
           onKeyDown={(e) => handleKeyDown(i, e)}
           className="w-6 h-10 text-center font-semibold border-b-2 outline-none bg-transparent
            border-gray-400 focus:border-blue-500 text-gray-800
-           dark:border-gray-100 dark:focus:border-purple-600 dark:text-gray-100"
+           dark:border-gray-600 dark:focus:border-[#8AA1C4] dark:text-gray-200"
         />
       ))}
     </div>

@@ -61,8 +61,8 @@ export default function OtpInput({ value, onChange, length = 5 }) {
           onKeyDown={(e) => handleKeyDown(i, e)}
           onPaste={handlePaste}
           className="w-10 h-12 text-center border-b-2 outline-none bg-transparent text-xl font-semibold
-           border-gray-400 focus:border-blue-500 text-gray-800 dark:text-gray-100
-           dark:border-gray-100 dark:focus:border-purple-900"
+           border-gray-400 focus:border-blue-500 text-gray-800 dark:text-gray-200
+           dark:border-gray-600 dark:focus:border-[#8AA1C4]"
         />
       ))}
     </div>
