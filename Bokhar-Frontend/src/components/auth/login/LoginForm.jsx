@@ -162,7 +162,7 @@ export default function LoginForm({ onSwitchRegister, onClose, onSuccess }) {
       {/* ==================== ورود با رمز ==================== */}
 {mode === "login" && (
   <>
-    <h2 className="text-2xl font-bold text-center mb-6 md:my-6 text-gray-800 dark:text-gray-100">
+    <h2 className="text-2xl font-bold text-center mb-6 md:my-6 text-gray-800 dark:text-gray-200">
       ورود به حساب کاربری
     </h2>
 
@@ -179,7 +179,7 @@ export default function LoginForm({ onSwitchRegister, onClose, onSuccess }) {
         onChange={(val) => setPhone(val.replace(/\D/g, ""))}
       />
 
-      <div className="mt-4 text-gray-800 dark:text-gray-100">رمز عبور:</div>
+      <div className="mt-4 text-gray-800 dark:text-gray-200">رمز عبور:</div>
 
       <div className="relative">
         <input
@@ -188,7 +188,7 @@ export default function LoginForm({ onSwitchRegister, onClose, onSuccess }) {
           onChange={(e) => setPassword(e.target.value)}
           className="w-full border-b p-1 pr-2 bg-transparent outline-none transition
            text-gray-800 border-gray-300 focus:border-blue-600 
-           dark:border-gray-100 dark:focus:border-purple-600 dark:focus:border-b-2 dark:text-gray-100"
+           dark:border-gray-600 dark:focus:border-[#8AA1C4] dark:focus:border-b-2 dark:text-gray-200"
         />
         <button
           type="button"
@@ -204,8 +204,8 @@ export default function LoginForm({ onSwitchRegister, onClose, onSuccess }) {
         disabled={loading || !/^09\d{9}$/.test(phone) || !password}
         className={`w-full py-3 mt-6 rounded-xl text-white font-medium flex justify-center items-center gap-2 transition shadow-lg ${
           loading || !/^09\d{9}$/.test(phone) || !password
-            ? "bg-blue-400 dark:bg-purple-500 cursor-not-allowed"
-            : "bg-blue-600 dark:bg-purple-700 hover:bg-blue-700 dark:hover:bg-purple-900"
+            ? "bg-blue-400 dark:bg-[#262B40] cursor-not-allowed"
+            : "bg-blue-600 dark:bg-[#8AA1C4] hover:bg-blue-700 dark:hover:bg-[#7a93b8]"
         }`}
       >
         {loading && (
@@ -218,15 +218,15 @@ export default function LoginForm({ onSwitchRegister, onClose, onSuccess }) {
     <div className="flex justify-between items-center mt-6 text-sm text-gray-500 dark:text-gray-400">
       <button
         onClick={() => setMode("otp-phone")}
-        className="text-blue-600 hover:underline dark:text-purple-400"
+        className="text-blue-600 hover:underline dark:text-[#8AA1C4]"
       >
         ورود با رمز یک بار مصرف
       </button>
-      <span className="text-gray-600 dark:text-gray-200">
+      <span className="text-gray-600 dark:text-gray-300">
         حساب ندارید؟{" "}
         <button
           onClick={onSwitchRegister}
-          className="text-blue-600 hover:underline dark:text-purple-400"
+          className="text-blue-600 hover:underline dark:text-[#8AA1C4]"
         >
           ثبت نام
         </button>
@@ -238,7 +238,7 @@ export default function LoginForm({ onSwitchRegister, onClose, onSuccess }) {
       {/* ==================== فرم شماره برای OTP ==================== */}
 {mode === "otp-phone" && (
   <>
-    <h2 className="text-xl font-bold mb-4 text-center">
+    <h2 className="text-xl font-bold mb-4 text-center dark:text-gray-200">
       ورود با رمز یک بار مصرف
     </h2>
 
@@ -260,8 +260,8 @@ export default function LoginForm({ onSwitchRegister, onClose, onSuccess }) {
         disabled={loading || !/^09\d{9}$/.test(phone)}
         className={`w-full py-3 mt-6 rounded-xl text-white font-medium flex justify-center items-center gap-2 ${
           loading || !/^09\d{9}$/.test(phone)
-            ? "bg-blue-400 dark:bg-purple-500 cursor-not-allowed"
-            : "bg-blue-600 dark:bg-purple-700 hover:bg-blue-700 dark:hover:bg-purple-900"
+            ? "bg-blue-400 dark:bg-[#262B40] cursor-not-allowed"
+            : "bg-blue-600 dark:bg-[#8AA1C4] hover:bg-blue-700 dark:hover:bg-[#7a93b8]"
         }`}
       >
         {loading ? "در حال ارسال..." : "ارسال پیامک"}
@@ -270,7 +270,7 @@ export default function LoginForm({ onSwitchRegister, onClose, onSuccess }) {
 
     <button
       onClick={() => setMode("login")}
-      className="mt-4 w-full text-center text-gray-600 hover:underline"
+      className="mt-4 w-full text-center text-gray-600 hover:underline dark:text-gray-400"
     >
       بازگشت
     </button>
@@ -280,7 +280,7 @@ export default function LoginForm({ onSwitchRegister, onClose, onSuccess }) {
       {/* ==================== تایید OTP ==================== */}
 {mode === "otp-verify" && (
   <>
-    <h2 className="text-xl font-bold my-4 text-center">
+    <h2 className="text-xl font-bold my-4 text-center dark:text-gray-200">
       کد ارسال شده را وارد کنید
     </h2>
 
@@ -300,8 +300,8 @@ export default function LoginForm({ onSwitchRegister, onClose, onSuccess }) {
         disabled={loading}
         className={`w-full py-3 mt-6 rounded-xl text-white font-medium flex justify-center items-center gap-2 ${
           loading
-            ? "bg-blue-400 cursor-not-allowed"
-            : "bg-blue-600 hover:bg-blue-700 dark:bg-purple-700 dark:hover:bg-purple-900"
+            ? "bg-blue-400 cursor-not-allowed dark:bg-[#262B40]"
+            : "bg-blue-600 hover:bg-blue-700 dark:bg-[#8AA1C4] dark:hover:bg-[#7a93b8]"
         }`}
       >
         {loading ? "در حال تایید..." : "تایید کد ارسال شده"}
@@ -313,7 +313,7 @@ export default function LoginForm({ onSwitchRegister, onClose, onSuccess }) {
       {timer > 0 ? (
         <p className="text-gray-500 dark:text-gray-400 text-sm">
           ارسال مجدد کد تا{" "}
-          <span className="font-bold text-blue-600 dark:text-purple-400">
+          <span className="font-bold text-blue-600 dark:text-[#8AA1C4]">
             {timer}
           </span>{" "}
           ثانیه دیگر
@@ -322,7 +322,7 @@ export default function LoginForm({ onSwitchRegister, onClose, onSuccess }) {
         <button
           onClick={handleResendOtp}
           disabled={loading}
-          className="text-blue-600 hover:underline dark:text-purple-400 text-sm font-medium disabled:opacity-50"
+          className="text-blue-600 hover:underline dark:text-[#8AA1C4] text-sm font-medium disabled:opacity-50"
         >
           ارسال مجدد کد
         </button>
@@ -334,7 +334,7 @@ export default function LoginForm({ onSwitchRegister, onClose, onSuccess }) {
       </span>
       <button
         onClick={() => setMode("otp-phone")}
-        className="text-blue-600 hover:underline dark:text-purple-400 text-sm"
+        className="text-blue-600 hover:underline dark:text-[#8AA1C4] text-sm"
       >
         تغییر شماره موبایل
       </button>
