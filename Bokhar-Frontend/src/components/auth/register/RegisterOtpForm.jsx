@@ -75,7 +75,7 @@ export default function RegisterOtpForm({ phone, fullname, onBack, onSuccess }) 
 
   return (
     <div className="max-w-md mx-auto p-2 sm:p-6">
-      <h2 className="text-2xl font-bold text-center mb-6 text-gray-800 dark:text-gray-100">
+      <h2 className="text-2xl font-bold text-center mb-6 text-gray-800 dark:text-gray-200">
         کد تأیید
       </h2>
 
@@ -91,8 +91,8 @@ export default function RegisterOtpForm({ phone, fullname, onBack, onSuccess }) 
           disabled={loading || otp.length < 5}
           className={`w-full mt-6 py-3 rounded-xl text-white font-medium flex justify-center items-center gap-2 transition ${
             loading || otp.length < 5
-              ? "bg-blue-400 dark:bg-purple-500 cursor-not-allowed"
-              : "bg-blue-600 dark:bg-purple-700 hover:bg-blue-700 dark:hover:bg-purple-900"
+              ? "bg-blue-400 dark:bg-[#262B40] cursor-not-allowed"
+              : "bg-blue-600 dark:bg-[#8AA1C4] hover:bg-blue-700 dark:hover:bg-[#7a93b8]"
           }`}
         >
           {loading && (
@@ -102,14 +102,14 @@ export default function RegisterOtpForm({ phone, fullname, onBack, onSuccess }) 
         </button>
       </form>
 
-      <p className="text-center mt-4 text-sm text-gray-500">
+      <p className="text-center mt-4 text-sm text-gray-500 dark:text-gray-400">
         {!canResend ? (
           <>ارسال مجدد تا {timer} ثانیه دیگر</>
         ) : (
           <button
             onClick={handleResend}
             disabled={resendLoading}
-            className="text-blue-600 dark:text-purple-400 hover:underline"
+            className="text-blue-600 dark:text-[#8AA1C4] hover:underline"
           >
             {resendLoading ? "در حال ارسال..." : "ارسال مجدد کد"}
           </button>
@@ -118,7 +118,7 @@ export default function RegisterOtpForm({ phone, fullname, onBack, onSuccess }) 
 
       <button
         onClick={onBack}
-        className="block mx-auto mt-4 text-blue-600 dark:text-purple-400 hover:underline"
+        className="block mx-auto mt-4 text-blue-600 dark:text-[#8AA1C4] hover:underline"
       >
         بازگشت
       </button>

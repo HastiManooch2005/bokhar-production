@@ -30,7 +30,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
               items-center justify-center
               w-9 h-9 rounded-full
               hover:bg-white text-black
-              dark:hover:bg-gray-200 dark:text-white dark:hover:text-black
+              dark:hover:bg-[#262B40] dark:text-gray-200 dark:hover:text-gray-100
               transition
               z-10
             "
