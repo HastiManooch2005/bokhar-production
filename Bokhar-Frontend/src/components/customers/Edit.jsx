@@ -89,19 +89,19 @@ export default function EditProfile() {
     <div dir="rtl" className="min-h-screen p-4 md:p-8">
       <div
         className="
-          bg-sky-50 dark:bg-gradient-to-br dark:from-sky-800 dark:via-sky-900 dark:to-sky-950
-          border border-sky-200 dark:border-sky-700
+          bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40]
+          border border-sky-200 dark:border-gray-700
           rounded-2xl shadow p-4 md:max-w-3xl md:mx-auto mt-5 md:mt-15
         "
       >
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-14 h-14 rounded-full bg-sky-100 dark:bg-sky-700 flex items-center justify-center text-2xl">
+          <div className="w-14 h-14 rounded-full bg-sky-100 dark:bg-[#262B40] flex items-center justify-center text-2xl">
             👤
           </div>
 
           <div className="flex-1">
-            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-200">
               ویرایش پروفایل
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -114,10 +114,10 @@ export default function EditProfile() {
             className="
               ms-auto w-10 h-10 rounded-full border shadow-sm hover:shadow-md cursor-pointer
               bg-white/80 hover:bg-gray-200 border-sky-300 shadow-sky-200
-              dark:bg-purple-800 dark:hover:bg-purple-900 dark:border-indigo-500 dark:shadow-indigo-500 flex items-center justify-center transition
+              dark:bg-[#262B40] dark:hover:bg-[#2d3350] dark:border-gray-600 dark:shadow-black/40 flex items-center justify-center transition
             "
           >
-            <ArrowLeft size={20} className="text-gray-700 dark:text-gray-200" />
+            <ArrowLeft size={20} className="text-gray-700 dark:text-gray-300" />
           </button>
         </div>
 
@@ -134,9 +134,9 @@ export default function EditProfile() {
               placeholder="مثال: علی احمدی"
               className="
                 w-full p-3 border rounded-xl
-                bg-white dark:bg-sky-900/60 text-gray-800 dark:text-white
-                border-sky-300 dark:border-sky-700
-                focus:ring-2 focus:ring-sky-500 dark:focus:ring-purple-500 focus:border-transparent
+                bg-white dark:bg-[#1a1f2e] text-gray-800 dark:text-gray-200
+                border-sky-300 dark:border-gray-600
+                focus:ring-2 focus:ring-[#8AA1C4] focus:border-transparent
                 placeholder:text-gray-400 dark:placeholder:text-gray-500
               "
             />
@@ -152,9 +152,9 @@ export default function EditProfile() {
               disabled
               className="
                 w-full p-3 border rounded-xl
-                bg-gray-100 dark:bg-sky-800
-                border-sky-200 dark:border-sky-700
-                text-gray-500 cursor-not-allowed
+                bg-gray-100 dark:bg-[#262B40]
+                border-sky-200 dark:border-gray-600
+                text-gray-500 dark:text-gray-400 cursor-not-allowed
               "
             />
           </div>
@@ -165,7 +165,7 @@ export default function EditProfile() {
             </p>
           )}
 
-          <p className="text-xs text-gray-400 dark:text-gray-300">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
             تغییر شماره تلفن در حال حاضر امکان‌پذیر نیست
           </p>
         </div>
@@ -177,7 +177,7 @@ export default function EditProfile() {
             disabled={saving || !fullname.trim()}
             className="
               w-full bg-sky-600 hover:bg-sky-700 cursor-pointer
-              dark:bg-purple-700 dark:hover:bg-purple-800
+              dark:bg-[#8AA1C4] dark:hover:bg-[#7a93b8]
               text-white rounded-xl p-3 font-medium
               disabled:opacity-50 disabled:cursor-not-allowed
               transition-colors
