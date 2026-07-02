@@ -33,19 +33,19 @@ export default function OrderTracking() {
     <div dir="rtl" className="min-h-screen p-4 md:p-8">
       <div
         className="
-          bg-sky-50 dark:bg-gradient-to-br dark:from-sky-800 dark:via-sky-900 dark:to-sky-950
-          border border-sky-200 dark:border-sky-700
+          bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40]
+          border border-sky-200 dark:border-gray-700
           rounded-2xl shadow p-4 md:max-w-3xl md:mx-auto md:mt-15 mb-20 md:mb-0
         "
       >
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-500 flex items-center justify-center">
-            <Package className="text-orange-600 dark:text-orange-200" size={22} />
+          <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-[#262B40] flex items-center justify-center">
+            <Package className="text-orange-600 dark:text-[#8AA1C4]" size={22} />
           </div>
 
           <div>
-            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-200">
               پیگیری سفارش‌ها
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -58,9 +58,9 @@ export default function OrderTracking() {
             onClick={() => navigate("/customer-dashboard")}
             className="ms-auto w-10 h-10 rounded-full border shadow-sm hover:shadow-md cursor-pointer
               bg-white/80 hover:bg-gray-200 border-sky-300 shadow-sky-200
-               dark:bg-purple-800 dark:hover:bg-purple-900 dark:border-indigo-500 dark:shadow-indigo-500 flex items-center justify-center transition"
+               dark:bg-[#262B40] dark:hover:bg-[#2d3350] dark:border-gray-600 dark:shadow-black/40 flex items-center justify-center transition"
           >
-            <ArrowLeft size={20} className="text-gray-700 dark:text-gray-200" />
+            <ArrowLeft size={20} className="text-gray-700 dark:text-gray-300" />
           </button>
         </div>
 
@@ -70,13 +70,13 @@ export default function OrderTracking() {
             <div
               key={order.id}
               className="
-                bg-sky-50 dark:bg-gradient-to-br dark:from-sky-800 dark:via-sky-900 dark:to-sky-950
-                border border-sky-200 dark:border-sky-700
+                bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40]
+                border border-sky-200 dark:border-gray-700
                 rounded-2xl p-4
               "
             >
               <div className="flex justify-between items-center mb-4">
-                <p className="font-medium text-gray-800 dark:text-gray-100">
+                <p className="font-medium text-gray-800 dark:text-gray-200">
                   سفارش #{order.id}
                 </p>
               </div>
@@ -97,7 +97,7 @@ export default function OrderTracking() {
                               ? "bg-green-600 text-white"
                               : isCurrent
                               ? "border-2 border-green-600 text-green-600 animate-pulse"
-                              : "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-300"
+                              : "bg-gray-300 dark:bg-[#262B40] text-gray-500 dark:text-gray-400"
                           }`}
                       >
                         {isCompleted ? <CheckCircle size={18} /> : step.emoji}
@@ -109,7 +109,7 @@ export default function OrderTracking() {
                           className={`flex-1 h-1 rounded ${
                             idx < order.currentStep
                               ? "bg-green-600"
-                              : "bg-gray-300 dark:bg-gray-700"
+                              : "bg-gray-300 dark:bg-gray-600"
                           }`}
                         />
                       )}
@@ -119,7 +119,7 @@ export default function OrderTracking() {
               </div>
 
               {/* Step Labels */}
-              <div className="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-300">
+              <div className="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
                 {orderSteps.map((step, idx) => (
                   <span key={idx} className="text-center flex-1">
                     {step.label}
