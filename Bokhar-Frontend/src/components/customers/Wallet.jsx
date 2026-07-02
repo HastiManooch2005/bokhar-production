@@ -31,22 +31,22 @@ export default function WalletPage() {
       <div
         className="
           rounded-2xl shadow-md p-5 md:max-w-3xl md:mx-auto mt-5 md:mt-16 mb-20 md:mb-0
-          bg-sky-50 dark:bg-gradient-to-br dark:from-sky-800 dark:via-sky-900 dark:to-sky-950
-          border border-sky-200 dark:border-sky-700
-          shadow-sky-200 dark:shadow-indigo-500
+          bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40]
+          border border-sky-200 dark:border-gray-700
+          shadow-sky-200 dark:shadow-black/40
           transition
         "
       >
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-full bg-sky-100 dark:bg-sky-700 flex items-center justify-center">
-            <Wallet className="text-sky-600 dark:text-sky-300" size={22} />
+          <div className="w-12 h-12 rounded-full bg-sky-100 dark:bg-[#262B40] flex items-center justify-center">
+            <Wallet className="text-sky-600 dark:text-[#8AA1C4]" size={22} />
           </div>
           <div>
-            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-200">
               کیف پول
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-300">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               افزایش موجودی کیف پول
             </p>
           </div>
@@ -56,17 +56,17 @@ export default function WalletPage() {
             onClick={() => navigate("/customer-dashboard")}
             className="ms-auto w-10 h-10 rounded-full shadow-sm hover:shadow-md cursor-pointer
                           bg-white/80 hover:bg-gray-200 border-sky-300 shadow-sky-200
-                           dark:bg-purple-800 dark:hover:bg-purple-900 dark:border-indigo-500 dark:shadow-indigo-500 flex items-center justify-center transition"
+                           dark:bg-[#262B40] dark:hover:bg-[#2d3350] dark:border-gray-600 dark:shadow-black/40 flex items-center justify-center transition"
           >
-            <ArrowLeft size={20} className="text-gray-700 dark:text-gray-200" />
+            <ArrowLeft size={20} className="text-gray-700 dark:text-gray-300" />
           </button>
         </div>
 
         {/* Balance - استایل مشابه کارت کیف پول در داشبورد */}
         <div
           className="
-          bg-white dark:bg-sky-900/60 
-          border border-sky-200 dark:border-sky-700 
+          bg-white dark:bg-[#262B40]/60 
+          border border-sky-200 dark:border-gray-700 
           rounded-2xl p-4 mb-6 transition
         "
         >
@@ -76,14 +76,14 @@ export default function WalletPage() {
               <span className="text-sm">موجودی فعلی</span>
             </div>
           </div>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-2 mr-1">
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-200 mt-2 mr-1">
             125,000 تومان
           </p>
         </div>
 
         {/* Quick amounts */}
         <div className="mb-6">
-          <p className="text-sm font-medium mb-3 text-gray-900 dark:text-gray-100">
+          <p className="text-sm font-medium mb-3 text-gray-900 dark:text-gray-200">
             انتخاب سریع مبلغ
           </p>
           <div className="grid grid-cols-3 gap-3">
@@ -95,8 +95,8 @@ export default function WalletPage() {
                   rounded-xl p-3 text-sm font-medium border transition cursor-pointer
                   ${
                     Number(amount) === a
-                      ? "bg-sky-600 text-white border-sky-600 dark:bg-purple-700 dark:border-purple-700"
-                      : "bg-white dark:bg-sky-900/60 text-gray-900 dark:text-gray-100 border-sky-200 dark:border-sky-700 hover:bg-sky-50 dark:hover:bg-sky-800"
+                      ? "bg-sky-600 text-white border-sky-600 dark:bg-[#8AA1C4] dark:border-[#8AA1C4]"
+                      : "bg-white dark:bg-[#262B40]/60 text-gray-900 dark:text-gray-200 border-sky-200 dark:border-gray-600 hover:bg-sky-50 dark:hover:bg-[#2d3350]"
                   }
                 `}
               >
@@ -108,7 +108,7 @@ export default function WalletPage() {
 
         {/* Manual input */}
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
+          <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-200">
             مبلغ دلخواه
           </label>
           <input
@@ -123,10 +123,10 @@ export default function WalletPage() {
             }}
             placeholder="مثلاً 75000"
             className="
-              w-full p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 transition
-              bg-white dark:bg-sky-900/60 border-sky-200 dark:border-sky-700 
-              text-gray-900 dark:text-white
-              placeholder:text-gray-400 dark:placeholder:text-gray-400
+              w-full p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8AA1C4] transition
+              bg-white dark:bg-[#262B40]/60 border-sky-200 dark:border-gray-600 
+              text-gray-900 dark:text-gray-200
+              placeholder:text-gray-400 dark:placeholder:text-gray-500
             "
           />
         </div>
@@ -142,8 +142,8 @@ export default function WalletPage() {
             w-full rounded-xl p-3 transition font-medium
             ${
               amount
-                ? "bg-sky-600 hover:bg-sky-700 text-white dark:bg-purple-700 dark:hover:bg-purple-800 cursor-pointer"
-                : "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-sky-800 dark:text-gray-500"
+                ? "bg-sky-600 hover:bg-sky-700 text-white dark:bg-[#8AA1C4] dark:hover:bg-[#7a93b8] cursor-pointer"
+                : "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-[#262B40] dark:text-gray-500"
             }
           `}
         >
