@@ -188,7 +188,7 @@ const GlassCard = ({children, className = "rounded-2xl shadow-lg shadow-sky-200"
         {/* Ambient Glow Background - Softer like SessionsSection */}
 
         {/* Card Body */}
-        <div className="relative bg-sky-50 dark:bg-gray-900/40 border border-sky-200 dark:border-white/10 rounded-2xl ">
+        <div className="relative bg-sky-50 dark:bg-[#1a1f2e]/40 border border-sky-200 dark:border-gray-700/50 rounded-2xl ">
             {children}
         </div>
     </div>
@@ -223,8 +223,8 @@ const CustomInput = ({
                 placeholder={placeholder}
                 className={`w-full bg-white/50 dark:bg-black/20 border border-gray-200/50 dark:border-gray-700/50 
           rounded-xl py-3 ${Icon ? "pl-10" : "pl-4"} pr-10
-          text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600
-          focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50
+          text-gray-900 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-600
+          focus:outline-none focus:ring-2 focus:ring-[#8AA1C4]/30 focus:border-[#8AA1C4]/50
           transition-all duration-200 backdrop-blur-sm
           ${error ? "border-red-500/50 focus:ring-red-500/30" : ""}`}
                 {...props}
@@ -292,8 +292,8 @@ const OtpInput = ({value, onChange, disabled, error}) => {
                     onPaste={handlePaste}
                     className={`w-12 h-14 text-center text-xl font-bold bg-white/60 dark:bg-black/20 
             border-2 rounded-xl focus:outline-none transition-all duration-200
-            ${error ? "border-red-400 focus:border-red-500" : "border-gray-200/50 dark:border-gray-700/50 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"}
-            dark:text-white disabled:opacity-50`}
+            ${error ? "border-red-400 focus:border-red-500" : "border-gray-200/50 dark:border-gray-700/50 focus:border-[#8AA1C4] focus:ring-2 focus:ring-[#8AA1C4]/30"}
+            dark:text-gray-200 disabled:opacity-50`}
                 />
             ))}
         </div>
@@ -343,7 +343,7 @@ const ActionButton = ({onClick, disabled, loading, children, variant = "primary"
 
     const variants = {
         primary: "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 dark:shadow-blue-900/20",
-        secondary: "bg-white/50 dark:bg-white/10 hover:bg-white/70 dark:hover:bg-white/20 text-gray-900 dark:text-white border border-gray-200/50 dark:border-white/10",
+        secondary: "bg-white/50 dark:bg-white/10 hover:bg-white/70 dark:hover:bg-white/20 text-gray-900 dark:text-gray-200 border border-gray-200/50 dark:border-white/10",
         success: "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/25",
     };
 
@@ -417,11 +417,11 @@ export default function PasswordSection() {
                 <div className="p-6 md:p-8 space-y-6  ">
 
                     {/* Header */}
-                    <div className="flex items-center gap-3 pb-4 border-b border-gray-200/30 dark:border-white/5">
+                    <div className="flex items-center gap-3 pb-4 border-b border-gray-200/30 dark:border-gray-700/30">
                         <div className="p-2 bg-blue-500/10 dark:bg-blue-500/20 rounded-lg">
-                            <Lock className="text-blue-600 dark:text-blue-400" size={24}/>
+                            <Lock className="text-blue-600 dark:text-[#8AA1C4]" size={24}/>
                         </div>
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-200">
                             {hasPassword ? "تغییر رمز عبور" : "تنظیم رمز عبور"}
                         </h2>
                     </div>
@@ -468,7 +468,7 @@ export default function PasswordSection() {
                                     }}
                                     className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
                                         !useOtp
-                                            ? "bg-white dark:bg-gray-800 text-blue-600 shadow-sm"
+                                            ? "bg-white dark:bg-[#262B40] text-blue-600 dark:text-[#8AA1C4] shadow-sm"
                                             : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                                     }`}
                                 >
@@ -483,7 +483,7 @@ export default function PasswordSection() {
                                     }}
                                     className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
                                         useOtp
-                                            ? "bg-white dark:bg-gray-800 text-blue-600 shadow-sm"
+                                            ? "bg-white dark:bg-[#262B40] text-blue-600 dark:text-[#8AA1C4] shadow-sm"
                                             : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                                     }`}
                                 >
@@ -559,7 +559,7 @@ export default function PasswordSection() {
                                                     type="button"
                                                     onClick={sendOTP}
                                                     disabled={otpTimer > 0 || otpLoading}
-                                                    className="text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
+                                                    className="text-blue-600 dark:text-[#8AA1C4] hover:underline disabled:opacity-50"
                                                 >
                                                     {otpTimer > 0
                                                         ? `ارسال مجدد (${otpTimer}s)`
@@ -607,10 +607,10 @@ export default function PasswordSection() {
                                         animate={{opacity: 1, y: 0, scale: 1}}
                                         exit={{opacity: 0, y: 10, scale: 0.95}}
                                         transition={{duration: 0.2}}
-                                        className="absolute z-20 bottom-full mb-2 right-0 w-full p-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-xl"
+                                        className="absolute z-20 bottom-full mb-2 right-0 w-full p-4 bg-white/90 dark:bg-[#262B40]/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-xl"
                                     >
                                         <div
-                                            className="flex items-center gap-2 mb-3 text-blue-600 dark:text-blue-400 font-semibold text-sm">
+                                            className="flex items-center gap-2 mb-3 text-blue-600 dark:text-[#8AA1C4] font-semibold text-sm">
                                             <Info size={16}/>
                                             <span>نکات امنیتی</span>
                                         </div>
