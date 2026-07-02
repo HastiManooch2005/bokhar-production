@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import ServiceModal from "./services_modal/ServiceModal";
 import api from "../api/clientApi";
 import DiscountBadgeClient, { getDiscountStatus } from "./DiscountBadgeClient";
-import Skeleton from "./Skeleton"; // ← اضافه شده
+import Skeleton from "./Skeleton"; 
 
 export default function Card({
   id,
@@ -86,14 +86,14 @@ export default function Card({
   return (
     <div
       dir="rtl"
-      className="relative p-3 sm:p-4 rounded-2xl bg-white/70 dark:bg-[#8AA1C4]
-       border border-sky-200 dark:border-[#262B40] shadow-xl 
+      className="relative p-3 sm:p-4 rounded-2xl bg-white/70 dark:bg-[#262B40]
+       border border-sky-200 dark:border-gray-500 shadow-xl 
       flex flex-col justify-between min-h-[220px] sm:min-h-[280px] hover:scale-[1.02] 
       sm:hover:scale-[1.03] transition-all duration-300 group"
     >
       <DiscountBadgeClient product={{ id, title, image, base_price, pricing, category }} />
 
-      <div className="w-full aspect-[3/3] md:aspect-[2/1.8] sm:aspect-square mb-2 sm:mb-3 overflow-hidden rounded-xl border border-sky-200 dark:border-[#262B40] shadow">
+      <div className="w-full aspect-[3/3] md:aspect-[2/1.8] sm:aspect-square mb-2 sm:mb-3 overflow-hidden rounded-xl border border-sky-200 dark:border-gray-500 shadow">
         <img
           src={image}
           alt={title}
@@ -109,8 +109,8 @@ export default function Card({
         <button
           onClick={openModal}
           className="w-full py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-sky-100 to-sky-200 
-          dark:from-[#262B40] dark:to-[#262B40] border border-sky-200 dark:border-[#262B40] 
-          shadow-lg text-gray-800 dark:text-white font-semibold hover:from-sky-200 hover:to-sky-300 
+          dark:from-[#8AA1C4] dark:to-[#8AA1C4] border border-sky-200 dark:border-[#262B40] 
+          shadow-lg text-gray-800 dark:text-white font-semibold hover:from-sky-200 hover:to-sky-300 dark:hover:from-[#7392c2] dark:hover:to-[#7392c2]
           transition-all active:scale-95 text-sm sm:text-base"
         >
           خدمات

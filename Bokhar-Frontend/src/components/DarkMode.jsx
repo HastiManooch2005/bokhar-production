@@ -20,7 +20,7 @@ export default function DarkMode({ className = "" }) {
       }
     >
       {isDark ? (
-        <Sun size={15} className="text-white dark:text-gray-700 dark:hover:text-yellow-300" />
+        <Sun size={15} className="text-white dark:text-gray-200 dark:hover:text-yellow-300" />
       ) : (
         <Moon size={15} className="text-white hover:text-gray-500" />
       )}

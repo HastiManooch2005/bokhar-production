@@ -187,7 +187,7 @@ export default function Landing() {
             renderItem={(item) => (
               <div className="flex justify-between text-sm">
                 <span>{item.title}</span>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-400 dark:text-gray-100">
                   {item.category.name}
                 </span>
               </div>

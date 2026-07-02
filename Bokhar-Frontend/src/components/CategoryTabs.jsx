@@ -67,10 +67,10 @@ export default function CategoryTabs({
               onClick={() => onCategoryChange(cat)}
               className={`relative flex-shrink-0 whitespace-nowrap px-4 py-2 my-2 mx-0.5 rounded-3xl text-sm font-bold transition-all
                 ${isActive 
-                  ? "bg-sky-200 dark:bg-[#8AA1C4] dark:text-[3E3E7F9] scale-105 mx-1" 
+                  ? "bg-sky-200 dark:bg-[#8AA1C4] dark:text-white scale-105 mx-1" 
                   : isDiscounted 
                     ? "bg-red-100 text-red-800 border border-red-400 animate-[pulse_2s_ease-in-out_infinite] shadow-sm hover:shadow-md" 
-                    : "bg-white dark:bg-[#E3E7F9] dark:text-gray-700"
+                    : "bg-white dark:bg-[#262B40] dark:text-gray-200"
                 }`}
             >
               {cat.name}
@@ -97,7 +97,7 @@ export default function CategoryTabs({
                   ? "bg-sky-200 dark:bg-[#8AA1C4] dark:text-[3E3E7F9] scale-105" 
                   : isDiscounted 
                     ? "bg-red-100 text-red-800 border border-red-400 animate-[pulse_2s_ease-in-out_infinite] shadow-sm hover:shadow-md" 
-                    : "bg-white dark:bg-[#E3E7F9] dark:text-gray-700"
+                    : "bg-white dark:bg-[#262B40] dark:text-gray-200 border border-sky-200 dark:border-gray-500"
                 }`}
             >
               {cat.name}

@@ -50,7 +50,7 @@ export default function MobileNavbar() {
     <>
       <nav
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 
-                   bg-sky-50/85 dark:bg-gray-900/90 backdrop-blur-xl 
+                   bg-sky-50/85 dark:bg-[#262B40] backdrop-blur-xl 
                    border-t border-gray-200/50 dark:border-gray-700/50 
                    rounded-t-3xl shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] 
                    dark:shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.3)]
@@ -70,8 +70,8 @@ export default function MobileNavbar() {
               relative flex flex-col items-center justify-center gap-1 
               w-16 h-14 rounded-2xl transition-all duration-300 ease-out
               ${isHomeActive 
-                ? "text-sky-500 dark:text-sky-400 scale-105 bg-white/70 dark:bg-sky-900/20 shadow-sm" 
-                : "text-gray-500 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-300 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                ? "text-sky-500 dark:text-gray-400 scale-105 bg-white/70 dark:bg-[#8AA1C4] shadow-sm" 
+                : "text-gray-500 dark:text-gray-400 "
               }
             `}
             aria-label="خانه"
@@ -99,11 +99,11 @@ export default function MobileNavbar() {
                 <Home 
                   size={22} 
                   strokeWidth={2}
-                  className={isHomeActive ? "text-sky-500 dark:text-sky-400" : "text-current"}
+                  className={isHomeActive ? "text-sky-500 dark:text-white" : "text-current"}
                 />
               </div>
             </div>
-            <span className="text-[10px] font-medium tracking-tight">
+            <span className="text-[10px] font-medium tracking-tight dark:text-white">
               خانه
             </span>
           </button>
@@ -160,8 +160,8 @@ function NavItem({ icon, label, onClick, active }) {
         relative flex flex-col items-center justify-center gap-1 
         w-16 h-14 rounded-2xl transition-all duration-300 ease-out
         ${active 
-          ? "text-sky-500 dark:text-sky-400 scale-105 bg-white/70 dark:bg-sky-900/20 shadow-sm" 
-          : "text-gray-500 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-300 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          ? "text-sky-500 dark:text-gray-100 scale-105 bg-white/70 dark:bg-[#8AA1C4] shadow-sm" 
+          : "text-gray-500 dark:text-gray-400"
         }
       `}
       aria-label={label}

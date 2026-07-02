@@ -35,9 +35,9 @@ export default function Search({
         dir="rtl"
         className="flex items-center gap-2 shadow-lg px-3 py-3 rounded-3xl
         bg-white border border-sky-300/50
-        dark:bg-[#E3E7F9] dark:border-white/80"
+        dark:bg-[#262B40] dark:border-gray-500"
       >
-        <SearchIcon className="text-gray-500 dark:text-gray-700" size={20} />
+        <SearchIcon className="text-gray-500 dark:text-gray-100" size={20} />
         <input
           type="text"
           placeholder={placeholder}
@@ -47,7 +47,7 @@ export default function Search({
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
-          className="flex-1 bg-transparent outline-none text-sm text-gray-800"
+          className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-gray-100"
         />
       </div>
 
