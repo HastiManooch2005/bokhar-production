@@ -61,7 +61,7 @@ export default function Notifications() {
     <div 
     dir="rtl"
     className="p-3 sm:p-4 md:p-6 max-w-3xl mx-auto text-gray-800 dark:text-gray-200">
-      <div className="bg-gradient-to-br from-sky-50 via-sky-100 to-sky-200 dark:from-sky-800 dark:via-sky-900 dark:to-sky-950 rounded-2xl sm:rounded-3xl shadow-lg p-4 mt-2 md:mt-16 sm:p-5 md:p-6 border border-sky-200 dark:border-sky-700 transition-colors">
+      <div className="bg-gradient-to-br from-sky-50 via-sky-100 to-sky-200 dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] rounded-2xl sm:rounded-3xl shadow-lg p-4 mt-2 md:mt-16 sm:p-5 md:p-6 border border-sky-200 dark:border-gray-700 transition-colors">
         
         {/* Tabs */}
 {/* Tabs */}
@@ -91,7 +91,7 @@ export default function Notifications() {
         {/* Content */}
         {loading ? (
           <div className="flex items-center justify-center py-10">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-sky-400 dark:border-purple-500" />
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-sky-400 dark:border-[#8AA1C4]" />
           </div>
         ) : error ? (
           <div className="text-center text-red-500 font-medium mb-3">
@@ -119,8 +119,8 @@ function PillButton({ active, onClick, icon, label, badge }) {
       onClick={onClick}
       className={`flex-1 min-w-[100px] sm:min-w-[120px] flex justify-center items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full border transition-colors focus:outline-none focus-visible:outline-none text-sm sm:text-base ${
         active
-          ? "bg-gradient-to-r from-sky-400 to-sky-500 text-white border-transparent shadow-md  dark:from-purple-700 dark:to-purple-800"
-          : "bg-white/80 text-gray-700 border-sky-300 hover:bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700 shadow-md"
+          ? "bg-gradient-to-r from-sky-400 to-sky-500 text-white border-transparent shadow-md dark:bg-[#8AA1C4] dark:from-[#8AA1C4] dark:to-[#8AA1C4] dark:text-white"
+          : "bg-white/80 text-gray-700 border-sky-300 hover:bg-white dark:bg-[#262B40] dark:text-gray-200 dark:border-gray-500 dark:hover:bg-[#2d3350] shadow-md"
       }`}
     >
       {icon}
@@ -130,8 +130,8 @@ function PillButton({ active, onClick, icon, label, badge }) {
         <span
           className={`ml-1 inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-full ${
             active
-              ? "bg-white text-sky-500 dark:bg-gray-900 dark:text-purple-400"
-              : "bg-sky-400 text-white dark:bg-purple-600"
+              ? "bg-white text-sky-500 dark:bg-gray-900 dark:text-[#8AA1C4]"
+              : "bg-sky-400 text-white dark:bg-[#1a1f2e] dark:text-gray-200"
           }`}
         >
           {badge}
