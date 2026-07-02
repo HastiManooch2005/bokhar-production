@@ -164,7 +164,7 @@ export default function MobileModal({ isOpen, onClose, children, title }) {
           absolute bottom-0 w-full rounded-t-[32px]
           bg-gradient-to-br
           from-sky-50 via-sky-100 to-sky-200
-          dark:from-sky-800 dark:via-sky-900 dark:to-sky-950
+          dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40]
         "
         onClick={(e) => e.stopPropagation()}
         onTouchStart={onTouchStart}
@@ -176,14 +176,14 @@ export default function MobileModal({ isOpen, onClose, children, title }) {
         </div>
 
         {title && (
-          <div className="px-6 pb-2 font-semibold text-gray-900 dark:text-gray-100">
+          <div className="px-6 pb-2 font-semibold text-gray-900 dark:text-gray-200">
             {title}
           </div>
         )}
 
         <div
           ref={contentRef}
-          className="px-6 pb-6 max-h-[75vh] overflow-y-auto text-gray-900 dark:text-gray-100"
+          className="px-6 pb-6 max-h-[75vh] overflow-y-auto text-gray-900 dark:text-gray-200"
         >
           {children}
         </div>
