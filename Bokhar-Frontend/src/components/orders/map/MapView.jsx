@@ -224,8 +224,10 @@ export default function MapView({
   strokeWidth={1.2}
   className="
     text-sky-500
+    dark:text-[#8AA1C4]
     cursor-pointer
     drop-shadow-[0_10px_20px_rgba(14,165,233,.4)]
+    dark:drop-shadow-[0_10px_20px_rgba(138,161,196,.4)]
   "
   fill="white"
 />

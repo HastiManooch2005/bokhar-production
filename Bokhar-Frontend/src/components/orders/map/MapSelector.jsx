@@ -232,7 +232,7 @@ const res = await fetch(
         overflow-hidden
 
         bg-white
-        dark:bg-zinc-950
+        dark:bg-[#1a1f2e]
       "
     >
       {/* MAP */}
@@ -292,7 +292,7 @@ const res = await fetch(
           className="
             rounded-t-[32px]
             bg-white/95
-            dark:bg-zinc-950/95
+            dark:bg-[#1a1f2e]/95
             backdrop-blur-2xl
             shadow-2xl
             p-4
@@ -368,10 +368,10 @@ const res = await fetch(
                     px-4
                     rounded-2xl
                     bg-gray-100
-                    dark:bg-zinc-900
+                    dark:bg-[#262B40]
                     border
                     border-gray-200
-                    dark:border-zinc-700
+                    dark:border-gray-600
                   "
                 >
                   <Icon size={16} className="text-sky-500" />

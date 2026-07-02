@@ -65,7 +65,7 @@ export default function SavedAddressButtons({
           className="
         w-9 h-9 rounded-full transition-colors flex items-center justify-center shadow-md
         bg-white/80 text-sky-600 hover:bg-white hover:text-sky-600 text-shadow-2xl
-        dark:bg-white/80 dark:text-purple-800 dark:hover:bg-white dark:hover:text-purple-900
+        dark:bg-[#262B40]/80 dark:text-[#8AA1C4] dark:hover:bg-[#262B40] dark:hover:text-[#8AA1C4]
       "
           style={{ touchAction: "manipulation" }}
         >
@@ -100,7 +100,7 @@ export default function SavedAddressButtons({
                   ${
                     isLongPress
                       ? "bg-red-100 border-red-400"
-                      : " bg-white/80 dark:bg-white/80 text-sky-600 hover:bg-white hover:text-sky-600 text-shadow-2xldark:bg-white/70 dark:text-purple-800 dark:hover:bg-white dark:hover:text-purple-900"
+                      : " bg-white/80 text-sky-600 hover:bg-white hover:text-sky-600 text-shadow-2xl dark:bg-[#262B40]/80 dark:text-[#8AA1C4] dark:hover:bg-[#262B40] dark:hover:text-[#8AA1C4] dark:border-gray-600"
                   }`}
                 style={{ touchAction: "manipulation" }}
               >
@@ -113,7 +113,7 @@ export default function SavedAddressButtons({
                     e.stopPropagation();
                     handleDelete(item);
                   }}
-                  className="absolute -left-3 -top-1 bg-white rounded-full p-1 shadow text-red-600"
+                  className="absolute -left-3 -top-1 bg-white dark:bg-[#262B40] rounded-full p-1 shadow text-red-600"
                 >
                   <FaTrash size={12} />
                 </button>

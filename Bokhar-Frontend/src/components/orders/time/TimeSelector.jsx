@@ -230,7 +230,7 @@ export default function TimeSelector({
           ? Array.from({ length: 7 }).map((_, i) => (
               <div
                 key={i}
-                className="h-20 w-16 sm:h-[5.5rem] sm:w-[4.5rem] bg-pink-100/60 dark:bg-sky-800/40 animate-pulse rounded-xl flex-shrink-0 snap-start"
+                className="h-20 w-16 sm:h-[5.5rem] sm:w-[4.5rem] bg-pink-100/60 dark:bg-[#262B40]/40 animate-pulse rounded-xl flex-shrink-0 snap-start"
               />
             ))
           : days.map((day) => {
@@ -247,10 +247,10 @@ export default function TimeSelector({
                     transition-all duration-300 flex-shrink-0 snap-start select-none relative
                     ${
                       isBeforeMin || isDisabled
-                        ? "opacity-40 cursor-not-allowed bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                        ? "opacity-40 cursor-not-allowed bg-gray-100 dark:bg-[#262B40] border-gray-200 dark:border-gray-700"
                         : isSelected
-                        ? "bg-gradient-to-r from-sky-100 to-sky-200 dark:from-purple-700 dark:to-purple-800 border-gray-300 dark:border-indigo-600 text-gray-800 dark:text-white shadow-md shadow-indigo-300 scale-105 font-bold z-10"
-                        : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-100 hover:bg-sky-100 dark:hover:bg-gray-700 shadow-sm cursor-pointer font-bold"
+                        ? "bg-gradient-to-r from-sky-100 to-sky-200 dark:from-[#8AA1C4] dark:to-[#8AA1C4] border-gray-300 dark:border-[#8AA1C4] text-gray-800 dark:text-white shadow-md shadow-[#8AA1C4]/30 scale-105 font-bold z-10"
+                        : "bg-white dark:bg-[#262B40] border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-sky-100 dark:hover:bg-[#2d3350] shadow-sm cursor-pointer font-bold"
                     }
                   `}
                 >
@@ -288,10 +288,10 @@ export default function TimeSelector({
                 className={`px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl text-xs sm:text-sm border transition-all duration-300 font-bold
                   ${
                     isDisabled
-                      ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 border-gray-200 dark:border-gray-700 cursor-not-allowed opacity-50"
+                      ? "bg-gray-100 dark:bg-[#262B40] text-gray-400 dark:text-gray-600 border-gray-200 dark:border-gray-700 cursor-not-allowed opacity-50"
                       : selectedTime === slot
-                      ? "bg-gradient-to-r from-sky-100 to-sky-200 dark:from-purple-700 dark:to-purple-800 border-gray-300 dark:border-indigo-600 text-gray-800 dark:text-white shadow-md shadow-indigo-300 scale-105"
-                      : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-100 hover:bg-sky-100 dark:hover:bg-gray-700 shadow-sm"
+                      ? "bg-gradient-to-r from-sky-100 to-sky-200 dark:from-[#8AA1C4] dark:to-[#8AA1C4] border-gray-300 dark:border-[#8AA1C4] text-gray-800 dark:text-white shadow-md shadow-[#8AA1C4]/30 scale-105"
+                      : "bg-white dark:bg-[#262B40] border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-sky-100 dark:hover:bg-[#2d3350] shadow-sm"
                   }`}
               >
                 {slot}

@@ -357,10 +357,10 @@ export default function DateTimeRangePicker({
   return (
     <div
       dir="rtl"
-      className="w-full max-w-3xl mx-auto rounded-3xl mb-15 md:mb-0 p-4 md:p-8 shadow-xl border bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+      className="w-full max-w-3xl mx-auto rounded-3xl mb-15 md:mb-0 p-4 md:p-8 shadow-xl border bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-200"
     >
       {isLoadingSettings && (
-        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl text-sm text-center animate-pulse">
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-[#262B40]/60 text-blue-600 dark:text-[#8AA1C4] rounded-xl text-sm text-center animate-pulse">
           در حال دریافت تنظیمات ظرفیت...
         </div>
       )}
@@ -378,7 +378,7 @@ export default function DateTimeRangePicker({
 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
   {/* Delivery Section */}
   {/* ✅ حذف h-fit و اضافه کردن h-full flex flex-col */}
-  <div className="bg-white/50 dark:bg-gray-800/50 rounded-2xl p-4 md:p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-full">
+  <div className="bg-white/50 dark:bg-[#262B40]/50 rounded-2xl p-4 md:p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-full">
     {/* ✅ min-h-[48px] برای ثابت نگه داشتن ارتفاع header */}
     <div className="flex items-center gap-2 mb-4 min-h-[48px]">
       <span className="text-2xl">📦</span>
@@ -386,7 +386,7 @@ export default function DateTimeRangePicker({
         تحویل دادن
       </h3>
       {deliveryDate && deliveryTime && (
-        <span className="mr-auto text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-3 py-1.5 rounded-full flex items-center gap-2 whitespace-nowrap">
+        <span className="mr-auto text-xs bg-purple-100 dark:bg-[#262B40] text-purple-700 dark:text-[#8AA1C4] px-3 py-1.5 rounded-full flex items-center gap-2 whitespace-nowrap">
           <span className="font-medium">{formatSafe(deliveryDate)}</span>
           <span className="opacity-60">|</span>
           <span>{deliveryTime}</span>
@@ -407,14 +407,14 @@ export default function DateTimeRangePicker({
   </div>
 
   {/* Pickup Section */}
-  <div className="bg-white/50 dark:bg-gray-800/50 rounded-2xl p-4 md:p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-full">
+  <div className="bg-white/50 dark:bg-[#262B40]/50 rounded-2xl p-4 md:p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-full">
     <div className="flex items-center gap-2 mb-4 min-h-[48px]">
       <span className="text-2xl">🕒</span>
       <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">
         تحویل گرفتن
       </h3>
       {pickupDate && pickupTime && (
-        <span className="mr-auto text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-3 py-1.5 rounded-full flex items-center gap-2 whitespace-nowrap">
+        <span className="mr-auto text-xs bg-purple-100 dark:bg-[#262B40] text-purple-700 dark:text-[#8AA1C4] px-3 py-1.5 rounded-full flex items-center gap-2 whitespace-nowrap">
           <span className="font-medium">{formatSafe(pickupDate)}</span>
           <span className="opacity-60">|</span>
           <span>{pickupTime}</span>
@@ -490,7 +490,7 @@ export default function DateTimeRangePicker({
             w-full md:w-auto px-4 py-2 md:px-8 md:py-4 rounded-2xl font-bold text-lg transition-all transform
             ${isComplete
               ? "bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white shadow-lg hover:shadow-xl cursor-pointer"
-              : "bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+              : "bg-gray-200 dark:bg-[#262B40] text-gray-400 dark:text-gray-500 cursor-not-allowed"
             }
           `}
         >

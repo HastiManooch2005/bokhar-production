@@ -29,18 +29,18 @@ export default function StepProgress({ steps, step, maxStep, onStepClick }) {
                   isActive
                     ? `
                       from-sky-300 to-sky-300 border-sky-300 text-sky-600 shadow-md
-                      dark:bg-gradient-to-r dark:from-purple-700 dark:to-purple-800
-                      dark:border-indigo-600 dark:text-white/90
-                      dark:shadow-indigo-300
+                      dark:bg-gradient-to-r dark:from-[#8AA1C4] dark:to-[#8AA1C4]
+                      dark:border-[#8AA1C4] dark:text-white/90
+                      dark:shadow-[#8AA1C4]/30
                     `
                     : isCompleted
                     ? `
                       bg-sky-100 border-sky-200 text-sky-700
-                      dark:bg-sky-800/60 dark:border-sky-700 dark:text-sky-100
+                      dark:bg-[#262B40]/60 dark:border-gray-600 dark:text-gray-200
                     `
                     : `
                       bg-white border-sky-100 text-gray-400
-                      dark:bg-sky-900/60 dark:border-sky-800 dark:text-gray-500
+                      dark:bg-[#1a1f2e]/60 dark:border-gray-700 dark:text-gray-500
                     `
                 }`}
             >
@@ -52,10 +52,10 @@ export default function StepProgress({ steps, step, maxStep, onStepClick }) {
               className={`mt-2 text-sm font-medium transition-colors
                 ${
                   isActive
-                    ? "text-sky-600 dark:text-sky-100"
+                    ? "text-sky-600 dark:text-[#8AA1C4]"
                     : isCompleted
-                    ? "text-sky-500 dark:text-sky-100"
-                    : "text-gray-400 dark:text-gray-100"
+                    ? "text-sky-500 dark:text-gray-200"
+                    : "text-gray-400 dark:text-gray-500"
                 }`}
             >
               {item.label}

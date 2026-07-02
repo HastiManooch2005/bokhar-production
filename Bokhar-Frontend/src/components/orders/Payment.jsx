@@ -79,8 +79,8 @@ export default function Payment({
         className="
           rounded-3xl p-6 space-y-7 border shadow-xl
           bg-sky-50
-          dark:bg-gradient-to-br dark:from-sky-800 dark:via-sky-900 dark:to-sky-950
-          border-sky-200 dark:border-sky-700
+          dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40]
+          border-sky-200 dark:border-gray-700
           shadow-sky-200/40 dark:shadow-black/40
         "
       >
@@ -90,12 +90,12 @@ export default function Payment({
             className="
               size-11 rounded-2xl flex items-center justify-center
               bg-sky-100
-              dark:bg-sky-700/60
+              dark:bg-[#262B40]/60
             "
           >
-            <CreditCard className="text-sky-600 dark:text-sky-300" />
+            <CreditCard className="text-sky-600 dark:text-[#8AA1C4]" />
           </div>
-          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">
             پرداخت نهایی
           </h2>
         </div>
@@ -143,7 +143,7 @@ export default function Payment({
             />
           )}
 
-          <div className="h-px bg-sky-200 dark:bg-sky-700 my-2" />
+          <div className="h-px bg-sky-200 dark:bg-gray-700 my-2" />
 
           {/* بخش مبلغ نهایی - مشابه فاکتور */}
           <div className="flex justify-between items-start pt-2">
@@ -164,23 +164,23 @@ export default function Payment({
                   {originalGrandTotal.toLocaleString()} تومان
                 </span>
               )}
-              <span className="text-2xl font-bold text-sky-700 dark:text-white">
+              <span className="text-2xl font-bold text-sky-700 dark:text-gray-200">
                 {total.toLocaleString()} 
-                <span className="text-sm font-normal text-sky-600 dark:text-gray-300 mr-1">تومان</span>
+                <span className="text-sm font-normal text-sky-600 dark:text-gray-400 mr-1">تومان</span>
               </span>
             </div>
           </div>
         </div>
 
         {/* Delivery & Location Info */}
-        <div className="space-y-3 text-sm rounded-2xl p-4 bg-white/60 dark:bg-sky-600/40 border border-sky-200 dark:border-sky-700">
+        <div className="space-y-3 text-sm rounded-2xl p-4 bg-white/60 dark:bg-[#262B40]/40 border border-sky-200 dark:border-gray-700">
           {/* زمان تحویل دادن */}
           <div className="flex justify-between items-center">
-            <span className="font-semibold text-gray-700 dark:text-gray-100">
+            <span className="font-semibold text-gray-700 dark:text-gray-200">
               زمان تحویل دادن:
             </span>
             <div className="flex items-center gap-2">
-              <span className="text-gray-600 dark:text-gray-200">
+              <span className="text-gray-600 dark:text-gray-300">
                 {datetime?.delivery?.date} — {datetime?.delivery?.time}
               </span>
             </div>
@@ -188,11 +188,11 @@ export default function Payment({
 
           {/* زمان تحویل گرفتن */}
           <div className="flex justify-between items-center">
-            <span className="font-semibold text-gray-700 dark:text-gray-100">
+            <span className="font-semibold text-gray-700 dark:text-gray-200">
               زمان تحویل گرفتن:
             </span>
             <div className="flex items-center gap-2">
-              <span className="text-gray-600 dark:text-gray-200">
+              <span className="text-gray-600 dark:text-gray-300">
                 {datetime?.pickup?.date} — {datetime?.pickup?.time}
               </span>
               {/* نمایش تعداد ساعت */}
@@ -202,16 +202,16 @@ export default function Payment({
           {/* آدرس */}
           <div className="flex justify-between items-start">
             <div className="flex-1">
-              <span className="font-semibold text-gray-700 dark:text-gray-100">
+              <span className="font-semibold text-gray-700 dark:text-gray-200">
                 آدرس:
               </span>
-              <span className="text-gray-600 dark:text-gray-200 leading-relaxed pr-2">
+              <span className="text-gray-600 dark:text-gray-300 leading-relaxed pr-2">
                 {location?.address} پلاک {location?.plaque}، واحد{" "}
                 {location?.unit}
               </span>
             </div>
             <Edit2
-              className="size-4 cursor-pointer text-sky-600 dark:text-sky-300 mt-1 mr-2 flex-shrink-0"
+              className="size-4 cursor-pointer text-sky-600 dark:text-[#8AA1C4] mt-1 mr-2 flex-shrink-0"
               onClick={() => goToLocationStep()}
             />
           </div>
@@ -221,7 +221,7 @@ export default function Payment({
         <div className="space-y-2">
           <div className="flex gap-2">
             <div className="relative flex-1 ">
-              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 dark:text-gray-100" />
+              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 dark:text-gray-300" />
               <input
                 value={discountCode}
                 onChange={(e) => setDiscountCode(e.target.value)}
@@ -229,9 +229,9 @@ export default function Payment({
                 className="
                   w-full pl-9 pr-3 py-2.5 rounded-xl border outline-none
                   bg-white border-sky-300
-                  dark:bg-sky-600/60 dark:border-sky-700 dark:text-white
-                  focus:ring-2 focus:ring-sky-400
-                 placeholder:text-gray-400  dark:placeholder:text-gray-300
+                  dark:bg-[#262B40]/60 dark:border-gray-600 dark:text-gray-200
+                  focus:ring-2 focus:ring-[#8AA1C4]
+                 placeholder:text-gray-400  dark:placeholder:text-gray-500
                 "
               />
             </div>
@@ -241,7 +241,7 @@ export default function Payment({
               className="
                 px-4 rounded-xl font-semibold transition
                 bg-sky-100 hover:bg-sky-200 text-gray-800
-                dark:bg-sky-700/60 dark:hover:bg-sky-600 dark:text-white
+                dark:bg-[#262B40]/60 dark:hover:bg-[#2d3350] dark:text-gray-200
               "
             >
               اعمال
@@ -283,8 +283,8 @@ export default function Payment({
           className="
             w-full h-12 rounded-2xl font-bold flex items-center justify-center gap-2 transition
             bg-sky-600 hover:bg-sky-700 text-white
-            dark:bg-gradient-to-r dark:from-purple-700 dark:to-purple-800
-            dark:hover:from-purple-600 dark:hover:to-purple-700
+            dark:bg-[#8AA1C4]
+            dark:hover:bg-[#7a93b8]
             disabled:opacity-70
           "
         >

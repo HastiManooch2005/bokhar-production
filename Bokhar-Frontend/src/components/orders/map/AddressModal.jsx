@@ -83,7 +83,7 @@ export default function AddressModal({
           rounded-3xl
 
           bg-gray-100
-          dark:bg-zinc-800
+          dark:bg-[#262B40]
 
           p-4
         "
@@ -104,7 +104,7 @@ export default function AddressModal({
         {/* PLAQUE + UNIT */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="flex flex-col">
-            <label className="text-xs mb-1 text-gray-500">
+            <label className="text-xs mb-1 text-gray-500 dark:text-gray-400">
               پلاک
             </label>
 
@@ -126,11 +126,12 @@ export default function AddressModal({
                 ${
                   localPlaque && !plaqueValid
                     ? "border-red-400 focus:ring-red-300"
-                    : "border-gray-200 dark:border-zinc-700 focus:ring-sky-300"
+                    : "border-gray-200 dark:border-gray-600 focus:ring-[#8AA1C4]"
                 }
 
                 bg-white
-                dark:bg-zinc-800
+                dark:bg-[#1a1f2e]
+                dark:text-gray-200
               `}
             />
 
@@ -142,7 +143,7 @@ export default function AddressModal({
           </div>
 
           <div className="flex flex-col">
-            <label className="text-xs mb-1 text-gray-500">
+            <label className="text-xs mb-1 text-gray-500 dark:text-gray-400">
               واحد
             </label>
 
@@ -164,11 +165,12 @@ export default function AddressModal({
                 ${
                   localUnit && !unitValid
                     ? "border-red-400 focus:ring-red-300"
-                    : "border-gray-200 dark:border-zinc-700 focus:ring-sky-300"
+                    : "border-gray-200 dark:border-gray-600 focus:ring-[#8AA1C4]"
                 }
 
                 bg-white
-                dark:bg-zinc-800
+                dark:bg-[#1a1f2e]
+                dark:text-gray-200
               `}
             />
 
@@ -182,7 +184,7 @@ export default function AddressModal({
 
         {/* TITLE */}
         <div className="mb-4">
-          <label className="text-xs mb-1 block text-gray-500">
+          <label className="text-xs mb-1 block text-gray-500 dark:text-gray-400">
             عنوان آدرس
           </label>
 
@@ -200,26 +202,27 @@ export default function AddressModal({
 
             border
             border-gray-200
-            dark:border-zinc-700
+            dark:border-gray-600
 
             bg-white
-            dark:bg-zinc-800
+            dark:bg-[#1a1f2e]
 
             px-4
 
             outline-none
 
             focus:ring-2
-            focus:ring-sky-300
+            focus:ring-[#8AA1C4]
 
             transition
+            dark:text-gray-200
           "
           />
         </div>
 
         {/* DESCRIPTION */}
         <div className="mb-5">
-          <label className="text-xs mb-1 block text-gray-500">
+          <label className="text-xs mb-1 block text-gray-500 dark:text-gray-400">
             توضیحات اضافی
           </label>
 
@@ -237,10 +240,10 @@ export default function AddressModal({
 
             border
             border-gray-200
-            dark:border-zinc-700
+            dark:border-gray-600
 
             bg-white
-            dark:bg-zinc-800
+            dark:bg-[#1a1f2e]
 
             px-4
             py-3
@@ -248,11 +251,12 @@ export default function AddressModal({
             outline-none
 
             focus:ring-2
-            focus:ring-sky-300
+            focus:ring-[#8AA1C4]
 
             transition
 
             resize-none
+            dark:text-gray-200
           "
           />
         </div>
@@ -283,11 +287,15 @@ export default function AddressModal({
                   border-sky-400
                   text-sky-600
                   hover:bg-sky-50
-                  dark:hover:bg-zinc-800
+                  dark:border-[#8AA1C4]
+                  dark:text-[#8AA1C4]
+                  dark:hover:bg-[#262B40]
                 `
                 : `
                   border-gray-300
                   text-gray-400
+                  dark:border-gray-600
+                  dark:text-gray-500
                   cursor-not-allowed
                 `
             }
@@ -307,7 +315,7 @@ export default function AddressModal({
             rounded-2xl
 
             bg-gray-100
-            dark:bg-zinc-800
+            dark:bg-[#262B40]
 
             text-gray-700
             dark:text-gray-200
@@ -340,9 +348,12 @@ export default function AddressModal({
                   ? `
                     bg-green-500
                     hover:bg-green-600
+                    dark:bg-[#8AA1C4]
+                    dark:hover:bg-[#7a93b8]
                   `
                   : `
                     bg-gray-300
+                    dark:bg-gray-600
                     cursor-not-allowed
                   `
               }

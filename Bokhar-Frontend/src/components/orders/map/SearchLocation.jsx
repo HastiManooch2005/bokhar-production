@@ -46,18 +46,18 @@ setResults(res.data.items || []);
         dir="rtl"
         className="
           flex items-center gap-2
-          bg-white/80 dark:bg-white/70
-          border border-sky-300 dark:border-purple-700
+          bg-white/80 dark:bg-[#262B40]/80
+          border border-sky-300 dark:border-gray-600
           px-3 py-2 rounded-2xl
           shadow-sm shadow-sky-200/60
           focus-within:ring-1
           focus-within:ring-sky-400
-          dark:focus-within:ring-purple-800
+          dark:focus-within:ring-[#8AA1C4]
           transition-all
         "
       >
         <Search
-          className="text-gray-500"
+          className="text-gray-500 dark:text-gray-300"
           size={20}
         />
 
@@ -72,7 +72,7 @@ setResults(res.data.items || []);
             outline-none
             text-sm
             text-gray-700
-            dark:text-gray-900
+            dark:text-gray-200
           "
         />
       </div>
@@ -88,11 +88,11 @@ setResults(res.data.items || []);
             w-full
 
             bg-white/95
-            dark:bg-white/90
+            dark:bg-[#262B40]/95
 
             border
             border-sky-300
-            dark:border-purple-800
+            dark:border-gray-600
 
             rounded-2xl
 
@@ -137,6 +137,7 @@ setResults(res.data.items || []);
             -translate-y-1/2
             text-xs
             text-gray-400
+            dark:text-gray-500
           "
         >
           در حال جستجو...
