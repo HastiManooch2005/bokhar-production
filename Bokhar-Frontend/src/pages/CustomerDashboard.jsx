@@ -22,12 +22,12 @@ function QuickCard({ title, icon, onClick }) {
       className="
         flex flex-col items-center gap-2 p-4 rounded-2xl transition w-full shadow-md hover:shadow-lg
         bg-sky-50 cursor-pointer
-        dark:bg-gradient-to-br dark:from-sky-800 dark:via-sky-900 dark:to-sky-950
-        border border-sky-200 dark:border-sky-700 shadow-sky-200 dark:shadow-indigo-500
+        dark:bg-[#262B40]
+        border border-sky-200 dark:border-gray-700 shadow-sky-200 dark:shadow-black/40
       "
     >
-      <div className="text-gray-700 dark:text-gray-200">{icon}</div>
-      <span className="font-medium text-gray-800 dark:text-gray-100">
+      <div className="text-gray-700 dark:text-gray-300">{icon}</div>
+      <span className="font-medium text-gray-800 dark:text-gray-200">
         {title}
       </span>
     </button>
@@ -38,16 +38,16 @@ function SettingItem({ title, icon, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full flex justify-between items-center py-3 px-4 rounded-xl hover:bg-sky-200 dark:hover:bg-sky-700 cursor-pointer transition group"
+      className="w-full flex justify-between items-center py-3 px-4 rounded-xl hover:bg-sky-200 dark:hover:bg-[#2d3350] cursor-pointer transition group"
     >
       <div className="flex items-center gap-3">
-        <span className="text-gray-600 dark:text-gray-300 group-hover:text-sky-600 dark:group-hover:text-sky-300 transition">
+        <span className="text-gray-600 dark:text-gray-400 group-hover:text-sky-600 dark:group-hover:text-[#8AA1C4] transition">
           {icon}
         </span>
-        <span className="text-gray-800 dark:text-gray-100">{title}</span>
+        <span className="text-gray-800 dark:text-gray-200">{title}</span>
       </div>
       <ChevronRight 
-        className="w-5 h-5 text-gray-400 rtl:rotate-180" 
+        className="w-5 h-5 text-gray-400 dark:text-gray-500 rtl:rotate-180" 
       />
     </button>
   );
@@ -82,15 +82,15 @@ export default function CustomersDashboard() {
       <div
         className="
           rounded-2xl p-5 flex items-center gap-4 md:mt-16 shadow-md md:max-w-3xl md:mx-auto
-          bg-sky-50 border border-sky-200 shadow-sky-200 dark:shadow-indigo-500
-          dark:bg-gradient-to-br dark:from-sky-800 dark:via-sky-900 dark:to-sky-950 dark:border-sky-700
+          bg-sky-50 border border-sky-200 shadow-sky-200 dark:shadow-black/40
+          dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] dark:border-gray-700
         "
       >
-        <div className="w-16 h-16 rounded-full bg-sky-100 dark:bg-sky-700 flex items-center justify-center text-2xl">
+        <div className="w-16 h-16 rounded-full bg-sky-100 dark:bg-[#262B40] flex items-center justify-center text-2xl">
           👤
         </div>
         <div className="flex-1">
-          <p className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+          <p className="font-semibold text-lg text-gray-900 dark:text-gray-200">
             {user?.fullname || "—"}
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -99,7 +99,7 @@ export default function CustomersDashboard() {
         </div>
         <button
           onClick={() => navigate("/customer-dashboard/edit")}
-          className="text-sky-600 dark:text-gray-200 dark:hover:text-gray-100 cursor-pointer font-medium"
+          className="text-sky-600 dark:text-[#8AA1C4] dark:hover:text-[#7a93b8] cursor-pointer font-medium"
         >
           <PencilSquareIcon className="w-6 h-6" />
         </button>
@@ -110,22 +110,22 @@ export default function CustomersDashboard() {
         className="
           mt-5 p-5 rounded-2xl shadow-md md:max-w-3xl md:mx-auto
           bg-sky-50
-          dark:bg-gradient-to-br dark:from-sky-800 dark:via-sky-900 dark:to-sky-950
-          border border-sky-200 dark:border-sky-700 shadow-sky-200 dark:shadow-indigo-500
+          dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40]
+          border border-sky-200 dark:border-gray-700 shadow-sky-200 dark:shadow-black/40
         "
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-200">
+          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
             <Wallet size={20} />
             کیف پول
           </div>
-          <span className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+          <span className="font-semibold text-lg text-gray-900 dark:text-gray-200">
             125,000 تومان
           </span>
         </div>
         <button
           onClick={() => navigate("/customer-dashboard/wallet")}
-          className="mt-3 w-full bg-sky-600 hover:bg-sky-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white py-2 rounded-xl cursor-pointer transition font-medium"
+          className="mt-3 w-full bg-sky-600 hover:bg-sky-700 dark:bg-[#8AA1C4] dark:hover:bg-[#7a93b8] text-white py-2 rounded-xl cursor-pointer transition font-medium"
         >
           افزایش موجودی
         </button>
@@ -136,7 +136,7 @@ export default function CustomersDashboard() {
         <QuickCard
           title="پیگیری سفارش‌ها"
           onClick={() => navigate("/customer-dashboard/orders-tracking")}
-          icon={<Package size={24} className="text-sky-600" />}
+          icon={<Package size={24} className="text-sky-600 dark:text-[#8AA1C4]" />}
         />
       </div>
 
@@ -145,8 +145,8 @@ export default function CustomersDashboard() {
         className="
           mt-5 rounded-2xl p-5 shadow-md space-y-1 md:max-w-3xl md:mx-auto
           bg-sky-50
-          dark:bg-gradient-to-br dark:from-sky-800 dark:via-sky-900 dark:to-sky-950
-          border border-sky-200 dark:border-sky-700 shadow-sky-200 dark:shadow-indigo-500
+          dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40]
+          border border-sky-200 dark:border-gray-700 shadow-sky-200 dark:shadow-black/40
         "
       >
         <SettingItem
@@ -196,7 +196,7 @@ export default function CustomersDashboard() {
       </button>
 
       {/* Mobile Footer */}
-      <div className="mb-20 mt-5 rounded-2xl bottom-0 left-0 right-0 bg-sky-50 dark:bg-sky-900 shadow-sky-200 dark:shadow-indigo-500 p-4 flex justify-between items-center shadow-md md:hidden">
+      <div className="mb-20 mt-5 rounded-2xl bottom-0 left-0 right-0 bg-sky-50 dark:bg-[#1a1f2e] shadow-sky-200 dark:shadow-black/40 p-4 flex justify-between items-center shadow-md md:hidden">
         <button
           onClick={async () => {
             await logout();
@@ -211,7 +211,7 @@ export default function CustomersDashboard() {
         <button
           onClick={toggleTheme}
           className={`relative w-14 h-8 rounded-full p-1 transition-all duration-300 ${
-            theme === "dark" ? "bg-sky-600" : "bg-gray-300"
+            theme === "dark" ? "bg-[#8AA1C4]" : "bg-gray-300"
           }`}
         >
           <span
@@ -220,7 +220,7 @@ export default function CustomersDashboard() {
             }`}
           >
             {theme === "dark" ? (
-              <FiMoon size={16} className="text-sky-700" />
+              <FiMoon size={16} className="text-[#8AA1C4]" />
             ) : (
               <FiSun size={16} className="text-yellow-500" />
             )}
