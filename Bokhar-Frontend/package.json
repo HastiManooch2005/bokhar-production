@@ -14,7 +14,7 @@
     "@heroicons/react": "^2.2.0",
     "@neshan-maps-platform/leaflet": "^1.0.8",
     "@react-google-maps/api": "^2.20.7",
-    "@tailwindcss/vite": "^4.1.13",
+    "@tailwindcss/vite": "^4.3.2",
     "axios": "^1.13.2",
     "date-object": "^2.1.6",
     "dayjs": "^1.11.19",
@@ -37,7 +37,7 @@
     "sonner": "^2.0.7",
     "sweetalert2": "^11.26.3",
     "swiper": "^12.0.2",
-    "tailwindcss": "^4.1.13"
+    "tailwindcss": "^4.3.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",

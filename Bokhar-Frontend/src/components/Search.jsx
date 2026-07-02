@@ -35,9 +35,9 @@ export default function Search({
         dir="rtl"
         className="flex items-center gap-2 shadow-lg px-3 py-3 rounded-3xl
         bg-white border border-sky-300/50
-        dark:bg-white/60 dark:border-white/80"
+        dark:bg-[#E3E7F9] dark:border-white/80"
       >
-        <SearchIcon className="text-gray-500 dark:text-gray-100" size={20} />
+        <SearchIcon className="text-gray-500 dark:text-gray-700" size={20} />
         <input
           type="text"
           placeholder={placeholder}
@@ -60,13 +60,13 @@ export default function Search({
       {open && items.length > 0 && (
         <ul
           className="absolute w-full border rounded-2xl mt-2 z-50 shadow
-           bg-white dark:bg-gray-500/95 dark:text-white"
+           bg-white dark:bg-[#E3E7F9] dark:text-gray-600"
         >
           {items.map((item, index) => (
             <li
               key={index}
               onClick={() => handleSelect(item)}
-              className="px-4 py-2 rounded-xl hover:bg-sky-100 dark:hover:bg-purple-900 cursor-pointer"
+              className="px-4 py-2 rounded-xl hover:bg-sky-100 dark:hover:bg-blue-950 dark:hover:text-gray-100 cursor-pointer"
             >
               {renderItem(item)}
             </li>

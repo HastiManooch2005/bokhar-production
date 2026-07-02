@@ -161,11 +161,11 @@ export default function Landing() {
   };
 
   return (
-    <div dir="rtl" className="min-h-dvh w-full text-gray-900 md:pt-15.5">
+    <div dir="rtl" className="min-h-dvh w-full text-gray-900 dark:text-gray-100 md:pt-15.5">
       {/* هدر */}
       <section className="p-8 text-center">
         <h1 className="text-3xl font-bold">خشکشویی افشار</h1>
-        <p className="mt-4 text-lg text-gray-600">
+        <p className="mt-4 text-lg text-gray-600 dark:text-gray-200">
           خدمات خشکشویی، شستشو، اتو و لکه‌بری
         </p>
       </section>

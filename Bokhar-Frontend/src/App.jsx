@@ -59,7 +59,7 @@ const hideNavbar =
   return (
     <div
       className="bg-gradient-to-bl from-sky-200/80 via-pink-100/60 to-sky-200/80
-                    dark:from-sky-950 dark:via-purple-900/70 dark:to-sky-900
+                dark:bg-gradient-to-br dark:from-[#262B40] dark:via-none dark:to-[#0B248A]
                     min-h-screen"
     >
       {/* Navbarها فقط اگر در مسیر مخفی نباشیم */}

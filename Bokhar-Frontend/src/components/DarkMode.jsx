@@ -15,14 +15,14 @@ export default function DarkMode({ className = "" }) {
         "flex items-center justify-center p-2 rounded-full transition cursor-pointer  " +
         "hover:scale-110 active:scale-95 duration-200 " +
         "bg-black/10 dark:bg-black/10 hover:bg-black/20 dark:hover:bg-black/20 " +
-        "border border-white/20 dark:border-white/40 shadow-md " +
+        "border border-white/20 dark:border-gray-300 shadow-md  " +
         className
       }
     >
       {isDark ? (
-        <Sun size={15} className="text-white hover:text-sky-300" />
+        <Sun size={15} className="text-white dark:text-gray-700 dark:hover:text-yellow-300" />
       ) : (
-        <Moon size={15} className="text-white hover:text-sky-300" />
+        <Moon size={15} className="text-white hover:text-gray-500" />
       )}
     </button>
   );

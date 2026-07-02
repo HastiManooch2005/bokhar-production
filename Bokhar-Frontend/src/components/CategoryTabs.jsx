@@ -67,10 +67,10 @@ export default function CategoryTabs({
               onClick={() => onCategoryChange(cat)}
               className={`relative flex-shrink-0 whitespace-nowrap px-4 py-2 my-2 mx-0.5 rounded-3xl text-sm font-bold transition-all
                 ${isActive 
-                  ? "bg-sky-200 scale-105 mx-1" 
+                  ? "bg-sky-200 dark:bg-[#8AA1C4] dark:text-[3E3E7F9] scale-105 mx-1" 
                   : isDiscounted 
                     ? "bg-red-100 text-red-800 border border-red-400 animate-[pulse_2s_ease-in-out_infinite] shadow-sm hover:shadow-md" 
-                    : "bg-white"
+                    : "bg-white dark:bg-[#E3E7F9] dark:text-gray-700"
                 }`}
             >
               {cat.name}
@@ -92,12 +92,12 @@ export default function CategoryTabs({
             <button
               key={cat.id}
               onClick={() => onCategoryChange(cat)}
-              className={`relative flex-shrink-0 whitespace-nowrap px-6 py-2 mx-1 rounded-3xl text-sm font-bold transition-all
+              className={`relative flex-shrink-0 whitespace-nowrap px-6 py-2 mx-1 rounded-3xl text-sm font-bold transition-all cursor-pointer
                 ${isActive 
-                  ? "bg-sky-200 scale-105" 
+                  ? "bg-sky-200 dark:bg-[#8AA1C4] dark:text-[3E3E7F9] scale-105" 
                   : isDiscounted 
                     ? "bg-red-100 text-red-800 border border-red-400 animate-[pulse_2s_ease-in-out_infinite] shadow-sm hover:shadow-md" 
-                    : "bg-white"
+                    : "bg-white dark:bg-[#E3E7F9] dark:text-gray-700"
                 }`}
             >
               {cat.name}
