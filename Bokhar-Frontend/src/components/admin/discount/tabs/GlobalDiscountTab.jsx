@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { fetchGlobalDiscounts, createGlobalDiscount, updateGlobalDiscount, deleteGlobalDiscount } from "../../../../api/discountsApi";
-import { useToast } from "../../../../context/ToastContext"; // مسیر را تنظیم کنید
+import { useToast } from "../../../../context/ToastContext";
 import DatePicker from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
@@ -48,7 +48,6 @@ function DiscountInputs({ value, onChange }) {
     setLocalActive(activeType);
   }, [activeType]);
 
-  // Helper function to convert number to Persian words
   const numberToPersianWords = (num) => {
     if (!num || isNaN(num) || num === 0) return "";
     
@@ -153,7 +152,7 @@ function DiscountInputs({ value, onChange }) {
   }`}>
     <div
       onClick={() => activate("percent")}
-      className="relative overflow-hidden rounded-xl bg-gray-100 dark:bg-neutral-700 flex items-center cursor-pointer h-12 w-full"
+      className="relative overflow-hidden rounded-xl bg-gray-100 dark:bg-[#262B40] border border-transparent dark:border-gray-600 flex items-center cursor-pointer h-12 w-full"
     >
       <div className="absolute right-3 text-purple-600 dark:text-purple-400 pointer-events-none">
         <Percent className="w-4 h-4" />
@@ -164,14 +163,14 @@ function DiscountInputs({ value, onChange }) {
         onChange={handlePercentChange}
         placeholder="درصد"
         readOnly={localActive !== "percent"}
-        className="w-full h-full px-3 bg-transparent outline-none pr-9 text-gray-800 dark:text-gray-100 remove-arrows leading-tight"
+        className="w-full h-full px-3 bg-transparent outline-none pr-9 text-gray-800 dark:text-gray-200 remove-arrows leading-tight"
         min="0"
         max="100"
       />
       {localActive === "percent" && (
         <button 
           onClick={handleReset} 
-          className="absolute left-3 p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-neutral-600 transition"
+          className="absolute left-3 p-1 rounded-full text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
         >
           <X className="w-4 h-4" />
         </button>
@@ -189,7 +188,7 @@ function DiscountInputs({ value, onChange }) {
   }`}>
     <div
       onClick={() => activate("fixed")}
-      className="relative overflow-hidden rounded-xl bg-gray-100 dark:bg-neutral-700 flex items-center cursor-pointer h-12 w-full"
+      className="relative overflow-hidden rounded-xl bg-gray-100 dark:bg-[#262B40] border border-transparent dark:border-gray-600 flex items-center cursor-pointer h-12 w-full"
     >
       <div className="absolute right-3 text-green-600 dark:text-green-400 pointer-events-none">
         <Banknote className="w-4 h-4" />
@@ -200,7 +199,7 @@ function DiscountInputs({ value, onChange }) {
         onChange={handleAmountChange}
         placeholder="مبلغ"
         readOnly={localActive !== "fixed"}
-        className="w-full h-full px-3 bg-transparent outline-none remove-arrows pr-9 pl-6 text-gray-800 dark:text-gray-100 leading-tight"
+        className="w-full h-full px-3 bg-transparent outline-none remove-arrows pr-9 pl-6 text-gray-800 dark:text-gray-200 leading-tight"
         min="0"
       />
       
@@ -214,7 +213,7 @@ function DiscountInputs({ value, onChange }) {
       {localActive === "fixed" && (
         <button 
           onClick={handleReset} 
-          className="absolute left-3 p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-neutral-600 transition"
+          className="absolute left-3 p-1 rounded-full text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
         >
           <X className="w-4 h-4" />
         </button>
@@ -247,7 +246,7 @@ function ScheduleSection({ isEnabled, schedule, onToggle, onChange, error }) {
   };
 
   return (
-    <div className="space-y-3 bg-gray-50 dark:bg-neutral-800/50 p-4 rounded-xl border border-gray-200 dark:border-neutral-700">
+    <div className="space-y-3 bg-gray-50 dark:bg-[#262B40]/50 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Timer className="w-4 h-4 text-purple-600 dark:text-purple-400" />
@@ -286,7 +285,7 @@ function ScheduleSection({ isEnabled, schedule, onToggle, onChange, error }) {
                 onChange={(date) => onChange({ ...schedule, startDate: date })}
                 format="YYYY/MM/DD"
                 className="rmdp-mobile"
-                inputClass="w-full bg-white dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-xl h-10 px-3 text-sm outline-none focus:border-purple-500 text-gray-800 dark:text-gray-100"
+                inputClass="w-full bg-white dark:bg-[#262B40] border border-gray-300 dark:border-gray-600 rounded-xl h-10 px-3 text-sm outline-none focus:border-purple-500 text-gray-800 dark:text-gray-200"
                 containerClassName="w-full"
               />
             </div>
@@ -296,12 +295,12 @@ function ScheduleSection({ isEnabled, schedule, onToggle, onChange, error }) {
                 <Clock className="w-3 h-3" />
                 ساعت شروع
               </label>
-              <div className="flex items-center bg-white dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-xl h-10 px-3 focus-within:border-purple-500">
+              <div className="flex items-center bg-white dark:bg-[#262B40] border border-gray-300 dark:border-gray-600 rounded-xl h-10 px-3 focus-within:border-purple-500">
                 <input
                   type="time"
                   value={schedule.startTime}
                   onChange={(e) => handleTimeChange("startTime", e.target.value)}
-                  className="w-full bg-transparent outline-none text-sm text-gray-800 dark:text-gray-100"
+                  className="w-full bg-transparent outline-none text-sm text-gray-800 dark:text-gray-200"
                   dir="ltr"
                 />
               </div>
@@ -322,7 +321,7 @@ function ScheduleSection({ isEnabled, schedule, onToggle, onChange, error }) {
                 onChange={(date) => onChange({ ...schedule, endDate: date })}
                 format="YYYY/MM/DD"
                 className="rmdp-mobile"
-                inputClass="w-full bg-white dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-xl h-10 px-3 text-sm outline-none focus:border-purple-500 text-gray-800 dark:text-gray-100"
+                inputClass="w-full bg-white dark:bg-[#262B40] border border-gray-300 dark:border-gray-600 rounded-xl h-10 px-3 text-sm outline-none focus:border-purple-500 text-gray-800 dark:text-gray-200"
                 containerClassName="w-full"
               />
             </div>
@@ -332,12 +331,12 @@ function ScheduleSection({ isEnabled, schedule, onToggle, onChange, error }) {
                 <Clock className="w-3 h-3" />
                 ساعت پایان
               </label>
-              <div className="flex items-center bg-white dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-xl h-10 px-3 focus-within:border-purple-500">
+              <div className="flex items-center bg-white dark:bg-[#262B40] border border-gray-300 dark:border-gray-600 rounded-xl h-10 px-3 focus-within:border-purple-500">
                 <input
                   type="time"
                   value={schedule.endTime}
                   onChange={(e) => handleTimeChange("endTime", e.target.value)}
-                  className="w-full bg-transparent outline-none text-sm text-gray-800 dark:text-gray-100"
+                  className="w-full bg-transparent outline-none text-sm text-gray-800 dark:text-gray-200"
                   dir="ltr"
                 />
               </div>
@@ -374,13 +373,11 @@ export default function GlobalDiscountTab() {
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   
-  // States for Delete Confirmation Modal
   const [deleteConfirm, setDeleteConfirm] = useState({
     isOpen: false,
     item: null
   });
   
-  // Form states
   const [discount, setDiscount] = useState({ percent: "", amount: "", activeType: null });
   const [scheduleOn, setScheduleOn] = useState(false);
   const [schedule, setSchedule] = useState({
@@ -391,9 +388,8 @@ export default function GlobalDiscountTab() {
   });
   const [error, setError] = useState(null);
 
-  const { addToast } = useToast(); // استفاده از Toast
+  const { addToast } = useToast();
 
-  // Load data
   const load = async () => {
     try {
       const res = await fetchGlobalDiscounts();
@@ -407,7 +403,6 @@ export default function GlobalDiscountTab() {
     load();
   }, []);
 
-  // Form handlers
   const resetForm = () => {
     setDiscount({ percent: "", amount: "", activeType: null });
     setScheduleOn(false);
@@ -518,7 +513,6 @@ export default function GlobalDiscountTab() {
     }
   };
 
-  // Delete Confirmation Handlers
   const openDeleteConfirm = (item) => {
     setDeleteConfirm({
       isOpen: true,
@@ -560,13 +554,13 @@ export default function GlobalDiscountTab() {
 
   return (
     <div className="w-full max-w-[1400px] mx-auto space-y-8 px-3 md:px-4 overflow-x-hidden">
-      <div className="w-full p-4 md:p-5 rounded-2xl bg-white/70 dark:bg-neutral-800/60 backdrop-blur-md border border-sky-200 dark:border-indigo-600 shadow-lg">
+      <div className="w-full p-4 md:p-5 rounded-2xl bg-white/70 dark:bg-[#262B40]/90 backdrop-blur-md border border-sky-200 dark:border-gray-600 shadow-lg">
         
         {/* Header */}
         <div className="flex justify-between items-center mb-5">
           <div className="flex items-center gap-2">
             <Tag className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100">
+            <h3 className="font-bold text-lg text-gray-800 dark:text-gray-200">
               تخفیف‌های عمومی
             </h3>
           </div>
@@ -584,8 +578,8 @@ export default function GlobalDiscountTab() {
 
         {/* Inline Form */}
         {isEditing && (
-          <div className="mb-6 p-4 bg-white/90 dark:bg-neutral-700/50 rounded-xl border border-sky-200 dark:border-indigo-600/60 shadow-sm space-y-4 animate-fadeIn">
-            <div className="flex justify-between items-center border-b border-gray-200 dark:border-neutral-600 pb-2">
+          <div className="mb-6 p-4 bg-white/90 dark:bg-[#262B40]/80 rounded-xl border border-sky-200 dark:border-gray-600 shadow-sm space-y-4 animate-fadeIn">
+            <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-600 pb-2">
               <div className="flex items-center gap-2">
                 {editingId ? <Pencil className="w-4 h-4 text-purple-600" /> : <Plus className="w-4 h-4 text-purple-600" />}
                 <h4 className="font-semibold text-gray-800 dark:text-gray-200">
@@ -594,7 +588,7 @@ export default function GlobalDiscountTab() {
               </div>
               <button 
                 onClick={cancelEdit}
-                className="p-1 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-neutral-600 transition"
+                className="p-1 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -643,7 +637,7 @@ export default function GlobalDiscountTab() {
 
         {/* List */}
         {items.length === 0 && !isEditing ? (
-          <div className="flex flex-col items-center justify-center py-8 text-gray-500 gap-2">
+          <div className="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-gray-400 gap-2">
             <Tag className="w-10 h-10 opacity-30" />
             <p>هیچ تخفیف عمومی فعالی موجود نیست.</p>
           </div>
@@ -652,7 +646,7 @@ export default function GlobalDiscountTab() {
             {items.map((item) => (
               <div
                 key={item.id}
-                className="p-4 bg-white/90 dark:bg-neutral-700/80 border border-sky-200/60 dark:border-indigo-600/60 rounded-xl shadow-sm transition hover:shadow-md flex justify-between items-center"
+                className="p-4 bg-white/90 dark:bg-[#262B40]/80 border border-sky-200/60 dark:border-gray-600 rounded-xl shadow-sm transition hover:shadow-md flex justify-between items-center"
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -667,7 +661,7 @@ export default function GlobalDiscountTab() {
                         <><Banknote className="w-3 h-3" /> مبلغی</>
                       )}
                     </span>
-                    <span className="font-bold text-gray-800 dark:text-gray-100">
+                    <span className="font-bold text-gray-800 dark:text-gray-200">
                       {item.type === "percent" ? `${item.value}%` : `${item.value.toLocaleString()} تومان`}
                     </span>
                     {item.start_at && (
@@ -682,7 +676,7 @@ export default function GlobalDiscountTab() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => startEdit(item)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm bg-sky-100 hover:bg-sky-200 dark:bg-purple-700 dark:hover:bg-purple-600 text-gray-800 dark:text-white transition"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm bg-sky-100 hover:bg-sky-200 dark:bg-[#8AA1C4] dark:hover:bg-[#7a92b8] text-gray-800 dark:text-white transition"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                     <span>ویرایش</span>
@@ -707,7 +701,7 @@ export default function GlobalDiscountTab() {
       {deleteConfirm.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 h-full backdrop-blur-sm animate-fadeIn">
           <div 
-            className="bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4 border border-gray-200 dark:border-neutral-700 transform scale-100 animate-scaleIn"
+            className="bg-white dark:bg-[#262B40] rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4 border border-gray-200 dark:border-gray-600 transform scale-100 animate-scaleIn"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
@@ -715,12 +709,12 @@ export default function GlobalDiscountTab() {
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">تأیید حذف</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-200">تأیید حذف</h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400">این عملیات قابل بازگشت نیست</p>
               </div>
             </div>
             
-            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed bg-gray-50 dark:bg-neutral-700/50 p-3 rounded-lg">
+            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed bg-gray-50 dark:bg-[#2d3350]/50 p-3 rounded-lg">
               آیا از حذف تخفیف 
               <span className="font-bold mx-1 text-gray-800 dark:text-gray-200 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded">
                 {getItemDisplayName(deleteConfirm.item)}
@@ -732,7 +726,7 @@ export default function GlobalDiscountTab() {
               <button
                 onClick={closeDeleteConfirm}
                 disabled={deletingId === deleteConfirm.item?.id}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-neutral-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-neutral-600 transition text-sm font-medium"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition text-sm font-medium"
               >
                 انصراف
               </button>

@@ -3,7 +3,7 @@ import api from "../../../../api/clientApi";
 import DiscountModal from "../modals/DiscountModal";
 import TabModal from "../modals/TabModal";
 import HorizontalScroller from "../../../../components/HorizontalScroller";
-import Search from "../../../../components/Search"; // ✅ اضافه شده
+import Search from "../../../../components/Search";
 
 /* --------------------------------------------------
    Helpers
@@ -14,7 +14,6 @@ function getDiscountStatus(product) {
 
   const now = new Date();
 
-  // اولویت با تخفیف دسته‌بندی
   if (product?.category?.discount) {
     const d = product.category.discount;
     const start = d.start_at ? new Date(d.start_at) : null;
@@ -33,7 +32,6 @@ function getDiscountStatus(product) {
     }
   }
 
-  // چک کردن تخفیف روی مواد
   for (const tab of Object.values(product.pricing || {})) {
     for (const m of tab.materialPrices || []) {
       if (!m.has_discount) continue;
@@ -137,9 +135,6 @@ export default function ServiceDiscountTab() {
   const [categoryModal, setCategoryModal] = useState(null);
   const [productModal, setProductModal] = useState(null);
 
-  // ---------------------------
-  // Fix: Trigger glow AFTER initial render
-  // ---------------------------
   const [animateGlow, setAnimateGlow] = useState(false);
 
   useEffect(() => {
@@ -147,17 +142,12 @@ export default function ServiceDiscountTab() {
     return () => clearTimeout(t);
   }, []);
 
-  // ---------------------------
-  // Load Categories
-  // ---------------------------
   useEffect(() => {
     (async () => {
       const data = await api.getCategories();
       setCategories(data);
     })();
   }, []);
-
-  /* ---------------- Load Products ---------------- */
 
   useEffect(() => {
     (async () => {
@@ -184,10 +174,7 @@ export default function ServiceDiscountTab() {
     });
   }, [products]);
 
-  /* ---------------- Detect Discount ---------------- */
-
   const hasDiscount = (product) => {
-    // چک کردن تخفیف دسته‌بندی
     if (product?.category?.discount) {
       const d = product.category.discount;
       const now = new Date();
@@ -203,7 +190,6 @@ export default function ServiceDiscountTab() {
       if ((!start || now >= start) && (!end || now <= end)) return true;
     }
     
-    // چک کردن تخفیف روی مواد
     if (!product?.pricing) return false;
     return Object.values(product.pricing).some((tab) =>
       tab.materialPrices?.some((m) => Number(m.discount_amount) > 0)
@@ -224,21 +210,15 @@ export default function ServiceDiscountTab() {
     }
   };
 
-  /* ---------------- Glow IDs ---------------- */
-
   const glowIds = useMemo(
     () => products.filter(hasDiscount).map((p) => p.id),
     [products]
   );
 
-  /* ---------------- Filter Products ---------------- */
-
   const filteredProducts = useMemo(() => {
     if (selectedCategory === "all") return products;
     return products.filter((p) => p.category?.id === selectedCategory);
   }, [products, selectedCategory]);
-
-  /* ---------------- Modals ---------------- */
 
   const openProductModal = async (product) => {
     const fullData = await api.getProduct(product.id);
@@ -255,8 +235,6 @@ export default function ServiceDiscountTab() {
   const closeProductModal = () => setProductModal(null);
   const openCategoryModal = (c) => setCategoryModal(c);
   const closeCategoryModal = () => setCategoryModal(null);
-
-  /* ---------------- IntersectionObserver ---------------- */
 
   const cardsRef = useRef({});
   const [visibleCards, setVisibleCards] = useState({});
@@ -284,18 +262,16 @@ export default function ServiceDiscountTab() {
     return () => observer.disconnect();
   }, [filteredProducts]);
 
-  /* ---------------- UI ---------------- */
-
   return (
     <div className="w-full max-w-[1400px] mx-auto space-y-8 px-3 md:px-4 overflow-x-hidden">
 
       {/* دسته‌ها */}
       <div className="
         w-full p-4 md:p-5 rounded-2xl
-        bg-white/70 dark:bg-neutral-800/60 backdrop-blur-md
-        border border-sky-200 dark:border-indigo-600 shadow-lg
+        bg-white/70 dark:bg-[#262B40]/90 backdrop-blur-md
+        border border-sky-200 dark:border-gray-600 shadow-lg
       ">
-        <h3 className="font-bold text-lg mb-4 text-gray-800 dark:text-gray-100">
+        <h3 className="font-bold text-lg mb-4 text-gray-800 dark:text-gray-200">
           تخفیف روی دسته‌بندی‌ها
         </h3>
 
@@ -306,10 +282,10 @@ export default function ServiceDiscountTab() {
               onClick={() => openCategoryModal(c)}
               className="
                 px-3 py-2 rounded-xl transition text-sm cursor-pointer
-                bg-white dark:bg-neutral-700 
+                bg-white dark:bg-[#262B40]
                 text-gray-700 dark:text-gray-200
                 border border-sky-200 dark:border-gray-600
-                hover:bg-sky-100 dark:hover:bg-purple-700 hover:text-gray-900
+                hover:bg-sky-100 dark:hover:bg-[#2d3350] hover:text-gray-900
               "
             >
               {c.name}
@@ -321,14 +297,13 @@ export default function ServiceDiscountTab() {
       {/* محصولات */}
       <div className="
         w-full p-4 md:p-5 rounded-2xl
-        bg-white/70 dark:bg-neutral-800/60 backdrop-blur
-        border border-sky-200 dark:border-indigo-600 shadow-lg
+        bg-white/70 dark:bg-[#262B40]/90 backdrop-blur
+        border border-sky-200 dark:border-gray-600 shadow-lg
       ">
-        <h3 className="font-bold text-lg mb-4 text-gray-800 dark:text-gray-100">
+        <h3 className="font-bold text-lg mb-4 text-gray-800 dark:text-gray-200">
           تخفیف روی محصولات
         </h3>
 
-        {/* ✅ تب‌های دسته‌بندی با اسکرول افقی */}
         <div className="mb-6">
           <HorizontalScroller className="pb-2 -mx-1 px-1 scrollbar-hide">
             <div className="flex gap-2 px-1">
@@ -338,8 +313,8 @@ export default function ServiceDiscountTab() {
                   px-4 py-2 mb-1 rounded-xl text-sm font-medium whitespace-nowrap transition-all
                   border flex-shrink-0 cursor-pointer
                   ${selectedCategory === "all"
-                    ? "border border-sky-200 dark:border-indigo-600 bg-gradient-to-r from-sky-100 to-sky-200 dark:from-purple-700 dark:to-purple-800 shadow text-gray-800 dark:text-white font-bold"
-                      : "bg-white/70 dark:bg-neutral-700 text-gray-700 dark:text-gray-200 border border-sky-200 dark:border-gray-600 hover:bg-white"
+                    ? "border border-sky-200 dark:border-gray-600 bg-gradient-to-r from-sky-100 to-sky-200 dark:from-[#8AA1C4] dark:to-[#8AA1C4] shadow text-gray-800 dark:text-white font-bold"
+                      : "bg-white/70 dark:bg-[#262B40] text-gray-700 dark:text-gray-200 border border-sky-200 dark:border-gray-600 hover:bg-white dark:hover:bg-[#2d3350]"
                   }
                 `}
               >
@@ -353,8 +328,8 @@ export default function ServiceDiscountTab() {
                     px-4 py-2 mb-1 rounded-xl text-sm font-medium whitespace-nowrap transition-all
                     border flex-shrink-0 cursor-pointer
                     ${selectedCategory === c.id
-                      ? "border border-sky-200 dark:border-indigo-600 bg-gradient-to-r from-sky-100 to-sky-200 dark:from-purple-700 dark:to-purple-800 shadow text-gray-800 dark:text-white font-bold"
-                      : "bg-white/70 dark:bg-neutral-700 text-gray-700 dark:text-gray-200 border border-sky-200 dark:border-gray-600 hover:bg-white"
+                      ? "border border-sky-200 dark:border-gray-600 bg-gradient-to-r from-sky-100 to-sky-200 dark:from-[#8AA1C4] dark:to-[#8AA1C4] shadow text-gray-800 dark:text-white font-bold"
+                      : "bg-white/70 dark:bg-[#262B40] text-gray-700 dark:text-gray-200 border border-sky-200 dark:border-gray-600 hover:bg-white dark:hover:bg-[#2d3350]"
                     }
                   `}
                 >
@@ -365,14 +340,13 @@ export default function ServiceDiscountTab() {
           </HorizontalScroller>
         </div>
 
-        {/* ✅ استفاده از کامپوننت Search به جای input */}
         <div className="mb-6">
           <Search
             value={query}
             onChange={setQuery}
             placeholder="جستجو در محصولات..."
             loading={loading}
-            items={[]} // لیست خالی چون نتایج در گرید زیر نمایش داده می‌شود
+            items={[]}
           />
         </div>
 
@@ -387,8 +361,8 @@ export default function ServiceDiscountTab() {
               data-id={p.id}
               ref={(el) => (cardsRef.current[p.id] = el)}
               className={`
-                relative p-3 rounded-xl bg-white/90 dark:bg-neutral-800/80
-                backdrop-blur border border-sky-200 dark:border-indigo-600
+                relative p-3 rounded-xl bg-white/90 dark:bg-[#262B40]/80
+                backdrop-blur border border-sky-200 dark:border-gray-600
                 shadow-md flex flex-col transition-all duration-300
                 hover:scale-[1.02]
                 ${visibleCards[p.id] && glowIds.includes(p.id) ? "discount-glow" : ""}
@@ -404,10 +378,10 @@ export default function ServiceDiscountTab() {
               <img
                 src={p.image || "/images/placeholder.png"}
                 alt={p.title}
-                className="aspect-square object-cover rounded-lg mb-2 bg-gray-100 dark:bg-neutral-700"
+                className="aspect-square object-cover rounded-lg mb-2 bg-gray-100 dark:bg-gray-700"
               />
 
-              <h3 className="text-sm font-bold text-center truncate text-gray-800 dark:text-gray-100 px-1">
+              <h3 className="text-sm font-bold text-center truncate text-gray-800 dark:text-gray-200 px-1">
                 {p.title}
               </h3>
 
@@ -416,11 +390,11 @@ export default function ServiceDiscountTab() {
                 className="
                   mt-3 w-full py-1.5 rounded-xl text-sm font-medium
                   bg-gradient-to-r from-sky-100 to-sky-200
-                  dark:from-purple-700 dark:to-purple-800
-                  border border-sky-200 dark:border-indigo-600
-                  text-sky-800 dark:text-gray-100
+                  dark:from-[#8AA1C4] dark:to-[#8AA1C4]
+                  border border-sky-200 dark:border-gray-600
+                  text-sky-800 dark:text-white
                   hover:from-sky-200 hover:to-sky-300
-                  dark:hover:from-purple-600 dark:hover:to-purple-700
+                  dark:hover:from-[#7a92b8] dark:hover:to-[#7a92b8]
                   transition-all active:scale-[0.98]
                 "
               >
@@ -430,7 +404,6 @@ export default function ServiceDiscountTab() {
           ))}
         </div>
         
-        {/* پیام خالی بودن */}
         {filteredProducts.length === 0 && !loading && (
           <div className="text-center py-12 text-gray-400 dark:text-gray-500">
             <div className="text-4xl mb-2">🔍</div>

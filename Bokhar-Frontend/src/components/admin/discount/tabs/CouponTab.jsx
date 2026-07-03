@@ -204,11 +204,11 @@ const handleEdit = (item) => {
       
       {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-2 sm:gap-4">
-        <div className="p-3 sm:p-4 lg:p-5 rounded-xl lg:rounded-2xl bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 shadow-sm">
+        <div className="p-3 sm:p-4 lg:p-5 rounded-xl lg:rounded-2xl bg-white/60 dark:bg-[#262B40]/80 border border-white/60 dark:border-gray-600 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[10px] sm:text-xs lg:text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">کل مشتریان</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 dark:text-white mt-1">{customers.length}</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-200 mt-1">{customers.length}</p>
             </div>
             <div className="p-1.5 sm:p-2 lg:p-3 bg-purple-100 dark:bg-purple-500/20 rounded-lg lg:rounded-xl text-purple-600 dark:text-purple-300">
               <Users size={16} className="sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
@@ -216,7 +216,7 @@ const handleEdit = (item) => {
           </div>
         </div>
         
-        <div className="p-3 sm:p-4 lg:p-5 rounded-xl lg:rounded-2xl bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 shadow-sm">
+        <div className="p-3 sm:p-4 lg:p-5 rounded-xl lg:rounded-2xl bg-white/60 dark:bg-[#262B40]/80 border border-white/60 dark:border-gray-600 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[10px] sm:text-xs lg:text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">کدهای فعال</p>
@@ -228,7 +228,7 @@ const handleEdit = (item) => {
           </div>
         </div>
 
-        <div className="p-3 sm:p-4 lg:p-5 rounded-xl lg:rounded-2xl bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 shadow-sm">
+        <div className="p-3 sm:p-4 lg:p-5 rounded-xl lg:rounded-2xl bg-white/60 dark:bg-[#262B40]/80 border border-white/60 dark:border-gray-600 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[10px] sm:text-xs lg:text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">اختصاصی</p>
@@ -246,7 +246,7 @@ const handleEdit = (item) => {
         <button 
           onClick={loadCoupons}
           disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 text-sm text-purple-600 bg-purple-50 rounded-lg hover:bg-purple-100 transition disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 text-sm text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           بروزرسانی لیست
@@ -254,13 +254,13 @@ const handleEdit = (item) => {
       </div>
 
       {/* Customers Section with Coupon Status */}
-      <div className="w-full p-4 md:p-5 rounded-2xl bg-white/70 dark:bg-neutral-800/60 backdrop-blur-md border border-sky-200 dark:border-indigo-600 shadow-lg">
+      <div className="w-full p-4 md:p-5 rounded-2xl bg-white/70 dark:bg-[#262B40]/90 backdrop-blur-md border border-sky-200 dark:border-gray-600 shadow-lg">
         
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-3">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100">
+            <h3 className="font-bold text-lg text-gray-800 dark:text-gray-200">
               مدیریت مشتریان و کدهای تخفیف
             </h3>
             <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium">
@@ -292,24 +292,24 @@ const handleEdit = (item) => {
             <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
           </div>
         ) : filteredCustomers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-gray-500 gap-2">
+          <div className="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-gray-400 gap-2">
             <Users className="w-10 h-10 opacity-30" />
             <p>مشتری‌ای یافت نشد.</p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-gray-200/60 dark:border-gray-700/30 bg-white/50 dark:bg-black/20">
+          <div className="overflow-hidden rounded-xl border border-gray-200/60 dark:border-gray-600/50 bg-white/50 dark:bg-[#262B40]/50">
             <div className="overflow-x-auto">
               <table className="w-full text-xs sm:text-sm">
                 <thead>
-                  <tr className="bg-gray-50/80 dark:bg-white/5 border-b border-gray-200 dark:border-gray-700/50">
-                    <th className="py-3 px-2 sm:px-3 lg:px-6 text-right font-semibold text-gray-700 dark:text-gray-300">مشتری</th>
-                    <th className="py-3 px-2 sm:px-3 lg:px-6 text-right font-semibold text-gray-700 dark:text-gray-300">تماس</th>
-                    <th className="py-3 px-2 sm:px-3 lg:px-6 text-center font-semibold text-gray-700 dark:text-gray-300">وضعیت</th>
-                    <th className="py-3 px-2 sm:px-3 lg:px-6 text-right font-semibold text-gray-700 dark:text-gray-300">کد فعال</th>
-                    <th className="py-3 px-2 sm:px-3 lg:px-6 text-center font-semibold text-gray-700 dark:text-gray-300">عملیات</th>
+                  <tr className="bg-gray-50/80 dark:bg-[#2d3350]/50 border-b border-gray-200 dark:border-gray-600/50">
+                    <th className="py-3 px-2 sm:px-3 lg:px-6 text-right font-semibold text-gray-700 dark:text-gray-200">مشتری</th>
+                    <th className="py-3 px-2 sm:px-3 lg:px-6 text-right font-semibold text-gray-700 dark:text-gray-200">تماس</th>
+                    <th className="py-3 px-2 sm:px-3 lg:px-6 text-center font-semibold text-gray-700 dark:text-gray-200">وضعیت</th>
+                    <th className="py-3 px-2 sm:px-3 lg:px-6 text-right font-semibold text-gray-700 dark:text-gray-200">کد فعال</th>
+                    <th className="py-3 px-2 sm:px-3 lg:px-6 text-center font-semibold text-gray-700 dark:text-gray-200">عملیات</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-600/30">
                   {filteredCustomers.map((customer) => {
                     const activeCoupon = getCustomerActiveCoupon(customer.id);
                     const hasCoupon = !!activeCoupon;
@@ -317,12 +317,12 @@ const handleEdit = (item) => {
                     return (
                       <tr 
                         key={customer.id} 
-                        className="group hover:bg-purple-50/50 dark:hover:bg-purple-500/5 transition-colors duration-200"
+                        className="group hover:bg-purple-50/50 dark:hover:bg-[#2d3350]/30 transition-colors duration-200"
                       >
                         <td className="py-3 px-2 sm:px-3 lg:px-6">
                           <div className="flex items-center gap-2 sm:gap-3">
                             <div>
-                              <p className="font-medium text-gray-900 dark:text-gray-100 text-xs sm:text-sm">{customer.fullname}</p>
+                              <p className="font-medium text-gray-900 dark:text-gray-200 text-xs sm:text-sm">{customer.fullname}</p>
                               <p className="text-[10px] text-gray-500 dark:text-gray-400 hidden sm:block">ID: {customer.id}</p>
                             </div>
                           </div>
@@ -332,7 +332,6 @@ const handleEdit = (item) => {
                           {customer.phone}
                         </td>
                         
-                        {/* وضعیت - در موبایل فقط آیکون، در دسکتاپ آیکون و متن */}
                         <td className="py-3 px-2 sm:px-3 lg:px-6 text-center">
                           {hasCoupon ? (
                             <div 
@@ -357,7 +356,7 @@ const handleEdit = (item) => {
                           {hasCoupon ? (
                             <div className="flex flex-col gap-1">
                               <div className="flex items-center gap-1 sm:gap-2">
-                                <code className="px-1.5 sm:px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-[10px] sm:text-xs font-mono text-purple-700 dark:text-purple-400 truncate max-w-[80px] sm:max-w-none">
+                                <code className="px-1.5 sm:px-2 py-1 bg-gray-100 dark:bg-[#262B40] rounded text-[10px] sm:text-xs font-mono text-purple-700 dark:text-purple-400 truncate max-w-[80px] sm:max-w-none">
                                   {activeCoupon.code}
                                 </code>
                                 <button 
@@ -368,25 +367,24 @@ const handleEdit = (item) => {
                                   <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                                 </button>
                               </div>
-                              <div className="text-[10px] sm:text-xs text-gray-500 hidden sm:block">
+                              <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
                                 {activeCoupon.type === 'percent' ? (
                                   <span>% {activeCoupon.value}</span>
                                 ) : (
                                   <span>{Number(activeCoupon.value).toLocaleString()} تومان</span>
                                 )}
                                 {activeCoupon.ends_at && (
-                                  <span className="mr-2 text-amber-600">
+                                  <span className="mr-2 text-amber-600 dark:text-amber-400">
                                     تا {formatDate(activeCoupon.ends_at)}
                                   </span>
                                 )}
                               </div>
                             </div>
                           ) : (
-                            <span className="text-xs text-gray-400">-</span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">-</span>
                           )}
                         </td>
 
-                        {/* عملیات - در موبایل فقط آیکون، در دسکتاپ دکمه کامل */}
                         <td className="py-3 px-2 sm:px-3 lg:px-6 text-center">
                           <div className="flex items-center justify-center gap-1 sm:gap-2">
                             {hasCoupon ? (
@@ -421,15 +419,15 @@ const handleEdit = (item) => {
       </div>
 
       {/* All Coupons List */}
-      <div className="w-full p-4 md:p-5 rounded-2xl bg-white/70 dark:bg-neutral-800/60 backdrop-blur-md border border-sky-200 dark:border-indigo-600 shadow-lg opacity-80">
-        <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700/50">
-          <Tag className="w-4 h-4 text-gray-500" />
-          <h4 className="font-semibold text-gray-700 dark:text-gray-300">همه کدهای تخفیف ({items.length})</h4>
+      <div className="w-full p-4 md:p-5 rounded-2xl bg-white/70 dark:bg-[#262B40]/90 backdrop-blur-md border border-sky-200 dark:border-gray-600 shadow-lg opacity-80">
+        <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200 dark:border-gray-600/50">
+          <Tag className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          <h4 className="font-semibold text-gray-700 dark:text-gray-200">همه کدهای تخفیف ({items.length})</h4>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {items.slice(0, 6).map((item) => (
-            <div key={item.id} className="p-3 bg-white/50 dark:bg-neutral-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <div key={item.id} className="p-3 bg-white/50 dark:bg-[#262B40]/80 rounded-lg border border-gray-200 dark:border-gray-600 flex justify-between items-center">
               <div className="flex items-center gap-2 overflow-hidden">
                 <code className="text-sm font-mono text-purple-700 dark:text-purple-400 truncate">{item.code}</code>
                 {getCouponUserId(item) && (
@@ -439,17 +437,17 @@ const handleEdit = (item) => {
                 )}
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => handleEdit(item)} className="p-1 text-gray-400 hover:text-sky-600">
+                <button onClick={() => handleEdit(item)} className="p-1 text-gray-400 hover:text-sky-600 transition">
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={() => openDeleteConfirm(item)} className="p-1 text-gray-400 hover:text-red-600">
+                <button onClick={() => openDeleteConfirm(item)} className="p-1 text-gray-400 hover:text-red-600 transition">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
           ))}
           {items.length > 6 && (
-            <div className="p-3 text-center text-xs text-gray-500">
+            <div className="p-3 text-center text-xs text-gray-500 dark:text-gray-400">
               و {items.length - 6} مورد دیگر...
             </div>
           )}
@@ -469,7 +467,7 @@ const handleEdit = (item) => {
       {deleteConfirm.isOpen && (
         <div className="fixed inset-0 h-full z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
           <div 
-            className="bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4 border border-gray-200 dark:border-neutral-700"
+            className="bg-white dark:bg-[#262B40] rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4 border border-gray-200 dark:border-gray-600"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
@@ -477,12 +475,12 @@ const handleEdit = (item) => {
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">تأیید حذف</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-200">تأیید حذف</h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400">این عملیات قابل بازگشت نیست</p>
               </div>
             </div>
             
-            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed bg-gray-50 dark:bg-neutral-700/50 p-3 rounded-lg">
+            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed bg-gray-50 dark:bg-[#2d3350]/50 p-3 rounded-lg">
               آیا از حذف کد تخفیف 
               <span className="font-bold mx-1 text-gray-800 dark:text-gray-200 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded font-mono">
                 {deleteConfirm.item?.code}
@@ -494,7 +492,7 @@ const handleEdit = (item) => {
               <button
                 onClick={closeDeleteConfirm}
                 disabled={deletingId === deleteConfirm.item?.id}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-neutral-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-neutral-600 transition text-sm font-medium"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition text-sm font-medium"
               >
                 انصراف
               </button>
