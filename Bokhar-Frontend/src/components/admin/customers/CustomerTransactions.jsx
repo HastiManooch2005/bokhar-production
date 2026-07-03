@@ -120,7 +120,7 @@ export default function CustomerTransactions() {
   };
 
   return (
-    <div dir="rtl" className="flex min-h-screen overflow-x-hidden bg-gray-50 dark:bg-slate-900">
+    <div dir="rtl" className="flex min-h-screen overflow-x-hidden bg-gray-50 dark:bg-[#1a1f35]">
       <Sidebar
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
@@ -133,7 +133,7 @@ export default function CustomerTransactions() {
         {loading && (
           <div className="flex flex-col items-center justify-center min-h-[60vh]">
             <FiLoader className="animate-spin text-sky-500 text-4xl mb-4" />
-            <p className="text-slate-600 dark:text-slate-300">در حال بارگذاری...</p>
+            <p className="text-slate-600 dark:text-gray-300">در حال بارگذاری...</p>
           </div>
         )}
 
@@ -159,18 +159,18 @@ export default function CustomerTransactions() {
           <>
             {/* Sticky Header */}
             <div className="sticky top-4 z-40 mb-6">
-              <div className="rounded-2xl sm:rounded-3xl p-5 bg-gradient-to-br from-sky-50 via-sky-100 to-sky-200 dark:from-sky-800 dark:via-sky-900 dark:to-sky-950 border border-sky-200 dark:border-sky-700 shadow-lg backdrop-blur-xl flex flex-col md:flex-row justify-between gap-4">
-                <h1 className="text-xl sm:text-2xl font-extrabold text-sky-900 dark:text-sky-100 flex items-center gap-2">
+              <div className="rounded-2xl sm:rounded-3xl p-5 bg-gradient-to-br from-sky-50 via-sky-100 to-sky-200 dark:from-[#262B40] dark:via-[#2d3350] dark:to-[#262B40] border border-sky-200 dark:border-gray-600 shadow-lg backdrop-blur-xl flex flex-col md:flex-row justify-between gap-4">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-sky-900 dark:text-gray-200 flex items-center gap-2">
                   <FiShoppingBag size={22} />
                   تراکنش‌های مشتری: {customer.name}
                   {customer.phone && (
-                    <span className="text-sm font-normal text-sky-600 dark:text-sky-300 mr-2">
+                    <span className="text-sm font-normal text-sky-600 dark:text-gray-400 mr-2">
                       ({customer.phone})
                     </span>
                   )}
                 </h1>
 
-                <div className="rounded-xl px-5 py-3 font-extrabold whitespace-nowrap bg-white/80 dark:bg-gray-900/60 text-sky-700 dark:text-sky-200 border border-sky-300 dark:border-sky-700 shadow-sm">
+                <div className="rounded-xl px-5 py-3 font-extrabold whitespace-nowrap bg-white/80 dark:bg-[#262B40]/80 text-sky-700 dark:text-gray-200 border border-sky-300 dark:border-gray-600 shadow-sm">
                   مجموع کل: {formatPrice(totalSum)}
                 </div>
               </div>
@@ -178,9 +178,9 @@ export default function CustomerTransactions() {
 
             {/* Empty State */}
             {transactions.length === 0 ? (
-              <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
-                <FiShoppingBag className="mx-auto text-4xl text-slate-300 mb-3" />
-                <p className="text-slate-500 dark:text-slate-400">هیچ تراکنشی برای این مشتری یافت نشد</p>
+              <div className="text-center py-12 bg-white dark:bg-[#262B40] rounded-2xl border border-slate-200 dark:border-gray-600">
+                <FiShoppingBag className="mx-auto text-4xl text-slate-300 dark:text-gray-500 mb-3" />
+                <p className="text-slate-500 dark:text-gray-400">هیچ تراکنشی برای این مشتری یافت نشد</p>
               </div>
             ) : (
               /* Transactions List */
@@ -188,24 +188,24 @@ export default function CustomerTransactions() {
                 {transactions.map((t) => (
                   <div
                     key={t.id}
-                    className="rounded-2xl sm:rounded-3xl p-5 bg-gradient-to-br from-sky-50 via-sky-100 to-sky-200 dark:from-sky-800 dark:via-sky-900 dark:to-sky-950 border border-sky-200 dark:border-sky-700 shadow-lg backdrop-blur-xl dark:text-gray-300 transition-all hover:shadow-xl"
+                    className="rounded-2xl sm:rounded-3xl p-5 bg-gradient-to-br from-sky-50 via-sky-100 to-sky-200 dark:from-[#262B40] dark:via-[#2d3350] dark:to-[#262B40] border border-sky-200 dark:border-gray-600 shadow-lg backdrop-blur-xl dark:text-gray-200 transition-all hover:shadow-xl"
                   >
-                    <div className="flex items-center gap-2 mb-3 text-sky-700 dark:text-sky-100 font-bold">
+                    <div className="flex items-center gap-2 mb-3 text-sky-700 dark:text-gray-200 font-bold">
                       <FiCalendar size={18} />
                       <span>تاریخ: {formatDate(t.date)}</span>
-                      <span className="mr-auto text-sm font-normal text-slate-500 dark:text-slate-400">
+                      <span className="mr-auto text-sm font-normal text-slate-500 dark:text-gray-400">
                         شماره فاکتور: #{t.id}
                       </span>
                     </div>
 
-                    <div className="font-semibold mb-4 text-sky-700 dark:text-sky-100 bg-white/50 dark:bg-white/10 rounded-lg px-4 py-2 inline-block">
+                    <div className="font-semibold mb-4 text-sky-700 dark:text-gray-200 bg-white/50 dark:bg-[#2d3350]/50 rounded-lg px-4 py-2 inline-block">
                       مبلغ کل این تراکنش: {formatPrice(getTransactionTotal(t))}
                     </div>
 
-                    <div className="overflow-x-auto rounded-xl border border-sky-200 dark:border-sky-700 bg-white/40 dark:bg-white/5">
+                    <div className="overflow-x-auto rounded-xl border border-sky-200 dark:border-gray-600 bg-white/40 dark:bg-[#262B40]/50">
                       <table className="min-w-full text-right text-sm">
                         <thead>
-                          <tr className="bg-sky-100/50 dark:bg-sky-900/50 text-gray-700 dark:text-gray-200">
+                          <tr className="bg-sky-100/50 dark:bg-[#2d3350]/50 text-gray-700 dark:text-gray-200">
                             <th className="p-3 font-bold">ردیف</th>
                             <th className="p-3 font-bold">نام کالا</th>
                             <th className="p-3 font-bold">تعداد</th>
@@ -217,13 +217,13 @@ export default function CustomerTransactions() {
                           {t.items?.map((item, idx) => (
                             <tr
                               key={idx}
-                              className="border-t border-sky-100 dark:border-sky-700 hover:bg-sky-100/50 dark:hover:bg-sky-800/50 transition"
+                              className="border-t border-sky-100 dark:border-gray-600 hover:bg-sky-100/50 dark:hover:bg-[#2d3350]/50 transition"
                             >
-                              <td className="p-3 text-slate-500">{idx + 1}</td>
+                              <td className="p-3 text-slate-500 dark:text-gray-400">{idx + 1}</td>
                               <td className="p-3 font-medium">{item.name}</td>
                               <td className="p-3">{item.quantity}</td>
                               <td className="p-3">{formatPrice(item.price)}</td>
-                              <td className="p-3 font-semibold text-sky-700 dark:text-sky-300">
+                              <td className="p-3 font-semibold text-sky-700 dark:text-gray-200">
                                 {formatPrice(item.price * item.quantity)}
                               </td>
                             </tr>

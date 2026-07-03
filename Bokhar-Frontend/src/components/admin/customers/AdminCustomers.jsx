@@ -22,15 +22,12 @@ function useCustomers() {
         setError(null);
         const data = await fetchCustomers();
         
-        // اطمینان از اینکه کامپوننت هنوز mount هست before setting state
         if (isMounted) {
-          // اگر ساختار داده بکند با UI متفاوت است، اینجا تبدیل کن
-          // مثال: اگر بکند به جای 'type' از 'status' استفاده می‌کند
           const formattedData = data.map(customer => ({
             id: customer.id,
             name: customer.name || customer.fullname || "نامشخص",
             phone: customer.phone,
-            type: customer.type || customer.status || "inactive", // تطابق با ساختار بکند
+            type: customer.type || customer.status || "inactive",
             orders: customer.orders || customer.order_count || 0
           }));
           
@@ -50,7 +47,6 @@ function useCustomers() {
 
     loadCustomers();
 
-    // cleanup function برای جلوگیری از memory leak
     return () => {
       isMounted = false;
     };
@@ -59,7 +55,7 @@ function useCustomers() {
   return { customers, loading, error };
 }
 
-/* ================= CARD (بدون تغییر) ================= */
+/* ================= CARD ================= */
 
 function CustomerCard({ customer, onClick }) {
   const { name, phone, type, orders } = customer;
@@ -76,15 +72,15 @@ function CustomerCard({ customer, onClick }) {
       onClick={onClick}
       className="
         p-6 rounded-2xl cursor-pointer
-        bg-white/30 dark:bg-white/50 backdrop-blur-lg
-        border border-sky-200/50
+        bg-white/30 dark:bg-[#262B40]/90 backdrop-blur-lg
+        border border-sky-200/50 dark:border-gray-600/50
         shadow-xl transition-all
-        hover:scale-[1.03] hover:bg-white/80
+        hover:scale-[1.03] hover:bg-white/80 dark:hover:bg-[#2d3350]
         active:scale-[0.98]
       "
     >
       <div className="flex justify-between items-center mb-3">
-        <h2 className="text-lg font-bold text-slate-800 dark:text-gray-900">
+        <h2 className="text-lg font-bold text-slate-800 dark:text-gray-200">
           {name}
         </h2>
         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${badgeStyle}`}>
@@ -92,7 +88,7 @@ function CustomerCard({ customer, onClick }) {
         </span>
       </div>
 
-      <div className="flex justify-between text-sm text-slate-600 dark:text-gray-700">
+      <div className="flex justify-between text-sm text-slate-600 dark:text-gray-300">
         <span>{phone}</span>
         <span>سفارش‌ها: {orders}</span>
       </div>
@@ -136,7 +132,7 @@ export default function AdminCustomers() {
       />
 
       <main className="flex-1 min-w-0 p-4 sm:p-6 md:mr-64 overflow-y-auto">
-<h1 className="flex items-center justify-center md:justify-start gap-2 text-2xl font-bold text-slate-800 dark:text-gray-900">
+<h1 className="flex items-center justify-center md:justify-start gap-2 text-2xl font-bold text-slate-800 dark:text-gray-200">
   <FiUsers className="text-2xl" />
   مشتریان
 </h1>
@@ -156,8 +152,8 @@ export default function AdminCustomers() {
         px-2 py-2 rounded-2xl font-medium transition border shadow-md cursor-pointer
         ${
           activeTab === tab.key
-            ? "bg-gradient-to-r from-sky-100 to-sky-200 dark:from-purple-700 dark:to-purple-800 border-gray-300 dark:border-indigo-600 shadow-lg shadow-indigo-300 dark:shadow-indigo-500 scale-105 text-gray-800 dark:text-white/90"
-            : "bg-white dark:bg-white/80 hover:bg-sky-100 dark:hover:bg-white/95 border-gray-200 shadow-lg text-gray-800"
+            ? "bg-gradient-to-r from-sky-100 to-sky-200 dark:from-[#8AA1C4] dark:to-[#8AA1C4] border-gray-300 dark:border-gray-600 shadow-lg scale-105 text-gray-800 dark:text-white"
+            : "bg-white dark:bg-[#262B40] hover:bg-sky-100 dark:hover:bg-[#2d3350] border-gray-200 dark:border-gray-600 shadow-lg text-gray-800 dark:text-gray-200"
         }
       `}
     >
@@ -184,13 +180,13 @@ export default function AdminCustomers() {
         {loading && (
           <div className="mt-12 flex justify-center items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500"></div>
-            <span className="mr-3 text-slate-600">در حال بارگذاری...</span>
+            <span className="mr-3 text-slate-600 dark:text-gray-300">در حال بارگذاری...</span>
           </div>
         )}
 
         {/* Error State */}
         {!loading && error && (
-          <div className="mt-8 p-4 bg-red-100 border border-red-300 rounded-xl text-red-800 text-center">
+          <div className="mt-8 p-4 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800 rounded-xl text-red-800 dark:text-red-300 text-center">
             <p className="font-bold">خطا در دریافت اطلاعات</p>
             <p className="text-sm mt-1">{error}</p>
             <button 
@@ -206,7 +202,7 @@ export default function AdminCustomers() {
         {!loading && !error && (
           <div className="mt-8">
             {filtered.length === 0 ? (
-              <div className="text-center text-slate-400 text-lg py-12">
+              <div className="text-center text-slate-400 dark:text-gray-500 text-lg py-12">
                 مشتری‌ای یافت نشد
               </div>
             ) : (
