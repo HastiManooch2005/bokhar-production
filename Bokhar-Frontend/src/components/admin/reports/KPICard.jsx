@@ -4,8 +4,8 @@ export default function KPICard({ title, value, icon, color, onClick }) {
   return (
     <div
       onClick={onClick}
-      className="p-5 rounded-2xl bg-white/30 dark:bg-white/50 backdrop-blur-lg
-      border border-sky-200/50 hover:bg-white/80 dark:hover:text-gray-800
+      className="p-5 rounded-2xl bg-white/30 dark:bg-[#262B40]/90 backdrop-blur-lg
+      border border-sky-200/50 dark:border-gray-600/50 hover:bg-white/80 dark:hover:bg-[#2d3350]
       transition-all shadow-xl
       hover:scale-[1.03] active:scale-[0.98]
       flex flex-col"
@@ -19,11 +19,11 @@ export default function KPICard({ title, value, icon, color, onClick }) {
         </div>
       )}
 
-      <div className="text-xs text-slate-500 dark:text-gray-700">
+      <div className="text-xs text-slate-500 dark:text-gray-400">
         {title}
       </div>
 
-      <div className="mt-3 text-2xl font-bold text-slate-800 dark:text-gray-900">
+      <div className="mt-3 text-2xl font-bold text-slate-800 dark:text-gray-200">
          {value !== null && value !== undefined ? value : "•"}
       </div>
     </div>
