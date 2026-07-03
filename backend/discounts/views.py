@@ -6,21 +6,11 @@ from django.db import transaction
 
 from .models import ProductDiscount, GlobalDiscount, Coupon
 from .serializers import ProductDiscountSerializer, GlobalDiscountSerializer, CouponSerializer
-
+from products.permossion import IsSeller
 from rest_framework.response import Response
 from rest_framework import status
 
-# ---------------------------------------------------------
-#   PERMISSION
-# ---------------------------------------------------------
-class IsSeller(permissions.BasePermission):
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return request.user.is_authenticated and getattr(request.user, "role", None) == "seller"
 
-
-# ---------------------------------------------------------
 #   ProductDiscount
 
 class ProductDiscountViewSet(viewsets.ModelViewSet):
