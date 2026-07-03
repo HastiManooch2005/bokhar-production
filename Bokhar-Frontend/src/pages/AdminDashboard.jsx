@@ -69,7 +69,7 @@ export default function AdminDashboard() {
   return (
     <div
       dir="rtl"
-      className="flex flex-col min-h-screen  transition-colors duration-300"
+      className="flex flex-col min-h-screen transition-colors duration-300"
     >
       <div className="flex flex-1">
         <Sidebar
@@ -80,7 +80,7 @@ export default function AdminDashboard() {
         />
 
         <main
-          className={`flex-1 p-6 overflow-y-auto text-gray-800 dark:text-gray-100 transition-all duration-300
+          className={`flex-1 p-6 overflow-y-auto text-gray-800 dark:text-gray-200 transition-all duration-300
             ${!isSidebarOpen ? "md:mr-64" : ""}`}
         >
           <h1 className="flex items-center justify-center md:justify-start gap-2 text-2xl font-bold mb-8">
@@ -94,8 +94,8 @@ export default function AdminDashboard() {
               <div
                 key={i}
                 onClick={() => card.link && navigate(card.link)}
-                className={`p-5 rounded-2xl bg-white/30 dark:bg-white/50 backdrop-blur-lg 
-                border border-sky-200/50 hover:bg-white/80 dark:hover:text-gray-800 transition-all cursor-pointer shadow-xl 
+                className={`p-5 rounded-2xl bg-white/30 dark:bg-[#262B40]/50 backdrop-blur-lg 
+                border border-sky-200/50 dark:border-gray-700/50 hover:bg-white/80 dark:hover:bg-[#2d3350]/80 transition-all cursor-pointer shadow-xl 
                 hover:scale-[1.03] active:scale-[0.98]`}
               >
                 <div
@@ -104,20 +104,20 @@ export default function AdminDashboard() {
                 >
                   {card.icon}
                 </div>
-                <h2 className="text-lg font-semibold">{card.title}</h2>
-                <p className="text-2xl font-bold mt-2">{card.count}</p>
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{card.title}</h2>
+                <p className="text-2xl font-bold mt-2 text-gray-800 dark:text-gray-200">{card.count}</p>
               </div>
             ))}
           </div>
 
           {/* جدول سفارش‌ها */}
-          <div className="bg-white/50 dark:bg-white/50 backdrop-blur-lg border border-sky-200/50 rounded-2xl p-6 shadow-xl">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-black mb-4 border-b border-white/10 pb-2">
+          <div className="bg-white/50 dark:bg-[#262B40]/50 backdrop-blur-lg border border-sky-200/50 dark:border-gray-700/50 rounded-2xl p-6 shadow-xl">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4 border-b border-white/10 dark:border-gray-700/30 pb-2">
               آخرین سفارش‌ها
             </h2>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm text-right">
-                <thead className="text-black border-b border-white/10">
+                <thead className="text-black dark:text-gray-200 border-b border-white/10 dark:border-gray-700/30">
                   <tr>
                     <th className="p-3">شماره سفارش</th>
                     <th className="p-3">نام مشتری</th>
@@ -129,7 +129,7 @@ export default function AdminDashboard() {
                   {orders.map((order) => (
                     <tr
                       key={order.id}
-                      className="hover:bg-white/80 dark:text-gray-900  transition border-b border-white/5"
+                      className="hover:bg-white/80 dark:hover:bg-[#2d3350]/60 dark:text-gray-300 transition border-b border-white/5 dark:border-gray-700/20"
                     >
                       <td className="p-3">{order.id}</td>
                       <td className="p-3">{order.name}</td>
@@ -137,9 +137,9 @@ export default function AdminDashboard() {
                       <td
                         className={`p-3 ${
                           order.status === "تحویل‌شده"
-                            ? "text-green-400 dark:text-green-600"
+                            ? "text-green-400 dark:text-green-400"
                             : order.status === "لغوشده"
-                              ? "text-red-400 dark:text-red-600"
+                              ? "text-red-400 dark:text-red-400"
                               : "text-yellow-400 dark:text-amber-300"
                         }`}
                       >
