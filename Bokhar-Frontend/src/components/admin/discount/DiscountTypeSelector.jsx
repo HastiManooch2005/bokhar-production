@@ -42,7 +42,7 @@ export default function DiscountTypeSelector({ value, onChange }) {
       {/* Percent */}
       <div
         onClick={() => activateType("percent")}
-        className={`relative flex items-center overflow-hidden rounded-xl bg-gray-100 transition-all duration-500 ease-in-out cursor-pointer ${wrapperClass(
+        className={`relative flex items-center overflow-hidden rounded-xl bg-gray-100 dark:bg-[#262B40] border border-transparent dark:border-gray-600 transition-all duration-500 ease-in-out cursor-pointer ${wrapperClass(
           "percent"
         )}`}
       >
@@ -52,16 +52,16 @@ export default function DiscountTypeSelector({ value, onChange }) {
           onChange={(e) => setPercentValue(e.target.value)}
           placeholder="درصد"
           disabled={active !== "percent"}
-          className="w-full h-full px-3 bg-transparent outline-none cursor-pointer"
+          className="w-full h-full px-3 bg-transparent outline-none cursor-pointer dark:text-gray-200"
         />
 
-        <span className="absolute left-3 text-sm text-gray-500">٪</span>
+        <span className="absolute left-3 text-sm text-gray-500 dark:text-gray-400">٪</span>
       </div>
 
       {/* Amount */}
       <div
         onClick={() => activateType("amount")}
-        className={`relative flex items-center overflow-hidden rounded-xl bg-gray-100 transition-all duration-500 ease-in-out cursor-pointer ${wrapperClass(
+        className={`relative flex items-center overflow-hidden rounded-xl bg-gray-100 dark:bg-[#262B40] border border-transparent dark:border-gray-600 transition-all duration-500 ease-in-out cursor-pointer ${wrapperClass(
           "amount"
         )}`}
       >
@@ -71,17 +71,17 @@ export default function DiscountTypeSelector({ value, onChange }) {
           onChange={(e) => setAmountValue(e.target.value)}
           placeholder="مبلغ"
           disabled={active !== "amount"}
-          className="w-full h-full px-3 bg-transparent outline-none cursor-pointer"
+          className="w-full h-full px-3 bg-transparent outline-none cursor-pointer dark:text-gray-200"
         />
 
-        <span className="absolute left-3 text-sm text-gray-500">تومان</span>
+        <span className="absolute left-3 text-sm text-gray-500 dark:text-gray-400">تومان</span>
       </div>
 
       {/* Reset button (outside) */}
       {active && (
         <button
           onClick={reset}
-          className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-500 hover:bg-gray-300 transition shrink-0"
+          className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition shrink-0"
         >
           ×
         </button>
