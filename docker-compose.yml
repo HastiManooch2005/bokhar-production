@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   db:
     image: postgres:15-alpine
@@ -35,29 +37,34 @@ services:
     restart: unless-stopped
     env_file:
       - .env.prod
+
     command: >
-      sh -c "
-      python manage.py migrate &&
-      python manage.py collectstatic --noinput &&
-      gunicorn bokhar.wsgi:application --bind 0.0.0.0:8000 --workers $${GUNICORN_WORKERS:-5} --timeout 120 --access-logfile - --error-logfile -
-      "
+      gunicorn bokhar.wsgi:application
+      --bind 0.0.0.0:8000
+      --workers ${GUNICORN_WORKERS:-5}
+      --timeout 120
+      --access-logfile -
+      --error-logfile -
+
     environment:
       - DJANGO_SETTINGS_MODULE=bokhar.settings
       - DJANGO_ENV=production
       - DEBUG=False
       - STATIC_ROOT=/app/staticfiles
       - STATIC_URL=/static/
+
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
 
   celery:
-    image: bokhar-backend:latest  # از همون image بیلد‌شده backend استفاده میکنه
+    image: bokhar-backend:latest
     restart: unless-stopped
     command: celery -A bokhar worker --loglevel=warning --concurrency=${CELERY_CONCURRENCY:-4}
     env_file:
@@ -72,7 +79,7 @@ services:
         condition: service_healthy
 
   celery_beat:
-    image: bokhar-backend:latest  # از همون image بیلد‌شده backend استفاده میکنه
+    image: bokhar-backend:latest
     restart: unless-stopped
     command: celery -A bokhar beat --loglevel=warning --scheduler django_celery_beat.schedulers:DatabaseScheduler
     env_file:
@@ -103,7 +110,7 @@ services:
       - /etc/nginx/ssl:/etc/nginx/ssl:ro
 
 volumes:
-    postgres_data:
-    redis_data:
-    static_volume:
-    media_volume:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:

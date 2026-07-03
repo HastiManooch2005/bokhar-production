@@ -163,12 +163,14 @@ export function AuthProvider({ children }) {
   }, [verifyAuth]);
 
   useEffect(() => {
-    if (!user?.isAuthenticated) return;
-    const interval = setInterval(() => {
-      tryRefreshToken();
-    }, 25 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [user?.isAuthenticated, tryRefreshToken]);
+  if (!user?.isAuthenticated) return;
+
+  const interval = setInterval(() => {
+    tryRefreshToken();
+  }, 10 * 60 * 1000);
+
+  return () => clearInterval(interval);
+}, [user?.isAuthenticated, tryRefreshToken]);
 const refreshUser = useCallback(async () => {
   try {
     const res = await fetch(`${API_BASE}/verify/`, {
