@@ -12,7 +12,6 @@ import {
   fetchProductFullPricing,
   createProductDiscount,
 } from "../../../../api/discountsApi";
-// Install: npm install react-multi-date-picker
 import DatePicker from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
@@ -55,7 +54,6 @@ const parseDateTime = (dateStr, timeStr) => {
   }
 };
 
-// Convert Persian Date object to ISO string
 const persianToISO = (persianDate, timeStr) => {
   if (!persianDate) return null;
   try {
@@ -109,10 +107,10 @@ const initialState = {
   pricing: {},
   activeTab: 0,
   discounts: {},
-  isScheduleEnabled: false, // ✅ Toggle state
+  isScheduleEnabled: false,
   schedule: {
-    startDate: null, // Persian date object
-    endDate: null,   // Persian date object
+    startDate: null,
+    endDate: null,
     startTime: "00:00",
     endTime: "23:59",
   },
@@ -131,7 +129,7 @@ function discountReducer(state, action) {
         pricing: action.payload.pricing,
         discounts: action.payload.discounts,
         schedule: action.payload.schedule,
-        isScheduleEnabled: action.payload.isScheduleEnabled, // ✅ Restore toggle state
+        isScheduleEnabled: action.payload.isScheduleEnabled,
         activeTab: 0,
         errors: {},
       };
@@ -168,7 +166,7 @@ function discountReducer(state, action) {
         },
       };
     
-    case "TOGGLE_SCHEDULE": // ✅ New action
+    case "TOGGLE_SCHEDULE":
       return {
         ...state,
         isScheduleEnabled: !state.isScheduleEnabled,
@@ -218,9 +216,8 @@ function useDiscountModal(product, isOpen) {
           return;
         }
 
-        // Initialize discounts from existing data
         const initialDiscounts = {};
-        let hasAnySchedule = false; // ✅ Check if any discount has schedule
+        let hasAnySchedule = false;
         
         tabs.forEach((tabName, index) => {
           initialDiscounts[index] = {};
@@ -239,7 +236,6 @@ function useDiscountModal(product, isOpen) {
           });
         });
 
-        // Extract schedule from first available discount
         let schedule = {
           startDate: null,
           endDate: null,
@@ -254,12 +250,11 @@ function useDiscountModal(product, isOpen) {
           );
           
           if (matWithDiscount) {
-            // Convert to Persian Date objects
             const start = new Date(matWithDiscount.discount_start_at);
             const end = new Date(matWithDiscount.discount_end_at);
             
             schedule = {
-              startDate: start, // Will be converted by DatePicker
+              startDate: start,
               endDate: end,
               startTime: formatTimeForInput(start),
               endTime: formatTimeForInput(end),
@@ -275,7 +270,7 @@ function useDiscountModal(product, isOpen) {
             pricing: data.pricing,
             discounts: initialDiscounts,
             schedule,
-            isScheduleEnabled: hasAnySchedule, // ✅ Enable toggle if data exists
+            isScheduleEnabled: hasAnySchedule,
           },
         });
       } catch {
@@ -298,7 +293,6 @@ function useDiscountModal(product, isOpen) {
     
     let startISO, endISO;
 
-    // ✅ Only validate schedule if enabled
     if (isScheduleEnabled) {
       if (!schedule.startDate || !schedule.endDate) {
         dispatch({
@@ -328,7 +322,6 @@ function useDiscountModal(product, isOpen) {
       }
     }
 
-    // Prepare payload
     const payload = [];
 
     Object.entries(discounts).forEach(([tabIndex, materials]) => {
@@ -364,7 +357,6 @@ function useDiscountModal(product, isOpen) {
           value: hasPercent ? Number(values.percent) : Number(values.amount),
         };
 
-        // ✅ Only add dates if scheduling is enabled
         if (isScheduleEnabled) {
           discountPayload.start_at = startISO;
           discountPayload.end_at = endISO;
@@ -411,7 +403,6 @@ function useDiscountModal(product, isOpen) {
 // Sub Components
 // ==========================================
 
-// ✅ Updated Schedule Component with Persian Calendar
 const DiscountTimeInputs = memo(function DiscountTimeInputs({
   isEnabled,
   schedule,
@@ -424,17 +415,17 @@ const DiscountTimeInputs = memo(function DiscountTimeInputs({
   }, [onChange]);
 
   return (
-    <div className="space-y-3 mb-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+    <div className="space-y-3 mb-4 bg-gray-50 dark:bg-[#262B40]/50 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
       {/* Toggle Switch */}
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-700">
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
           میخواهید برای تخفیف زمان انتخاب کنید
         </span>
         <button
           type="button"
           onClick={onToggle}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-            isEnabled ? "bg-purple-600" : "bg-gray-300"
+            isEnabled ? "bg-purple-600" : "bg-gray-300 dark:bg-gray-600"
           }`}
         >
           <span
@@ -445,13 +436,11 @@ const DiscountTimeInputs = memo(function DiscountTimeInputs({
         </button>
       </div>
 
-      {/* Persian Date & Time Inputs - Only show if enabled */}
       {isEnabled && (
         <div className="space-y-3 pt-2">
-          {/* Row 1: Start Date & Time */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500 mr-1">تاریخ شروع</label>
+              <label className="text-xs text-gray-500 dark:text-gray-400 mr-1">تاریخ شروع</label>
               <DatePicker
                 calendar={persian}
                 locale={persian_fa}
@@ -460,29 +449,28 @@ const DiscountTimeInputs = memo(function DiscountTimeInputs({
                 onChange={(date) => onChange({ startDate: date })}
                 format="YYYY/MM/DD"
                 className="rmdp-mobile"
-                inputClass="w-full bg-white border border-gray-300 rounded-xl h-10 px-3 text-sm outline-none focus:border-purple-500"
+                inputClass="w-full bg-white dark:bg-[#262B40] border border-gray-300 dark:border-gray-600 rounded-xl h-10 px-3 text-sm outline-none focus:border-purple-500 text-gray-800 dark:text-gray-200"
                 containerClassName="w-full"
               />
             </div>
             
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500 mr-1">ساعت شروع</label>
-              <div className="flex items-center bg-white border border-gray-300 rounded-xl h-10 px-3 focus-within:border-purple-500">
+              <label className="text-xs text-gray-500 dark:text-gray-400 mr-1">ساعت شروع</label>
+              <div className="flex items-center bg-white dark:bg-[#262B40] border border-gray-300 dark:border-gray-600 rounded-xl h-10 px-3 focus-within:border-purple-500">
                 <input
                   type="time"
                   value={schedule.startTime}
                   onChange={(e) => handleTimeChange("startTime", e.target.value)}
-                  className="w-full bg-transparent outline-none text-sm"
+                  className="w-full bg-transparent outline-none text-sm text-gray-800 dark:text-gray-200"
                   dir="ltr"
                 />
               </div>
             </div>
           </div>
 
-          {/* Row 2: End Date & Time */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500 mr-1">تاریخ پایان</label>
+              <label className="text-xs text-gray-500 dark:text-gray-400 mr-1">تاریخ پایان</label>
               <DatePicker
                 calendar={persian}
                 locale={persian_fa}
@@ -491,19 +479,19 @@ const DiscountTimeInputs = memo(function DiscountTimeInputs({
                 onChange={(date) => onChange({ endDate: date })}
                 format="YYYY/MM/DD"
                 className="rmdp-mobile"
-                inputClass="w-full bg-white border border-gray-300 rounded-xl h-10 px-3 text-sm outline-none focus:border-purple-500"
+                inputClass="w-full bg-white dark:bg-[#262B40] border border-gray-300 dark:border-gray-600 rounded-xl h-10 px-3 text-sm outline-none focus:border-purple-500 text-gray-800 dark:text-gray-200"
                 containerClassName="w-full"
               />
             </div>
             
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500 mr-1">ساعت پایان</label>
-              <div className="flex items-center bg-white border border-gray-300 rounded-xl h-10 px-3 focus-within:border-purple-500">
+              <label className="text-xs text-gray-500 dark:text-gray-400 mr-1">ساعت پایان</label>
+              <div className="flex items-center bg-white dark:bg-[#262B40] border border-gray-300 dark:border-gray-600 rounded-xl h-10 px-3 focus-within:border-purple-500">
                 <input
                   type="time"
                   value={schedule.endTime}
                   onChange={(e) => handleTimeChange("endTime", e.target.value)}
-                  className="w-full bg-transparent outline-none text-sm"
+                  className="w-full bg-transparent outline-none text-sm text-gray-800 dark:text-gray-200"
                   dir="ltr"
                 />
               </div>
@@ -517,7 +505,7 @@ const DiscountTimeInputs = memo(function DiscountTimeInputs({
       )}
       
       {!isEnabled && (
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           تخفیف بدون محدودیت زمانی (همیشگی) اعمال می‌شود
         </p>
       )}
@@ -570,13 +558,12 @@ const MaterialDiscountInput = memo(function MaterialDiscountInput({
     if (!activeType) setActiveType(type);
   }, [activeType]);
 
-const wrapperClass = useMemo(() => {
-  if (activeType === null) return "flex-1";
-  if (activeType === "percent") return "flex-[2]";
-  if (activeType === "amount") return "flex-0 opacity-0";
-  return "flex-1";
-}, [activeType]);
-
+  const wrapperClass = useMemo(() => {
+    if (activeType === null) return "flex-1";
+    if (activeType === "percent") return "flex-[2]";
+    if (activeType === "amount") return "flex-0 opacity-0";
+    return "flex-1";
+  }, [activeType]);
 
   const handlePercentChange = useCallback((e) => {
     let v = e.target.value;
@@ -600,7 +587,7 @@ const wrapperClass = useMemo(() => {
         <button
           type="button"
           onClick={onToggle}
-          className="px-3 py-2 rounded-xl bg-gray-100 text-gray-700 min-w-[70px]"
+          className="px-3 py-2 rounded-xl bg-gray-100 dark:bg-[#262B40] text-gray-700 dark:text-gray-300 border border-transparent dark:border-gray-600 min-w-[70px]"
         >
           {material}
         </button>
@@ -619,12 +606,10 @@ const wrapperClass = useMemo(() => {
           {material}
         </button>
 
-        {/* ✅ Fixed: Changed h-10 md:h-12 to min-h-10 md:min-h-12 and added items-start */}
         <div className="flex gap-2 flex-1 min-h-10 md:min-h-12 select-none items-start">
-          {/* ✅ Added h-10 md:h-12 to maintain fixed height */}
           <div
             onClick={(e) => activateType(e, "percent")}
-            className={`relative overflow-hidden rounded-xl bg-gray-100 flex items-center transition-all duration-300 ease-out cursor-pointer h-10 md:h-12 ${wrapperClass}`}
+            className={`relative overflow-hidden rounded-xl bg-gray-100 dark:bg-[#262B40] border border-transparent dark:border-gray-600 flex items-center transition-all duration-300 ease-out cursor-pointer h-10 md:h-12 ${wrapperClass}`}
           >
             <input
               ref={percentRef}
@@ -634,13 +619,13 @@ const wrapperClass = useMemo(() => {
               onChange={handlePercentChange}
               placeholder="درصد"
               readOnly={activeType !== "percent"}
-              className="w-full h-full px-3 bg-transparent outline-none remove-arrows pr-6"
+              className="w-full h-full px-3 bg-transparent outline-none remove-arrows pr-6 text-gray-800 dark:text-gray-200"
               min="0"
               max="100"
             />
-            <span className="absolute right-3 text-sm text-gray-500 pointer-events-none">٪</span>
+            <span className="absolute right-3 text-sm text-gray-500 dark:text-gray-400 pointer-events-none">٪</span>
             {activeType === "percent" && (
-              <button onClick={handleReset} className="absolute left-3 text-gray-400">×</button>
+              <button onClick={handleReset} className="absolute left-3 text-gray-400 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">×</button>
             )}
           </div>
 
@@ -653,7 +638,7 @@ const wrapperClass = useMemo(() => {
           }`}>
             <div
               onClick={(e) => activateType(e, "amount")}
-              className="relative overflow-hidden rounded-xl bg-gray-100 flex items-center transition-all duration-300 ease-out cursor-pointer h-10 md:h-12 w-full"
+              className="relative overflow-hidden rounded-xl bg-gray-100 dark:bg-[#262B40] border border-transparent dark:border-gray-600 flex items-center transition-all duration-300 ease-out cursor-pointer h-10 md:h-12 w-full"
             >
               <input
                 ref={amountRef}
@@ -663,16 +648,16 @@ const wrapperClass = useMemo(() => {
                 onChange={handleAmountChange}
                 placeholder="مبلغ"
                 readOnly={activeType !== "amount"}
-                className="w-full h-full px-3 bg-transparent outline-none remove-arrows pr-8"
+                className="w-full h-full px-3 bg-transparent outline-none remove-arrows pr-8 text-gray-800 dark:text-gray-200"
                 min="0"
               />
-              <span className="absolute right-3 h-full text-sm text-gray-500 pointer-events-none">$</span>
+              <span className="absolute right-3 h-full text-sm text-gray-500 dark:text-gray-400 pointer-events-none">$</span>
               {activeType === "amount" && (
-                <button onClick={handleReset} className="absolute left-3 text-gray-400">×</button>
+                <button onClick={handleReset} className="absolute left-3 text-gray-400 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">×</button>
               )}
             </div>
             {activeType === "amount" && amountValue && Number(amountValue) > 0 && (
-              <div className="text-xs text-gray-600 mt-1 font-medium text-right">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium text-right">
                 {numberToPersianWords(Number(amountValue) * 10)} ریال
               </div>
             )}
@@ -716,17 +701,17 @@ const PriceDisplay = memo(function PriceDisplay({ basePrice, percent, amount }) 
   }, [basePrice, percent, amount]);
 
   if (!display.showDiscount) {
-    return <div className="text-xs text-gray-500">قیمت: {display.original?.toLocaleString()} تومان</div>;
+    return <div className="text-xs text-gray-500 dark:text-gray-400">قیمت: {display.original?.toLocaleString()} تومان</div>;
   }
 
   return (
     <div className="flex items-center space-x-2 text-xs">
-      <span className="text-red-600 line-through">
+      <span className="text-red-600 dark:text-red-400 line-through">
         {display.original.toLocaleString()} تومان
       </span>
-      <span className="text-green-600 font-semibold">
+      <span className="text-green-600 dark:text-green-400 font-semibold">
         {display.discounted.toLocaleString()} تومان
-        <span className="text-gray-500 mr-1">
+        <span className="text-gray-500 dark:text-gray-400 mr-1">
           ({display.type === "amount" 
             ? `${Number(display.value).toLocaleString()} تومان` 
             : `${display.value}% تخفیف`}
@@ -792,7 +777,6 @@ export default function DiscountModal({ isOpen, onClose, product, category }) {
       maxWidth="lg"
     >
       <div dir="rtl" className="py-1 max-h-[80vh] px-3 overflow-y-auto">
-        {/* ✅ Updated Schedule Component */}
         <DiscountTimeInputs
           isEnabled={state.isScheduleEnabled}
           schedule={state.schedule}
@@ -802,13 +786,13 @@ export default function DiscountModal({ isOpen, onClose, product, category }) {
         />
 
         {state.errors.global && (
-          <div className="text-red-500 text-sm mb-3 p-2 bg-red-50 rounded-lg">
+          <div className="text-red-500 text-sm mb-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
             {state.errors.global}
           </div>
         )}
 
         {state.loading && (
-          <div className="text-center py-6">در حال دریافت اطلاعات...</div>
+          <div className="text-center py-6 text-gray-600 dark:text-gray-300">در حال دریافت اطلاعات...</div>
         )}
 
         {!state.loading && state.tabs.length > 0 && (
@@ -824,8 +808,8 @@ export default function DiscountModal({ isOpen, onClose, product, category }) {
                     onClick={() => dispatch({ type: "SET_ACTIVE_TAB", payload: i })}
                     className={`flex-1 py-2 text-sm border rounded-t-xl transition relative ${
                       isActive
-                        ? "bg-white border-gray-200 border-b-white font-semibold"
-                        : "bg-gray-200 border-transparent text-gray-500"
+                        ? "bg-white dark:bg-[#262B40] border-gray-200 dark:border-gray-600 border-b-white dark:border-b-[#262B40] font-semibold text-gray-800 dark:text-gray-200"
+                        : "bg-gray-200 dark:bg-gray-700 border-transparent text-gray-500 dark:text-gray-400"
                     }`}
                   >
                     {tab}
@@ -837,7 +821,7 @@ export default function DiscountModal({ isOpen, onClose, product, category }) {
               })}
             </div>
 
-            <div className="bg-white border border-gray-200 border-t-white rounded-b-xl p-3 space-y-4 max-h-[50vh] overflow-y-auto">
+            <div className="bg-white dark:bg-[#262B40] border border-gray-200 dark:border-gray-600 border-t-white dark:border-t-[#262B40] rounded-b-xl p-3 space-y-4 max-h-[50vh] overflow-y-auto">
               {currentTabData.materialPrices?.map((mat) => {
                 const saved = currentDiscounts[mat.material] || {};
                 const active = !!currentDiscounts[mat.material];
@@ -873,7 +857,7 @@ export default function DiscountModal({ isOpen, onClose, product, category }) {
         <div className="flex justify-between mt-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 transition"
+            className="px-4 py-2 rounded-xl bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition text-gray-700 dark:text-gray-300"
             disabled={state.loading}
           >
             انصراف

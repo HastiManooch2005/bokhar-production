@@ -105,10 +105,10 @@ function DiscountInputs({ value, onChange }) {
   };
 
   return (
-    <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
+    <div className="space-y-3 bg-gray-50 dark:bg-[#262B40]/50 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
       <div className="flex items-center gap-2">
-        <Tag className="w-4 h-4 text-purple-600" />
-        <h4 className="text-sm font-semibold text-gray-800">مقدار تخفیف</h4>
+        <Tag className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+        <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">مقدار تخفیف</h4>
       </div>
       
       <div className="flex gap-2 select-none items-start">
@@ -122,9 +122,9 @@ function DiscountInputs({ value, onChange }) {
         }`}>
           <div
             onClick={() => activate("percent")}
-            className="relative overflow-hidden rounded-xl bg-white border border-gray-300 flex items-center cursor-pointer h-12 w-full hover:border-purple-400 transition-colors"
+            className="relative overflow-hidden rounded-xl bg-white dark:bg-[#262B40] border border-gray-300 dark:border-gray-600 flex items-center cursor-pointer h-12 w-full hover:border-purple-400 dark:hover:border-purple-500 transition-colors"
           >
-            <div className="absolute right-3 text-purple-600 pointer-events-none">
+            <div className="absolute right-3 text-purple-600 dark:text-purple-400 pointer-events-none">
               <Percent className="w-4 h-4" />
             </div>
             <input
@@ -133,14 +133,14 @@ function DiscountInputs({ value, onChange }) {
               onChange={handlePercentChange}
               placeholder="درصد"
               readOnly={localActive !== "percent"}
-              className="w-full h-full px-3 bg-transparent outline-none pr-9 text-gray-800 remove-arrows leading-tight"
+              className="w-full h-full px-3 bg-transparent outline-none pr-9 text-gray-800 dark:text-gray-200 remove-arrows leading-tight"
               min="0"
               max="100"
             />
             {localActive === "percent" && (
               <button 
                 onClick={handleReset} 
-                className="absolute left-3 p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+                className="absolute left-3 p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -158,9 +158,9 @@ function DiscountInputs({ value, onChange }) {
         }`}>
           <div
             onClick={() => activate("fixed")}
-            className="relative overflow-hidden rounded-xl bg-white border border-gray-300 flex items-center cursor-pointer h-12 w-full hover:border-purple-400 transition-colors"
+            className="relative overflow-hidden rounded-xl bg-white dark:bg-[#262B40] border border-gray-300 dark:border-gray-600 flex items-center cursor-pointer h-12 w-full hover:border-purple-400 dark:hover:border-purple-500 transition-colors"
           >
-            <div className="absolute right-3 text-green-600 pointer-events-none">
+            <div className="absolute right-3 text-green-600 dark:text-green-400 pointer-events-none">
               <Banknote className="w-4 h-4" />
             </div>
             <input
@@ -169,12 +169,12 @@ function DiscountInputs({ value, onChange }) {
               onChange={handleAmountChange}
               placeholder="مبلغ"
               readOnly={localActive !== "fixed"}
-              className="w-full h-full px-3 bg-transparent outline-none remove-arrows pr-9 pl-16 text-gray-800 leading-tight"
+              className="w-full h-full px-3 bg-transparent outline-none remove-arrows pr-9 pl-16 text-gray-800 dark:text-gray-200 leading-tight"
               min="0"
             />
             
             {localActive === "fixed" && (
-              <div className="absolute left-9 text-xs text-gray-500 pointer-events-none font-medium">
+              <div className="absolute left-9 text-xs text-gray-500 dark:text-gray-400 pointer-events-none font-medium">
                 تومان
               </div>
             )}
@@ -182,7 +182,7 @@ function DiscountInputs({ value, onChange }) {
             {localActive === "fixed" && (
               <button 
                 onClick={handleReset} 
-                className="absolute left-3 p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+                className="absolute left-3 p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -190,7 +190,7 @@ function DiscountInputs({ value, onChange }) {
           </div>
           
           {localActive === "fixed" && amount && Number(amount) > 0 && (
-            <div className="text-xs text-gray-600 mt-1.5 pr-9 font-medium">
+            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1.5 pr-9 font-medium">
               {numberToPersianWords(Number(amount) * 10)} ریال
             </div>
           )}
@@ -198,7 +198,7 @@ function DiscountInputs({ value, onChange }) {
       </div>
       
       {!localActive && (
-        <p className="text-xs text-gray-500 flex items-center gap-1">
+        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
           <AlertCircle className="w-3 h-3" />
           برای وارد کردن تخفیف، روی یکی از فیلدها کلیک کنید
         </p>
@@ -213,11 +213,11 @@ function ScheduleSection({ isEnabled, schedule, onToggle, onChange, error }) {
   };
 
   return (
-    <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
+    <div className="space-y-3 bg-gray-50 dark:bg-[#262B40]/50 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Timer className="w-4 h-4 text-purple-600" />
-          <span className="text-sm font-medium text-gray-700">
+          <Timer className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             محدودیت زمانی
           </span>
         </div>
@@ -225,7 +225,7 @@ function ScheduleSection({ isEnabled, schedule, onToggle, onChange, error }) {
           type="button"
           onClick={onToggle}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-            isEnabled ? "bg-purple-600" : "bg-gray-300"
+            isEnabled ? "bg-purple-600" : "bg-gray-300 dark:bg-gray-600"
           }`}
         >
           <span
@@ -240,7 +240,7 @@ function ScheduleSection({ isEnabled, schedule, onToggle, onChange, error }) {
         <div className="space-y-3 pt-2">
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500 mr-1 flex items-center gap-1">
+              <label className="text-xs text-gray-500 dark:text-gray-400 mr-1 flex items-center gap-1">
                 <CalendarDays className="w-3 h-3" />
                 تاریخ شروع
               </label>
@@ -252,22 +252,22 @@ function ScheduleSection({ isEnabled, schedule, onToggle, onChange, error }) {
                 onChange={(date) => onChange({ ...schedule, startDate: date })}
                 format="YYYY/MM/DD"
                 className="rmdp-mobile"
-                inputClass="w-full bg-white border border-gray-300 rounded-xl h-10 px-3 text-sm outline-none focus:border-purple-500"
+                inputClass="w-full bg-white dark:bg-[#262B40] border border-gray-300 dark:border-gray-600 rounded-xl h-10 px-3 text-sm outline-none focus:border-purple-500 text-gray-800 dark:text-gray-200"
                 containerClassName="w-full"
               />
             </div>
             
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500 mr-1 flex items-center gap-1">
+              <label className="text-xs text-gray-500 dark:text-gray-400 mr-1 flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 ساعت شروع
               </label>
-              <div className="flex items-center bg-white border border-gray-300 rounded-xl h-10 px-3 focus-within:border-purple-500">
+              <div className="flex items-center bg-white dark:bg-[#262B40] border border-gray-300 dark:border-gray-600 rounded-xl h-10 px-3 focus-within:border-purple-500">
                 <input
                   type="time"
                   value={schedule.startTime}
                   onChange={(e) => handleTimeChange("startTime", e.target.value)}
-                  className="w-full bg-transparent outline-none text-sm"
+                  className="w-full bg-transparent outline-none text-sm text-gray-800 dark:text-gray-200"
                   dir="ltr"
                 />
               </div>
@@ -276,7 +276,7 @@ function ScheduleSection({ isEnabled, schedule, onToggle, onChange, error }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500 mr-1 flex items-center gap-1">
+              <label className="text-xs text-gray-500 dark:text-gray-400 mr-1 flex items-center gap-1">
                 <CalendarDays className="w-3 h-3" />
                 تاریخ پایان
               </label>
@@ -288,22 +288,22 @@ function ScheduleSection({ isEnabled, schedule, onToggle, onChange, error }) {
                 onChange={(date) => onChange({ ...schedule, endDate: date })}
                 format="YYYY/MM/DD"
                 className="rmdp-mobile"
-                inputClass="w-full bg-white border border-gray-300 rounded-xl h-10 px-3 text-sm outline-none focus:border-purple-500"
+                inputClass="w-full bg-white dark:bg-[#262B40] border border-gray-300 dark:border-gray-600 rounded-xl h-10 px-3 text-sm outline-none focus:border-purple-500 text-gray-800 dark:text-gray-200"
                 containerClassName="w-full"
               />
             </div>
             
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500 mr-1 flex items-center gap-1">
+              <label className="text-xs text-gray-500 dark:text-gray-400 mr-1 flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 ساعت پایان
               </label>
-              <div className="flex items-center bg-white border border-gray-300 rounded-xl h-10 px-3 focus-within:border-purple-500">
+              <div className="flex items-center bg-white dark:bg-[#262B40] border border-gray-300 dark:border-gray-600 rounded-xl h-10 px-3 focus-within:border-purple-500">
                 <input
                   type="time"
                   value={schedule.endTime}
                   onChange={(e) => handleTimeChange("endTime", e.target.value)}
-                  className="w-full bg-transparent outline-none text-sm"
+                  className="w-full bg-transparent outline-none text-sm text-gray-800 dark:text-gray-200"
                   dir="ltr"
                 />
               </div>
@@ -320,7 +320,7 @@ function ScheduleSection({ isEnabled, schedule, onToggle, onChange, error }) {
       )}
       
       {!isEnabled && (
-        <p className="text-xs text-gray-500 flex items-center gap-1">
+        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
           <Clock className="w-3 h-3" />
           تخفیف بدون محدودیت زمانی (همیشگی) اعمال می‌شود
         </p>
@@ -333,19 +333,16 @@ export default function CouponModal({ isOpen, onClose, editItem, customer, onSav
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  // Coupon specific fields (removed code)
   const [usageLimit, setUsageLimit] = useState("");
   const [minOrder, setMinOrder] = useState("");
   const [isActive, setIsActive] = useState(true);
   
-  // Discount value (percent/fixed)
   const [discount, setDiscount] = useState({ 
     percent: "", 
     amount: "", 
     activeType: null 
   });
   
-  // Scheduling
   const [scheduleOn, setScheduleOn] = useState(false);
   const [schedule, setSchedule] = useState({
     startDate: null, 
@@ -357,12 +354,10 @@ export default function CouponModal({ isOpen, onClose, editItem, customer, onSav
   useEffect(() => {
     if (isOpen) {
       if (editItem) {
-        // Parse existing coupon data
         setUsageLimit(editItem.usage_limit ? String(editItem.usage_limit) : "");
         setMinOrder(editItem.min_order_amount ? String(editItem.min_order_amount) : "");
         setIsActive(editItem.is_active !== false);
         
-        // Parse discount type and value
         if (editItem.type && editItem.value !== undefined) {
           setDiscount({
             percent: editItem.type === "percent" ? String(editItem.value) : "",
@@ -373,7 +368,6 @@ export default function CouponModal({ isOpen, onClose, editItem, customer, onSav
           setDiscount({ percent: "", amount: "", activeType: null });
         }
         
-        // Parse dates if exist
         if (editItem.starts_at && editItem.ends_at) {
           setScheduleOn(true);
           const s = new Date(editItem.starts_at);
@@ -394,7 +388,6 @@ export default function CouponModal({ isOpen, onClose, editItem, customer, onSav
           });
         }
       } else {
-        // Reset form for new coupon
         setUsageLimit("");
         setMinOrder("");
         setIsActive(true);
@@ -412,7 +405,6 @@ export default function CouponModal({ isOpen, onClose, editItem, customer, onSav
     }
   }, [isOpen, editItem]);
 
-  // تعیین عنوان مودال و زیرنویس
   const getModalTitle = () => {
     if (editItem) return "ویرایش کد تخفیف";
     return "افزودن کد تخفیف";
@@ -420,15 +412,12 @@ export default function CouponModal({ isOpen, onClose, editItem, customer, onSav
 
 const getSubtitle = () => {
   if (editItem) {
-    // اگر editItem.user آبجکت کامل باشه
     if (editItem.user?.fullname) {
       return `این کد متعلق به: ${editItem.user.fullname} ${editItem.user.phone ? `(${editItem.user.phone})` : ''}`;
     } 
-    // اگر customer prop (که از parent پاس داده میشه) وجود داشته باشه
     else if (customer?.fullname) {
       return `این کد متعلق به: ${customer.fullname} ${customer.phone ? `(${customer.phone})` : ''}`;
     }
-    // اگر فقط ID داشته باشیم
     else if (editItem.user_id || editItem.user) {
       const id = editItem.user_id || editItem.user;
       return `این کد متعلق به: مشتری خاص (ID: ${id})`;
@@ -441,7 +430,6 @@ const getSubtitle = () => {
   }
   return "کد تخفیف عمومی (قابل استفاده برای همه)";
 };
-
 
   const validate = () => {
     setError(null);
@@ -488,8 +476,6 @@ const getSubtitle = () => {
         min_order_amount: minOrder ? parseInt(minOrder) : null,
         is_active: isActive,
         
-        // اضافه کردن user فقط موقع ساخت کد جدید برای مشتری خاص
-        // وقتی editItem null باشه یعنی داریم کد جدید می‌سازیم
         ...(customer && !editItem && { user: customer.id }),
         
         ...(scheduleOn && {
@@ -523,12 +509,10 @@ const getSubtitle = () => {
     >
       <div dir="rtl" className="py-1 space-y-4 max-h-[80vh] overflow-y-auto">
         
-        {/* متن ساده مشخص کننده مالک کد تخفیف */}
         <p className="text-sm text-gray-600 dark:text-gray-400 text-center -mt-2 mb-2 font-medium">
           {getSubtitle()}
         </p>
 
-        {/* Schedule Section - moved to top */}
         <ScheduleSection
           isEnabled={scheduleOn}
           schedule={schedule}
@@ -537,14 +521,12 @@ const getSubtitle = () => {
           error={error?.includes("تاریخ") || error?.includes("زمان") ? error : null}
         />
 
-        {/* Discount Value (Percent/Amount) */}
         <DiscountInputs value={discount} onChange={setDiscount} />
 
-        {/* Usage Limit and Min Order */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-xs font-medium text-gray-600 mr-1">
-              <Hash className="w-3 h-3 text-gray-500" />
+            <label className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-400 mr-1">
+              <Hash className="w-3 h-3 text-gray-500 dark:text-gray-400" />
               حداکثر استفاده (اختیاری)
             </label>
             <input
@@ -552,14 +534,14 @@ const getSubtitle = () => {
               value={usageLimit}
               onChange={(e) => setUsageLimit(e.target.value)}
               placeholder="نامحدود"
-              className="w-full p-3 rounded-xl bg-white border border-gray-300 outline-none focus:border-purple-500 text-gray-800 remove-arrows text-sm"
+              className="w-full p-3 rounded-xl bg-white dark:bg-[#262B40] border border-gray-300 dark:border-gray-600 outline-none focus:border-purple-500 text-gray-800 dark:text-gray-200 remove-arrows text-sm"
               min="1"
             />
           </div>
           
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-xs font-medium text-gray-600 mr-1">
-              <ShoppingCart className="w-3 h-3 text-gray-500" />
+            <label className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-400 mr-1">
+              <ShoppingCart className="w-3 h-3 text-gray-500 dark:text-gray-400" />
               حداقل سفارش (تومان)
             </label>
             <input
@@ -567,17 +549,16 @@ const getSubtitle = () => {
               value={minOrder}
               onChange={(e) => setMinOrder(e.target.value)}
               placeholder="0"
-              className="w-full p-3 rounded-xl bg-white border border-gray-300 outline-none focus:border-purple-500 text-gray-800 remove-arrows text-sm"
+              className="w-full p-3 rounded-xl bg-white dark:bg-[#262B40] border border-gray-300 dark:border-gray-600 outline-none focus:border-purple-500 text-gray-800 dark:text-gray-200 remove-arrows text-sm"
               min="0"
             />
           </div>
         </div>
 
-        {/* Active Toggle */}
-        <div className="flex items-center justify-between p-3 rounded-xl border border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-between p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-[#262B40]/50">
           <div className="flex items-center gap-2">
             <CheckCircle2 className={`w-4 h-4 ${isActive ? "text-green-600" : "text-gray-400"}`} />
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {isActive ? "کد تخفیف فعال است" : "کد تخفیف غیرفعال است"}
             </span>
           </div>
@@ -585,7 +566,7 @@ const getSubtitle = () => {
             type="button"
             onClick={() => setIsActive(!isActive)}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-              isActive ? "bg-green-600" : "bg-gray-300"
+              isActive ? "bg-green-600" : "bg-gray-300 dark:bg-gray-600"
             }`}
           >
             <span
@@ -596,20 +577,18 @@ const getSubtitle = () => {
           </button>
         </div>
 
-        {/* Error Display */}
         {error && !error.includes("تاریخ") && !error.includes("زمان") && (
-          <div className="flex items-center gap-2 text-red-500 text-sm p-3 bg-red-50 rounded-lg">
+          <div className="flex items-center gap-2 text-red-500 text-sm p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex justify-between pt-4 border-t mt-4">
+        <div className="flex justify-between pt-4 border-t dark:border-gray-600 mt-4">
           <button
             onClick={onClose}
             disabled={loading}
-            className="px-6 py-2.5 rounded-xl bg-gray-200 hover:bg-gray-300 transition text-sm font-medium text-gray-700 disabled:opacity-50"
+            className="px-6 py-2.5 rounded-xl bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition text-sm font-medium text-gray-700 dark:text-gray-300 disabled:opacity-50"
           >
             انصراف
           </button>
@@ -617,7 +596,7 @@ const getSubtitle = () => {
           <button
             onClick={submit}
             disabled={loading || !discount.activeType}
-            className="px-8 py-2.5 rounded-xl bg-purple-600 text-white text-sm font-medium disabled:opacity-50 hover:bg-purple-700 transition shadow-lg shadow-purple-200"
+            className="px-8 py-2.5 rounded-xl bg-purple-600 text-white text-sm font-medium disabled:opacity-50 hover:bg-purple-700 transition shadow-lg shadow-purple-200 dark:shadow-purple-900/30"
           >
             {loading ? (
               <span className="flex items-center gap-2">
