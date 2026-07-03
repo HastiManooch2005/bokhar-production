@@ -69,7 +69,7 @@ function MaterialPriceInput({ mat, value, onToggle, onChange, onDelete }) {
         type="button"
         onClick={onToggle}
         className={`px-3 py-2 rounded-xl transition min-w-[60px] flex items-center justify-center gap-2 ${
-          active ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          active ? "bg-[#8AA1C4] text-white" : "bg-gray-100 dark:bg-[#262B40] text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-[#2d3350]"
         }`}
       >
         {mat}
@@ -91,7 +91,7 @@ function MaterialPriceInput({ mat, value, onToggle, onChange, onDelete }) {
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="قیمت (تومان)"
-          className="flex-1 p-2 rounded-xl bg-gray-100"
+          className="flex-1 p-2 rounded-xl bg-gray-100 dark:bg-[#1a1f2e] dark:text-gray-200 dark:border-gray-600"
           min="0"
         />
       )}
@@ -105,13 +105,13 @@ function SizeSelector({ value, onChange }) {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full h-10 px-3 text-sm rounded-xl bg-gray-100 appearance-none"
+        className="w-full h-10 px-3 text-sm rounded-xl bg-gray-100 dark:bg-[#1a1f2e] dark:text-gray-200 dark:border-gray-600 appearance-none"
       >
         <option value="">هیچکدام</option>
         <option value="singleDouble">تک نفره / دو نفره</option>
         <option value="meter">متر مربع (متراژی)</option>
       </select>
-      <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs">
+      <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs dark:text-gray-400">
         ▼
       </div>
     </div>
@@ -452,7 +452,7 @@ export default function ServicesModal({
             <button
               type="button"
               onClick={handleImageClick}
-              className="p-1.5 mr-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-all"
+              className="p-1.5 mr-2 text-gray-500 hover:text-[#8AA1C4] hover:bg-[#8AA1C4]/10 rounded-full transition-all"
               title="افزودن تصویر"
             >
               <svg 
@@ -490,7 +490,7 @@ export default function ServicesModal({
               <img 
                 src={serviceImage} 
                 alt="پیش‌نمایش سرویس" 
-                className="w-full h-32 object-cover rounded-xl border border-gray-200"
+                className="w-full h-32 object-cover rounded-xl border border-gray-200 dark:border-gray-600"
               />
               <button
                 type="button"
@@ -508,14 +508,14 @@ export default function ServicesModal({
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
               placeholder="عنوان سرویس"
-              className="flex-1 h-10 px-3 text-sm rounded-xl bg-gray-100"
+              className="flex-1 h-10 px-3 text-sm rounded-xl bg-gray-100 dark:bg-[#1a1f2e] dark:text-gray-200 dark:border-gray-600"
               disabled={isLoading}
             />
             <div className="flex-1 relative">
               <select
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="w-full h-10 px-3 text-sm rounded-xl bg-gray-100 appearance-none"
+                className="w-full h-10 px-3 text-sm rounded-xl bg-gray-100 dark:bg-[#1a1f2e] dark:text-gray-200 dark:border-gray-600 appearance-none"
                 disabled={isLoading}
               >
                 {categories.map((cat) => (
@@ -524,7 +524,7 @@ export default function ServicesModal({
                   </option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs">
+              <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs dark:text-gray-400">
                 ▼
               </div>
             </div>
@@ -543,8 +543,8 @@ export default function ServicesModal({
                     onClick={() => setActiveTab(i)}
                     className={`w-full py-2 text-sm border rounded-t-xl transition relative ${
                       activeTab === i
-                        ? "bg-white border-gray-200 border-b-white z-20 font-semibold"
-                        : "bg-gray-200 border-transparent text-gray-500 hover:bg-gray-300"
+                        ? "bg-white dark:bg-[#262B40] border-gray-200 dark:border-gray-600 border-b-white dark:border-b-[#262B40] z-20 font-semibold dark:text-gray-200"
+                        : "bg-gray-200 dark:bg-[#1a1f2e] border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-[#2d3350]"
                     }`}
                   >
                     {tab}
@@ -573,17 +573,17 @@ export default function ServicesModal({
               <button
                 type="button"
                 onClick={() => setIsAddingTab(true)}
-                className="py-2 px-3 text-sm border rounded-t-xl bg-purple-100 text-purple-700 border-transparent hover:bg-purple-200 transition"
+                className="py-2 px-3 text-sm border rounded-t-xl bg-purple-100 dark:bg-[#262B40] text-purple-700 dark:text-[#8AA1C4] border-transparent hover:bg-purple-200 dark:hover:bg-[#2d3350] transition"
               >
                 +
               </button>
             ) : (
-              <div className="flex-1 flex items-center gap-1 px-2 py-1 border border-purple-300 rounded-t-xl bg-purple-50 border-b-white">
+              <div className="flex-1 flex items-center gap-1 px-2 py-1 border border-purple-300 dark:border-gray-600 rounded-t-xl bg-purple-50 dark:bg-[#262B40] border-b-white dark:border-b-[#262B40]">
                 <input
                   value={newTabName}
                   onChange={(e) => setNewTabName(e.target.value)}
                   placeholder="نام تب"
-                  className="flex-1 h-7 px-2 text-xs rounded bg-white border-none outline-none"
+                  className="flex-1 h-7 px-2 text-xs rounded bg-white dark:bg-[#1a1f2e] dark:text-gray-200 border-none outline-none"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') addTab();
@@ -615,14 +615,14 @@ export default function ServicesModal({
           </div>
 
           {/* محتوای تب */}
-          <div className="bg-white border border-gray-200 rounded-b-xl p-3 max-h-[50vh] overflow-y-auto">
+          <div className="bg-white dark:bg-[#262B40] border border-gray-200 dark:border-gray-600 rounded-b-xl p-3 max-h-[50vh] overflow-y-auto">
             <div className="mb-5">
               {/* دراپ‌داون نوع قیمت‌گذاری - بالای لیست جنس‌ها */}
               <SizeSelector
                 value={data.sizeType}
                 onChange={(v) => setPricingField("sizeType", v)}
               />
-              <div className="text-sm font-semibold mb-2 text-gray-700">
+              <div className="text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">
                 جنس‌ها
               </div>
               
@@ -644,7 +644,7 @@ export default function ServicesModal({
                   <button
                     type="button"
                     onClick={() => setIsAddingMaterial(true)}
-                    className="w-full py-2 text-sm rounded-xl bg-gray-100 text-gray-600 border border-dashed border-gray-300 hover:bg-gray-200 hover:border-gray-400 transition"
+                    className="w-full py-2 text-sm rounded-xl bg-gray-100 dark:bg-[#1a1f2e] text-gray-600 dark:text-gray-300 border border-dashed border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-[#2d3350] hover:border-gray-400 transition"
                   >
                     + افزودن جنس جدید
                   </button>
@@ -654,7 +654,7 @@ export default function ServicesModal({
                       value={newMaterialName}
                       onChange={(e) => setNewMaterialName(e.target.value)}
                       placeholder="نام جنس جدید"
-                      className="flex-1 h-9 px-3 text-sm rounded-xl bg-gray-100 border border-gray-300 outline-none focus:border-purple-500"
+                      className="flex-1 h-9 px-3 text-sm rounded-xl bg-gray-100 dark:bg-[#1a1f2e] dark:text-gray-200 border border-gray-300 dark:border-gray-600 outline-none focus:border-[#8AA1C4]"
                       autoFocus
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') addMaterial();
@@ -677,7 +677,7 @@ export default function ServicesModal({
                         setIsAddingMaterial(false);
                         setNewMaterialName("");
                       }}
-                      className="h-9 px-3 rounded-xl bg-gray-200 text-gray-700 text-sm hover:bg-gray-300"
+                      className="h-9 px-3 rounded-xl bg-gray-200 dark:bg-[#262B40] text-gray-700 dark:text-gray-200 text-sm hover:bg-gray-300 dark:hover:bg-[#2d3350]"
                     >
                       انصراف
                     </button>
@@ -692,7 +692,7 @@ export default function ServicesModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 transition"
+              className="px-4 py-2 rounded-xl bg-gray-200 dark:bg-[#262B40] dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-[#2d3350] transition"
               disabled={isLoading}
             >
               انصراف
@@ -701,7 +701,7 @@ export default function ServicesModal({
               type="button"
               onClick={handleSave}
               disabled={!isValid || isLoading}
-              className="px-6 py-2 rounded-xl bg-purple-600 text-white disabled:opacity-50 hover:bg-purple-700 transition"
+              className="px-6 py-2 rounded-xl bg-purple-600 dark:bg-[#8AA1C4] text-white disabled:opacity-50 hover:bg-purple-700 dark:hover:bg-[#7a93b8] transition"
             >
               {isLoading ? "در حال ذخیره..." : "ذخیره"}
             </button>
