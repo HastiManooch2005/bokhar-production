@@ -6,7 +6,7 @@ from django.db import transaction
 
 from .models import ProductDiscount, GlobalDiscount, Coupon
 from .serializers import ProductDiscountSerializer, GlobalDiscountSerializer, CouponSerializer
-from products.permossion import IsSeller
+from products.permission import *
 from rest_framework.response import Response
 from rest_framework import status
 
