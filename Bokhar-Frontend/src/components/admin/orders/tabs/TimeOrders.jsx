@@ -306,7 +306,7 @@ export default function TimeOrders({
         </div>
       )}
 
-      <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <section className="bg-white dark:bg-[#262B40] rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="p-3 sm:p-4 lg:p-6 border-b border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl shrink-0">
@@ -338,7 +338,7 @@ export default function TimeOrders({
                 disabled={saving}
                 placeholder="کلیک کنید و تاریخ را انتخاب کنید..."
                 format="YYYY/MM/DD"
-                inputClass="w-full p-2.5 sm:p-3 lg:p-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-right focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-xs sm:text-sm lg:text-base"
+                inputClass="w-full p-2.5 sm:p-3 lg:p-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-[#262B40] text-gray-800 dark:text-gray-200 text-right focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-xs sm:text-sm lg:text-base"
                 containerClassName="w-full block"
                 calendarPosition="bottom-center"
                 className="w-full"
@@ -366,7 +366,7 @@ export default function TimeOrders({
               ))}
             </div>
           ) : (
-            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-500 bg-gray-50 dark:bg-gray-800/50 p-3 sm:p-4 rounded-xl border border-dashed border-gray-300">
+            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 p-3 sm:p-4 rounded-xl border border-dashed border-gray-300 dark:border-gray-600">
               <CheckCircle2 size={16} className="text-green-500 shrink-0 sm:w-5 sm:h-5" />
               <span>هیچ تاریخ غیرفعالی تعریف نشده</span>
             </div>
@@ -374,7 +374,7 @@ export default function TimeOrders({
         </div>
       </section>
 
-      <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <section className="bg-white dark:bg-[#262B40] rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="p-3 sm:p-4 lg:p-6 border-b border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl shrink-0">
@@ -452,7 +452,7 @@ export default function TimeOrders({
 
                   {isEnabled && (
                     <div className="space-y-3 sm:space-y-4">
-                      <div className="bg-white dark:bg-gray-700/50 rounded-lg p-2.5 sm:p-3 border border-gray-100 dark:border-gray-600">
+                      <div className="bg-white dark:bg-[#262B40]/50 rounded-lg p-2.5 sm:p-3 border border-gray-100 dark:border-gray-600">
                         <label className="block text-[10px] sm:text-xs font-bold mb-2 text-gray-700 dark:text-gray-300">
                           نوع اضافه‌بها
                         </label>
@@ -461,7 +461,7 @@ export default function TimeOrders({
                             value={setting.priceType}
                             onChange={(e) => updateSettings(type, 'priceType', e.target.value)}
                             disabled={saving}
-                            className="w-full sm:w-32 lg:w-36 px-2.5 py-2 sm:px-3 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-xs sm:text-sm disabled:opacity-50"
+                            className="w-full sm:w-32 lg:w-36 px-2.5 py-2 sm:px-3 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#262B40] text-xs sm:text-sm disabled:opacity-50"
                           >
                             <option value="fixed">مبلغ ثابت (تومان)</option>
                             <option value="percentage">درصدی (%)</option>
@@ -481,12 +481,12 @@ export default function TimeOrders({
                             }}
                             disabled={saving}
                             placeholder={setting.priceType === 'percentage' ? "مثلاً: 20" : "مثلاً: 100000"}
-                            className="flex-1 px-2.5 py-2 sm:px-3 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-xs sm:text-sm disabled:opacity-50 min-w-0"
+                            className="flex-1 px-2.5 py-2 sm:px-3 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#262B40] text-xs sm:text-sm disabled:opacity-50 min-w-0"
                           />
                         </div>
                       </div>
 
-                      <div className="bg-white dark:bg-gray-700/50 rounded-lg p-2.5 sm:p-3 border border-gray-100 dark:border-gray-600">
+                      <div className="bg-white dark:bg-[#262B40]/50 rounded-lg p-2.5 sm:p-3 border border-gray-100 dark:border-gray-600">
                         <label className="block text-[10px] sm:text-xs font-bold mb-2 text-gray-700 dark:text-gray-300">
                           سقف روزانه سفارش
                         </label>
