@@ -170,7 +170,7 @@ export default function Devices() {
   const getDeviceIcon = (type) => {
     switch (type) {
       case "mobile":
-        return <Smartphone size={20} className="text-blue-600 dark:text-blue-400" />;
+        return <Smartphone size={20} className="text-blue-600 dark:text-[#8AA1C4]" />;
       case "tablet":
         return <Monitor size={20} className="text-orange-600 dark:text-orange-400" />;
       case "laptop":
@@ -185,7 +185,7 @@ export default function Devices() {
   const getDeviceColor = (type) => {
     switch (type) {
       case "mobile":
-        return "bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400";
+        return "bg-blue-500/10 dark:bg-[#8AA1C4]/10 text-blue-600 dark:text-[#8AA1C4]";
       case "tablet":
         return "bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400";
       case "laptop":
@@ -198,15 +198,15 @@ export default function Devices() {
 
   return (
     <div dir="rtl" className="w-full max-w-lg mx-auto p-4">
-      <div className="relative md:mt-20 mb-20 md:mb-0 bg-sky-50 dark:bg-gray-900/40 rounded-2xl shadow-xl shadow-black/5 border border-sky-200 dark:border-white/10">
+      <div className="relative md:mt-20 mb-20 md:mb-0 bg-sky-50 dark:bg-[#1a1f2e]/40 rounded-2xl shadow-xl shadow-black/5 border border-sky-200 dark:border-gray-700/50">
         <div className="p-6 space-y-6">
           {/* Header */}
-          <div className="flex items-center gap-3 pb-4 border-b border-gray-200/30 dark:border-white/5">
-            <div className="p-2 bg-purple-500/10 dark:bg-purple-500/20 rounded-lg">
-              <Smartphone className="text-purple-600 dark:text-purple-400" size={24} />
+          <div className="flex items-center gap-3 pb-4 border-b border-gray-200/30 dark:border-gray-700/30">
+            <div className="p-2 bg-purple-500/10 dark:bg-[#262B40] rounded-lg">
+              <Smartphone className="text-purple-600 dark:text-[#8AA1C4]" size={24} />
             </div>
             <div className="flex-1">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-200">
                 دستگاه‌ها و نشست‌ها
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
@@ -218,17 +218,17 @@ export default function Devices() {
               onClick={() => navigate("/customer-dashboard")}
               className="ms-auto w-10 h-10 rounded-full border shadow-sm hover:shadow-md cursor-pointer
               bg-white/80 hover:bg-gray-200 border-sky-300 shadow-sky-200
-              dark:bg-purple-800 dark:hover:bg-purple-900 dark:border-indigo-500
-              dark:shadow-indigo-500 flex items-center justify-center transition"
+              dark:bg-[#262B40] dark:hover:bg-[#2d3350] dark:border-gray-600
+              dark:shadow-black/40 flex items-center justify-center transition"
             >
-              <ArrowLeft size={20} className="text-gray-700 dark:text-gray-200" />
+              <ArrowLeft size={20} className="text-gray-700 dark:text-gray-300" />
             </button>
           </div>
 
           {/* Loading State */}
           {loading && (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Loader2 size={32} className="animate-spin text-purple-600 dark:text-purple-400" />
+              <Loader2 size={32} className="animate-spin text-purple-600 dark:text-[#8AA1C4]" />
               <p className="text-gray-500 dark:text-gray-400 text-sm">در حال دریافت اطلاعات...</p>
             </div>
           )}
@@ -249,9 +249,9 @@ export default function Devices() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
                     className={`group flex justify-between items-center p-4 rounded-xl
-                      bg-white/50 dark:bg-black/20 border border-gray-200/50 dark:border-gray-700/50
-                      hover:bg-white/70 dark:hover:bg-white/30 transition-all duration-200
-                      backdrop-blur-sm ${d.current ? "ring-1 ring-blue-500/20 dark:ring-blue-400/20" : ""}`}
+                      bg-white/50 dark:bg-[#262B40]/40 border border-gray-200/50 dark:border-gray-700/50
+                      hover:bg-white/70 dark:hover:bg-[#2d3350]/60 transition-all duration-200
+                      backdrop-blur-sm ${d.current ? "ring-1 ring-blue-500/20 dark:ring-[#8AA1C4]/20" : ""}`}
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className={`p-2.5 rounded-xl ${getDeviceColor(d.type)} transition-transform group-hover:scale-105 shrink-0`}>
@@ -259,7 +259,7 @@ export default function Devices() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                          <p className="font-medium text-gray-900 dark:text-gray-200 truncate">
                             {d.displayName}
                           </p>
                           {d.current && (
@@ -315,7 +315,7 @@ export default function Devices() {
 
           {/* Logout All Button */}
           {!loading && devices.length > 1 && (
-            <div className="pt-4 border-t border-gray-200/30 dark:border-white/5">
+            <div className="pt-4 border-t border-gray-200/30 dark:border-gray-700/30">
               <button
                 onClick={handleLogoutAll}
                 disabled={logoutAllLoading}
@@ -337,9 +337,9 @@ export default function Devices() {
           )}
 
           {/* Security Note */}
-          <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-200/30 dark:border-blue-500/20">
-            <Lock size={16} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-            <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+          <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50/50 dark:bg-[#262B40]/40 border border-blue-200/30 dark:border-gray-700/30">
+            <Lock size={16} className="text-blue-600 dark:text-[#8AA1C4] shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-700 dark:text-gray-300 leading-relaxed">
               در صورت مشاهده دستگاه ناشناس، سریعاً آن را حذف کرده و رمز عبور خود را تغییر دهید.
             </p>
           </div>
