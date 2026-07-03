@@ -219,7 +219,7 @@ export default function ManageOrders({
                            whitespace-nowrap flex-shrink-0
                            ${isActive
                              ? `${tab.colors.active} scale-105 text-gray-800 dark:text-white/90 shadow-sm`
-                             : `bg-white dark:bg-gray-800/80 ${tab.colors.hover} border-gray-200 dark:border-gray-600 shadow-sm text-gray-800`
+                             : `bg-white dark:bg-gray-800/80 ${tab.colors.hover} border-gray-200 dark:border-gray-600 shadow-sm text-gray-800 dark:text-gray-200`
                            }`}
               >
                 <Icon size={16} className={isActive ? "opacity-100" : "opacity-70"} />
@@ -438,14 +438,14 @@ function OrdersTable({
   };
 
   return (
-    <div className="bg-white/50 dark:bg-white/50 backdrop-blur-lg border border-sky-200/50 rounded-2xl mt-6 p-3 sm:p-6 shadow-xl">
-      <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-black mb-4 border-b border-white/10 pb-2">
+    <div className="bg-white/50 dark:bg-[#262B40]/90 backdrop-blur-lg border border-sky-200/50 dark:border-gray-600/50 rounded-2xl mt-6 p-3 sm:p-6 shadow-xl">
+      <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4 border-b border-white/10 dark:border-gray-600/50 pb-2">
         سفارش‌ها
       </h2>
 
       <div className="overflow-x-auto">
         <table className="w-full text-xs sm:text-sm text-right">
-          <thead className="text-black border-b border-white/10">
+          <thead className="text-black dark:text-gray-200 border-b border-white/10 dark:border-gray-600/50">
             <tr>
               <th className="p-2 sm:p-3 whitespace-nowrap">شماره</th>
               <th className="p-2 sm:p-3 whitespace-nowrap">وضعیت</th>
@@ -471,7 +471,7 @@ function OrdersTable({
               <tr
                 key={order.id}
                 onClick={() => onRowClick(order)}
-                className="hover:bg-white/80 dark:text-gray-900 transition border-b border-white/5 cursor-pointer"
+                className="hover:bg-white/80 dark:hover:bg-[#2d3350] dark:text-gray-200 transition border-b border-white/5 dark:border-gray-600/30 cursor-pointer"
               >
                 <td className="p-2 sm:p-3">
                   <span
