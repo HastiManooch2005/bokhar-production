@@ -18,14 +18,14 @@ function ConfirmToast({ message, onConfirm, onCancel }) {
   if (!message) return null;
   return (
     <div className="fixed inset-0 flex items-end sm:items-start justify-center sm:pt-6 z-[9999] px-4 pb-6 sm:pb-0 pointer-events-none">
-      <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-sky-200 dark:border-indigo-600 p-5 w-full max-w-sm pointer-events-auto backdrop-blur-xl animate-slide-up">
+      <div className="bg-white dark:bg-[#262B40] rounded-2xl shadow-2xl border border-sky-200 dark:border-gray-700 p-5 w-full max-w-sm pointer-events-auto backdrop-blur-xl animate-slide-up">
         <p className="text-gray-800 dark:text-gray-200 font-medium text-center mb-4">
           {message}
         </p>
         <div className="flex gap-3 justify-center">
           <button
             onClick={onCancel}
-            className="flex-1 py-2 rounded-xl bg-gray-100 dark:bg-neutral-700 hover:bg-gray-200 dark:hover:bg-neutral-600 text-gray-700 dark:text-gray-200 transition font-medium"
+            className="flex-1 py-2 rounded-xl bg-gray-100 dark:bg-[#1a1f2e] hover:bg-gray-200 dark:hover:bg-[#2d3350] text-gray-700 dark:text-gray-200 transition font-medium"
           >
             انصراف
           </button>
@@ -198,14 +198,14 @@ export default function AdminServices() {
       />
 
       <main className="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 md:mr-64">
-        <h1 className="flex items-center justify-center md:justify-start gap-2 text-2xl font-bold text-gray-800 dark:text-gray-100 mb-8">
+        <h1 className="flex items-center justify-center md:justify-start gap-2 text-2xl font-bold text-gray-800 dark:text-gray-200 mb-8">
           <FiPackage className="text-2xl" />
           خدمات
         </h1>
 
         {isLoading && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-neutral-900 text-gray-800 dark:text-gray-100 p-4 rounded-xl backdrop-blur-xl">
+            <div className="bg-white dark:bg-[#262B40] text-gray-800 dark:text-gray-200 p-4 rounded-xl backdrop-blur-xl">
               در حال بارگذاری...
             </div>
           </div>
@@ -215,8 +215,8 @@ export default function AdminServices() {
           {/* ----------------------- */}
           {/* دسته‌بندی‌ها */}
           {/* ----------------------- */}
-          <div className="p-6 rounded-3xl bg-white/30 dark:bg-white/40 backdrop-blur-lg border border-sky-200 dark:border-indigo-600 shadow-xl">
-            <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-900">
+          <div className="p-6 rounded-3xl bg-white/30 dark:bg-[#262B40]/40 backdrop-blur-lg border border-sky-200 dark:border-gray-700 shadow-xl">
+            <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
               دسته‌بندی‌ها
             </h2>
 
@@ -225,13 +225,13 @@ export default function AdminServices() {
                 value={newCat}
                 onChange={(e) => setNewCat(e.target.value)}
                 placeholder="نام دسته جدید"
-                className="flex-1 min-w-0 p-3 h-12 rounded-xl border border-sky-200 dark:border-indigo-600 bg-white/80 dark:bg-neutral-800 shadow text-slate-800 dark:text-gray-200"
+                className="flex-1 min-w-0 p-3 h-12 rounded-xl border border-sky-200 dark:border-gray-600 bg-white/80 dark:bg-[#1a1f2e] shadow text-slate-800 dark:text-gray-200"
                 onKeyDown={(e) => e.key === "Enter" && addCategory()}
               />
               <button
                 onClick={addCategory}
                 disabled={isLoading}
-                className="px-3 sm:px-4 h-12 shrink-0 rounded-xl bg-gradient-to-r from-sky-100 to-sky-200 dark:from-purple-700 dark:to-purple-800 border border-sky-200 dark:border-indigo-600 shadow-lg text-gray-800 dark:text-white flex items-center gap-2 shrink-0 cursor-pointer hover:scale-105 transition disabled:opacity-50"
+                className="px-3 sm:px-4 h-12 shrink-0 rounded-xl bg-gradient-to-r from-sky-100 to-sky-200 dark:from-[#8AA1C4] dark:to-[#8AA1C4] border border-sky-200 dark:border-gray-600 shadow-lg text-gray-800 dark:text-white flex items-center gap-2 cursor-pointer hover:scale-105 transition disabled:opacity-50"
               >
                 <FiPlus /> افزودن
               </button>
@@ -241,7 +241,7 @@ export default function AdminServices() {
               {sortedCategories.map((c) => (
                 <div
                   key={c.id}
-                  className="flex items-center gap-3 mx-1 mb-4 px-4 py-2 rounded-xl border border-sky-200 dark:border-indigo-600 bg-gradient-to-r from-sky-100 to-sky-200 dark:from-purple-700 dark:to-purple-800 shadow text-gray-800 dark:text-white shrink-0 select-none"
+                  className="flex items-center gap-3 mx-1 mb-4 px-4 py-2 rounded-xl border border-sky-200 dark:border-gray-600 bg-gradient-to-r from-sky-100 to-sky-200 dark:from-[#8AA1C4] dark:to-[#8AA1C4] shadow text-gray-800 dark:text-white shrink-0 select-none"
                 >
                   <span className="truncate whitespace-nowrap">{c.name}</span>
                   <button
@@ -259,7 +259,7 @@ export default function AdminServices() {
           {/* ----------------------- */}
           {/* خدمات */}
           {/* ----------------------- */}
-          <div className="p-6 rounded-3xl bg-white/30 dark:bg-white/40 backdrop-blur-lg border border-sky-200 dark:border-indigo-600 shadow-xl">
+          <div className="p-6 rounded-3xl bg-white/30 dark:bg-[#262B40]/40 backdrop-blur-lg border border-sky-200 dark:border-gray-700 shadow-xl">
             <div className="mb-6">
               <Search
                 value={search}
@@ -275,8 +275,8 @@ export default function AdminServices() {
                 onClick={() => setSelectedCategory("all")}
                 className={`px-4 py-2 mx-0.5 mb-4 rounded-xl whitespace-nowrap cursor-pointer shrink-0 transition-all ${
                   selectedCategory === "all"
-                    ? "border border-sky-200 dark:border-indigo-600 bg-gradient-to-r from-sky-100 to-sky-200 dark:from-purple-700 dark:to-purple-800 shadow text-gray-800 dark:text-white font-bold"
-                    : "bg-white/70 dark:bg-neutral-700 text-gray-700 dark:text-gray-200 border border-sky-200 dark:border-gray-600 hover:bg-white"
+                    ? "border border-sky-200 dark:border-gray-600 bg-gradient-to-r from-sky-100 to-sky-200 dark:from-[#8AA1C4] dark:to-[#8AA1C4] shadow text-gray-800 dark:text-white font-bold"
+                    : "bg-white/70 dark:bg-[#1a1f2e] text-gray-700 dark:text-gray-200 border border-sky-200 dark:border-gray-600 hover:bg-white"
                 }`}
               >
                 همه
@@ -288,8 +288,8 @@ export default function AdminServices() {
                   onClick={() => setSelectedCategory(cat.name)}
                   className={`px-4 py-2 mx-0.5 mb-4 rounded-xl whitespace-nowrap cursor-pointer shrink-0 transition-all ${
                     selectedCategory === cat.name
-                      ? "border border-sky-200 dark:border-indigo-600 bg-gradient-to-r from-sky-100 to-sky-200 dark:from-purple-700 dark:to-purple-800 shadow text-gray-800 dark:text-white font-bold"
-                      : "bg-white/70 dark:bg-neutral-700 text-gray-700 dark:text-gray-200 border border-sky-200 dark:border-gray-600 hover:bg-white"
+                      ? "border border-sky-200 dark:border-gray-600 bg-gradient-to-r from-sky-100 to-sky-200 dark:from-[#8AA1C4] dark:to-[#8AA1C4] shadow text-gray-800 dark:text-white font-bold"
+                      : "bg-white/70 dark:bg-[#1a1f2e] text-gray-700 dark:text-gray-200 border border-sky-200 dark:border-gray-600 hover:bg-white"
                   }`}
                 >
                   {cat.name}
@@ -304,9 +304,9 @@ export default function AdminServices() {
                   setEditItem(null);
                   setModalOpen(true);
                 }}
-                className="flex flex-col items-center justify-center rounded-2xl cursor-pointer bg-gradient-to-r from-sky-100 to-sky-200 dark:from-purple-700 dark:to-purple-800 border border-sky-200 dark:border-indigo-600 shadow-xl text-gray-800 dark:text-white hover:scale-[1.02] sm:hover:scale-[1.03] transition-all duration-300 p-3 sm:p-4 min-h-[220px] sm:min-h-[280px]"
+                className="flex flex-col items-center justify-center rounded-2xl cursor-pointer bg-gradient-to-r from-sky-100 to-sky-200 dark:from-[#8AA1C4] dark:to-[#8AA1C4] border border-sky-200 dark:border-gray-600 shadow-xl text-gray-800 dark:text-white hover:scale-[1.02] sm:hover:scale-[1.03] transition-all duration-300 p-3 sm:p-4 min-h-[220px] sm:min-h-[280px]"
               >
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white dark:bg-neutral-800 flex items-center justify-center mb-2 sm:mb-3 shadow">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white dark:bg-[#262B40] flex items-center justify-center mb-2 sm:mb-3 shadow">
                   <FiPlus className="text-2xl sm:text-3xl" />
                 </div>
                 <p className="font-semibold text-sm sm:text-base">
@@ -318,10 +318,10 @@ export default function AdminServices() {
               {activeServices.map((srv) => (
                 <div
                   key={srv.id}
-                  className="p-3 sm:p-4 rounded-2xl bg-white/70 dark:bg-neutral-800/80 backdrop-blur-lg border border-sky-200 dark:border-indigo-600 shadow-xl flex flex-col justify-between min-h-[220px] sm:min-h-[280px] hover:scale-[1.02] sm:hover:scale-[1.03] transition-all duration-300"
+                  className="p-3 sm:p-4 rounded-2xl bg-white/70 dark:bg-[#262B40]/80 backdrop-blur-lg border border-sky-200 dark:border-gray-600 shadow-xl flex flex-col justify-between min-h-[220px] sm:min-h-[280px] hover:scale-[1.02] sm:hover:scale-[1.03] transition-all duration-300"
                 >
                   <div>
-                    <div className="w-full aspect-[3/3] md:aspect-[2/1.5] sm:aspect-square mb-2 sm:mb-3 overflow-hidden rounded-xl border border-sky-200 dark:border-indigo-600 shadow">
+                    <div className="w-full aspect-[3/3] md:aspect-[2/1.5] sm:aspect-square mb-2 sm:mb-3 overflow-hidden rounded-xl border border-sky-200 dark:border-gray-600 shadow">
                       <img
                         src={
                           srv.image
@@ -334,7 +334,7 @@ export default function AdminServices() {
                         className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                       />
                     </div>
-                    <h3 className="font-bold text-center truncate text-slate-800 dark:text-gray-100 px-1 sm:px-2 text-sm sm:text-base">
+                    <h3 className="font-bold text-center truncate text-slate-800 dark:text-gray-200 px-1 sm:px-2 text-sm sm:text-base">
                       {srv.title || "بدون عنوان"}
                     </h3>
                     <p className="text-center text-sm mt-1 text-slate-600 dark:text-gray-300 truncate px-1 sm:px-2">
@@ -344,7 +344,7 @@ export default function AdminServices() {
 
                   <div className="flex justify-between mt-3 px-1 sm:px-2">
                     <button
-                      className="text-blue-600 dark:text-indigo-400 cursor-pointer hover:scale-110 transition"
+                      className="text-blue-600 dark:text-[#8AA1C4] cursor-pointer hover:scale-110 transition"
                       onClick={() => openEdit(srv.id)}
                     >
                       <FiEdit />
