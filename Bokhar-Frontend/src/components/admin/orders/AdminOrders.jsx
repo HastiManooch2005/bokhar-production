@@ -80,6 +80,7 @@ export default function AdminOrders() {
       price: 550000,
       phone: "09151111111",
       address: "حافظیه",
+      name: "مهدی محمدی",
       deliveryDate: "2026-05-06",
       status: "delivered",
       isChecked: false,
@@ -91,6 +92,7 @@ export default function AdminOrders() {
       price: 120000,
       phone: "09141111111",
       address: "خیابان امام",
+      name: "رضا کریمی",
       deliveryDate: "2026-05-05",
       status: "returned",
       isChecked: false,
@@ -164,7 +166,7 @@ export default function AdminOrders() {
       />
 
       <main className="flex-1 p-4 sm:p-6 md:pr-64 overflow-x-hidden">
-<h2 className="flex items-center justify-center md:justify-start gap-2 text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2 mb-8">
+<h2 className="flex items-center justify-center md:justify-start gap-2 text-2xl font-bold text-gray-800 dark:text-gray-200 mr-2 mb-8">
   <FiShoppingCart className="text-2xl" />
   مدیریت سفارش‌ها
 </h2>
@@ -175,8 +177,8 @@ export default function AdminOrders() {
             onClick={() => setActiveTab("orders")}
             className={`px-3 py-1.5 text-sm sm:px-5 sm:py-2 sm:text-base rounded-full font-semibold border transition cursor-pointer flex items-center gap-2 mr-1 mt-3
               ${activeTab === "orders"
-                ? "bg-gradient-to-r from-sky-100 to-sky-200 dark:from-purple-700 dark:to-purple-800 border-gray-300 dark:border-indigo-600 shadow-md scale-105 text-gray-800 dark:text-white"
-                : "bg-white dark:bg-gray-800 hover:bg-sky-100 dark:hover:bg-gray-700 border-gray-200 shadow-lg text-gray-800"
+                ? "bg-gradient-to-r from-sky-100 to-sky-200 dark:from-[#8AA1C4] dark:to-[#8AA1C4] border-gray-300 dark:border-gray-600 shadow-md scale-105 text-gray-800 dark:text-white"
+                : "bg-white dark:bg-[#262B40] hover:bg-sky-100 dark:hover:bg-[#2d3350] border-gray-200 dark:border-gray-600 shadow-lg text-gray-800 dark:text-gray-200"
               }`}
           >
             <ClipboardList size={18} />
@@ -192,8 +194,8 @@ export default function AdminOrders() {
             onClick={() => setActiveTab("time")}
             className={`px-3 py-1.5 text-sm sm:px-5 sm:py-2 sm:text-base rounded-full font-semibold border transition cursor-pointer flex items-center gap-2 mt-3
               ${activeTab === "time"
-                ? "bg-gradient-to-r from-sky-100 to-sky-200 dark:from-purple-700 dark:to-purple-800 border-gray-300 dark:border-indigo-600 shadow-md scale-105 text-gray-800 dark:text-white"
-                : "bg-white dark:bg-gray-800 hover:bg-sky-100 dark:hover:bg-gray-700 border-gray-200 shadow-lg text-gray-800"
+                ? "bg-gradient-to-r from-sky-100 to-sky-200 dark:from-[#8AA1C4] dark:to-[#8AA1C4] border-gray-300 dark:border-gray-600 shadow-md scale-105 text-gray-800 dark:text-white"
+                : "bg-white dark:bg-[#262B40] hover:bg-sky-100 dark:hover:bg-[#2d3350] border-gray-200 dark:border-gray-600 shadow-lg text-gray-800 dark:text-gray-200"
               }`}
           >
             <Clock size={18} />
@@ -225,7 +227,7 @@ export default function AdminOrders() {
                       className={`px-3 py-1.5 text-sm sm:px-5 sm:py-2 sm:text-base rounded-full font-semibold border transition cursor-pointer flex items-center gap-2
                         ${timeView === "today"
                           ? "bg-gradient-to-r from-emerald-100 to-emerald-200 dark:from-emerald-700 dark:to-emerald-800 border-gray-300 dark:border-emerald-600 shadow-md"
-                          : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600"
+                          : "bg-white dark:bg-[#262B40] border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200"
                         }`}
                     >
                       <Clock size={16} />
@@ -236,7 +238,7 @@ export default function AdminOrders() {
                       className={`px-3 py-1.5 text-sm sm:px-5 sm:py-2 sm:text-base rounded-full font-semibold border transition cursor-pointer flex items-center gap-2
                         ${timeView === "monthly"
                           ? "bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-700 dark:to-blue-800 border-gray-300 dark:border-blue-600 shadow-md"
-                          : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600"
+                          : "bg-white dark:bg-[#262B40] border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200"
                         }`}
                     >
                       <Calendar size={16} />
@@ -279,7 +281,7 @@ export default function AdminOrders() {
                     </div>
                   </div>
 
-                  <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mx-4">
+                  <div className="overflow-x-auto bg-white dark:bg-[#262B40] rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 mx-4">
                     <OrdersTable
                       orders={processedTimeOrders}
                       cities={cities || []}

@@ -18,14 +18,14 @@ export default function OrdersTable({
   };
 
   return (
-    <div className="bg-white/50 dark:bg-white/50 backdrop-blur-lg border border-sky-200/50 rounded-2xl mt-6 p-6 shadow-xl">
-      <h2 className="text-xl font-semibold text-gray-800 dark:text-black mb-4 border-b border-white/10 pb-2">
+    <div className="bg-white/50 dark:bg-[#262B40]/90 backdrop-blur-lg border border-sky-200/50 dark:border-gray-600/50 rounded-2xl mt-6 p-6 shadow-xl">
+      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4 border-b border-white/10 dark:border-gray-600/50 pb-2">
         سفارش‌ها
       </h2>
 
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm text-right">
-          <thead className="text-black border-b border-white/10">
+          <thead className="text-black dark:text-gray-200 border-b border-white/10 dark:border-gray-600/50">
             <tr>
               <th className="p-3">شماره سفارش</th>
               <th className="p-3">نام مشتری</th>
@@ -35,14 +35,13 @@ export default function OrdersTable({
               >
                 مهلت
               </th>
-              {/* ستون فاصله به دقیقه - بین مهلت و مبلغ */}
               <th className="p-3">فاصله</th>
               <th
                 className="p-3 cursor-pointer select-none"
                 onClick={() => toggleSort?.("price")}
               >
                 مبلغ
-                {showDeliveryBadge && <span className="block text-[10px] font-normal text-gray-500">(با احتساب تعجیل)</span>}
+                {showDeliveryBadge && <span className="block text-[10px] font-normal text-gray-500 dark:text-gray-400">(با احتساب تعجیل)</span>}
               </th>
             </tr>
           </thead>
@@ -52,7 +51,7 @@ export default function OrdersTable({
               <tr
                 key={order.id}
                 onClick={() => onRowClick(order)}
-                className="hover:bg-white/80 dark:text-gray-900 transition border-b border-white/5 cursor-pointer"
+                className="hover:bg-white/80 dark:hover:bg-[#2d3350] dark:text-gray-200 transition border-b border-white/5 dark:border-gray-600/30 cursor-pointer"
               >
                 <td className="p-3">
                   {showCheckbox ? (
@@ -71,7 +70,7 @@ export default function OrdersTable({
                       {order.id}
                     </button>
                   ) : (
-                    <span className="px-4 py-2 rounded-xl font-bold bg-gray-100 border border-gray-300 text-gray-700">
+                    <span className="px-4 py-2 rounded-xl font-bold bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200">
                       {order.id}
                     </span>
                   )}
@@ -80,7 +79,6 @@ export default function OrdersTable({
                 <td className="p-3">
                   {remainingDays(order.deliveryDate)} روز
                 </td>
-                {/* مقدار فاصله به دقیقه */}
                 <td className="p-3">
                   {order.distance ? `${order.distance} دقیقه` : '-'}
                 </td>

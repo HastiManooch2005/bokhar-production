@@ -21,7 +21,7 @@ export default function OrderModal({ order, isOpen, onClose }) {
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="bg-gradient-to-br from-white via-gray-100 to-gray-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-3xl shadow-2xl p-6 w-full max-w-md relative overflow-y-auto max-h-[90vh] border border-gray-200 dark:border-gray-700"
+            className="bg-gradient-to-br from-white via-gray-100 to-gray-50 dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] rounded-3xl shadow-2xl p-6 w-full max-w-md relative overflow-y-auto max-h-[90vh] border border-gray-200 dark:border-gray-700"
             initial={{ scale: 0.85, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.85, opacity: 0 }}
@@ -35,11 +35,11 @@ export default function OrderModal({ order, isOpen, onClose }) {
               <FiX size={26} />
             </button>
 
-            <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-200">
               جزئیات سفارش #{order.id}
             </h2>
 
-            <div className="space-y-3 text-gray-700 dark:text-gray-200">
+            <div className="space-y-3 text-gray-700 dark:text-gray-300">
               <p>
                 <span className="font-semibold">نام مشتری:</span> {order.name}
               </p>
