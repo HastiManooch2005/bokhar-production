@@ -136,7 +136,7 @@ export default function Support() {
       case "pending":
         return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700";
       case "closed":
-        return "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700";
+        return "bg-gray-50 text-gray-600 border-gray-200 dark:bg-[#262B40] dark:text-gray-400 dark:border-gray-700";
       default:
         return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700";
     }
@@ -148,43 +148,44 @@ export default function Support() {
 
         {/* Header */}
         <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">پشتیبانی</h1>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-200">پشتیبانی</h1>
 
           {/* Back Button */}
           <button
             onClick={() => navigate("/customer-dashboard")}
             className="ms-auto w-10 h-10 rounded-full shadow-sm hover:shadow-md cursor-pointer
               bg-white/80 hover:bg-gray-200 border-sky-300 shadow-sky-200
-               dark:bg-purple-800 dark:hover:bg-purple-900 dark:border-indigo-500 dark:shadow-indigo-500 flex items-center justify-center transition"
+               dark:bg-[#262B40] dark:hover:bg-[#2d3350] dark:border-gray-600
+               dark:shadow-black/40 flex items-center justify-center transition"
           >
-            <ArrowLeft size={20} className="text-gray-700 dark:text-gray-200" />
+            <ArrowLeft size={20} className="text-gray-700 dark:text-gray-300" />
           </button>
         </div>
 
         {/* تماس */}
-        <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-sky-800 dark:via-sky-900 dark:to-sky-950 border border-sky-200 dark:border-sky-700 rounded-2xl shadow p-4 flex items-center justify-between transition">
+        <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-4 flex items-center justify-between transition">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full bg-green-100 dark:bg-green-600 flex items-center justify-center">
-              <Phone className="text-green-600 dark:text-green-300" />
+            <div className="w-11 h-11 rounded-full bg-green-100 dark:bg-[#262B40] flex items-center justify-center">
+              <Phone className="text-green-600 dark:text-[#8AA1C4]" />
             </div>
             <div>
-              <p className="font-medium text-gray-900 dark:text-gray-100">تماس با پشتیبانی</p>
-              <p className="text-sm text-gray-500 dark:text-gray-300">همه روزه ۹ تا ۱۸</p>
+              <p className="font-medium text-gray-900 dark:text-gray-200">تماس با پشتیبانی</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">همه روزه ۹ تا ۱۸</p>
             </div>
           </div>
           <a
             href="tel:02112345678"
-            className="text-green-600 dark:text-green-200 font-medium"
+            className="text-green-600 dark:text-[#8AA1C4] font-medium"
           >
             تماس
           </a>
         </div>
 
         {/* ارسال پیام */}
-        <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-sky-800 dark:via-sky-900 dark:to-sky-950 border border-sky-200 dark:border-sky-700 rounded-2xl shadow p-4 transition">
+        <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-4 transition">
           <div className="flex items-center gap-3 mb-3">
-            <MessageCircle className="text-blue-600 dark:text-blue-400" />
-            <p className="font-medium text-gray-900 dark:text-gray-100">ارسال پیام</p>
+            <MessageCircle className="text-blue-600 dark:text-[#8AA1C4]" />
+            <p className="font-medium text-gray-900 dark:text-gray-200">ارسال پیام</p>
           </div>
 
           {/* Subject Input */}
@@ -194,9 +195,9 @@ export default function Support() {
             onChange={(e) => setSubject(e.target.value)}
             placeholder="عنوان تیکت..."
             className="
-              w-full border rounded-xl p-3 mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500
-              bg-white dark:bg-sky-900/60 border-sky-300 dark:border-sky-700 text-gray-900 dark:text-white
-              placeholder:text-gray-400 dark:placeholder:text-gray-300
+              w-full border rounded-xl p-3 mb-3 focus:outline-none focus:ring-2 focus:ring-[#8AA1C4]
+              bg-white dark:bg-[#1a1f2e] border-sky-300 dark:border-gray-600 text-gray-900 dark:text-gray-200
+              placeholder:text-gray-400 dark:placeholder:text-gray-500
             "
           />
 
@@ -205,25 +206,25 @@ export default function Support() {
             onChange={(e) => setMessage(e.target.value)}
             placeholder="پیام خود را اینجا بنویسید..."
             className="
-              w-full border rounded-xl p-3 resize-none h-28 focus:outline-none focus:ring-2 focus:ring-blue-500
-              bg-white dark:bg-sky-900/60 border-sky-300 dark:border-sky-700 text-gray-900 dark:text-white
-              placeholder:text-gray-400 dark:placeholder:text-gray-300
+              w-full border rounded-xl p-3 resize-none h-28 focus:outline-none focus:ring-2 focus:ring-[#8AA1C4]
+              bg-white dark:bg-[#1a1f2e] border-sky-300 dark:border-gray-600 text-gray-900 dark:text-gray-200
+              placeholder:text-gray-400 dark:placeholder:text-gray-500
             "
           />
           <button
             onClick={sendMessage}
             disabled={!message.trim() || !subject.trim()}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed dark:bg-purple-700 dark:hover:bg-purple-800 dark:disabled:bg-gray-600 text-white rounded-xl p-3 mt-3 transition font-medium"
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed dark:bg-[#8AA1C4] dark:hover:bg-[#7a93b8] dark:disabled:bg-[#262B40] text-white rounded-xl p-3 mt-3 transition font-medium"
           >
             ارسال پیام
           </button>
         </div>
 
         {/* لیست تیکت‌ها */}
-        <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-sky-800 dark:via-sky-900 dark:to-sky-950 border border-sky-200 dark:border-sky-700 rounded-2xl shadow p-4 transition">
+        <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-4 transition">
           <div className="flex items-center gap-3 mb-4">
-            <MessageSquare className="text-purple-600 dark:text-purple-400" />
-            <p className="font-medium text-gray-900 dark:text-gray-100">تیکت‌های من</p>
+            <MessageSquare className="text-purple-600 dark:text-[#8AA1C4]" />
+            <p className="font-medium text-gray-900 dark:text-gray-200">تیکت‌های من</p>
             <span className="mr-auto text-sm text-gray-500 dark:text-gray-400">
               {tickets.length} تیکت
             </span>
@@ -239,11 +240,11 @@ export default function Support() {
               {tickets.map((ticket) => (
                 <div
                   key={ticket.id}
-                  className="bg-white dark:bg-sky-900/40 border border-sky-200 dark:border-sky-700 rounded-xl p-4 hover:shadow-md transition cursor-pointer"
+                  className="bg-white dark:bg-[#262B40]/40 border border-sky-200 dark:border-gray-700 rounded-xl p-4 hover:shadow-md transition cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-200 truncate">
                         {ticket.subject}
                       </h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
@@ -276,18 +277,18 @@ export default function Support() {
         </div>
 
         {/* سوالات متداول */}
-        <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-sky-800 dark:via-sky-900 dark:to-sky-950 border border-sky-200 dark:border-sky-700 rounded-2xl shadow p-4 transition">
+        <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-4 transition">
           <div className="flex items-center gap-3 mb-3">
-            <HelpCircle className="text-orange-600 dark:text-orange-400" />
-            <p className="font-medium text-gray-900 dark:text-gray-100">سوالات متداول</p>
+            <HelpCircle className="text-orange-600 dark:text-[#8AA1C4]" />
+            <p className="font-medium text-gray-900 dark:text-gray-200">سوالات متداول</p>
           </div>
 
-          <div className="space-y-2 text-gray-900 dark:text-gray-100">
+          <div className="space-y-2 text-gray-900 dark:text-gray-200">
             {faqs.map((faq, idx) => (
               <div key={idx} className="border-b last:border-none border-gray-200 dark:border-gray-700">
                 <button
                   onClick={() => setOpenFAQ(openFAQ === idx ? null : idx)}
-                  className="w-full flex justify-between items-center py-2 text-sm font-medium text-gray-900 dark:text-white focus:outline-none"
+                  className="w-full flex justify-between items-center py-2 text-sm font-medium text-gray-900 dark:text-gray-200 focus:outline-none"
                 >
                   {faq.question}
                   <ChevronDown
@@ -301,7 +302,7 @@ export default function Support() {
                   ref={(el) => (faqRefs.current[idx] = el)}
                   className="overflow-hidden transition-all duration-300 ease-in-out py-3 opacity-0 max-h-0"
                 >
-                  <p className="text-gray-500 dark:text-gray-300 text-sm mt-1">{faq.answer}</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{faq.answer}</p>
                 </div>
               </div>
             ))}
