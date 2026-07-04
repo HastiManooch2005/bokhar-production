@@ -37,34 +37,39 @@ export function AuthProvider({ children }) {
 
   // ================= refresh token =================
   const tryRefreshToken = useCallback(async () => {
-    if (isRefreshing.current) return false;
-    isRefreshing.current = true;
+  if (isRefreshing.current) return false;
+  isRefreshing.current = true;
 
-    try {
-      const res = await fetch(`${API_BASE}/refresh/`, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!res.ok) return false;
+  try {
+    // ۱. حتماً توکن CSRF را دریافت و ارسال کنید
+    const csrfToken = await ensureCSRFToken();
 
-      const verifyRes = await fetch(`${API_BASE}/verify/`, {
-        method: "GET",
-        credentials: "include",
-      });
-      if (verifyRes.ok) {
-        const result = await verifyRes.json();
-        setUser({ isAuthenticated: true, ...result });
-        return true;
-      }
+    const res = await fetch(`${API_BASE}/refresh/`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrfToken // اضافه شدن هدر برای عبور از csrf_protect
+      },
+    });
+
+    if (!res.ok) {
+      // اگر واقعاً رفرش توکن منقضی شده بود (بعد از ۷ روز)
       return false;
-    } catch (err) {
-      console.error("Refresh error:", err.message);
-      return false;
-    } finally {
-      isRefreshing.current = false;
     }
-  }, []);
 
+    // ۲. برای بررسی وضعیت جدید، نیازی به ریکوئست مجدد به verify نیست،
+    // چون خود متد refresh در بک‌اند کوکی‌های جدید را ست کرده است.
+    setUser((prev) => ({ ...prev, isAuthenticated: true }));
+    return true;
+
+  } catch (err) {
+    console.error("Refresh error:", err.message);
+    return false;
+  } finally {
+    isRefreshing.current = false;
+  }
+}, []);
   // ================= verify auth =================
   const verifyAuth = useCallback(async () => {
     const currentVerify = Date.now();

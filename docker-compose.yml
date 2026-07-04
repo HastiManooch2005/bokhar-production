@@ -31,7 +31,7 @@ services:
       context: ./backend
       args:
         ENV: production
-        PIP_INDEX: https://package-mirror.liara.ir/repository/pypi/simple/
+        #PIP_INDEX: https://package-mirror.liara.ir/repository/pypi/simple/
 
     image: bokhar-backend:latest
     restart: unless-stopped
