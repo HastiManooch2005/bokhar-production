@@ -199,6 +199,8 @@ SIMPLE_JWT = {
     "AUTH_COOKIE_SAMESITE": "Lax",
     "ACCESS_TOKEN_LIFETIME_SECONDS": int(timedelta(minutes=15).total_seconds()),
     "REFRESH_TOKEN_LIFETIME_SECONDS": int(timedelta(days=7).total_seconds()),
+# اضافه کردن این خط (اجازه مصرف توکن قبلی تا ۱۰ ثانیه بعد از روتِیت شدن برای رفع مشکل Race Condition)
+    "JWT_RENEWAL_GRACE_PERIOD": 10,
 }
 
 # ---------------- COOKIE & SESSION SECURITY ----------------
