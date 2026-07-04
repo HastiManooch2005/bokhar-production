@@ -11,6 +11,7 @@ import {
   FiMenu,
   FiSun,
   FiMoon,
+  FiMessageSquare,
   FiChevronRight,
   FiShoppingCart,
 } from "react-icons/fi";
@@ -49,6 +50,7 @@ export default function Sidebar({
     { label: "مشتریان", icon: <FiUsers />, key: "customers", path: "/admin-dashboard/customers" },
     { label: "خدمات", icon: <FiPackage />, key: "services", path: "/admin-dashboard/services" },
     { label: "تخفیف‌ها", icon: <FiTag />, key: "discounts", path: "/admin-dashboard/discounts" },
+    { label: "پیام ها", icon: <FiMessageSquare />, key: "message", path: "/admin-dashboard/message" },
     { label: "گزارش‌ها", icon: <FiBarChart />, key: "reports", path: "/admin-dashboard/reports" },
   ];
 
