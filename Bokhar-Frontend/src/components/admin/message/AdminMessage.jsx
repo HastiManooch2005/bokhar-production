@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../Sidebar";
 import Search from "../../Search";
 import {
@@ -79,12 +80,12 @@ const tabs = [
 ];
 
 export default function AdminMessage() {
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState("messages");
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
-  // داده تستی
   const tickets = [
     {
       id: 1,
@@ -140,7 +141,6 @@ export default function AdminMessage() {
         </h1>
 
         <div className="mt-4 sm:mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
-          {/* Tabs row */}
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 sm:overflow-visible sm:pb-0 scrollbar-hide">
             {tabs.map((tab) => (
               <button
@@ -164,7 +164,6 @@ export default function AdminMessage() {
             ))}
           </div>
 
-          {/* Search */}
           <div className="w-full md:w-1/3">
             <Search
               value={search}
@@ -188,9 +187,7 @@ export default function AdminMessage() {
                 <TicketCard
                   key={ticket.id}
                   ticket={ticket}
-                  onClick={() =>
-                    console.log("Open Ticket:", ticket.id)
-                  }
+                  onClick={() => navigate(`/admin-dashboard/message/${ticket.id}`)}
                 />
               ))}
             </div>
