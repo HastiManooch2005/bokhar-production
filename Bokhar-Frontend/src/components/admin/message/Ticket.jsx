@@ -262,7 +262,7 @@ export default function Ticket() {
         />
       </div>
 
-      <main className="flex-1 min-w-0 flex flex-col h-screen bg-white/30 dark:bg-[#1e2337]/80 backdrop-blur-sm">
+      <main className="flex-1 min-w-0 flex flex-col h-screen bg-white/30 dark:bg-[#1e2337]/80 backdrop-blur-sm md:mr-64">
         {/* Header */}
         <div className="shrink-0 px-4 sm:px-6 py-4 border-b border-gray-200/50 dark:border-gray-600/50 bg-white/50 dark:bg-[#262B40]/50 backdrop-blur-lg">
           <div className="flex items-center gap-3">
