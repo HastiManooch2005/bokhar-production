@@ -240,6 +240,7 @@ export default function Support() {
               {tickets.map((ticket) => (
                 <div
                   key={ticket.id}
+                  onClick={() => navigate(`/customer-dashboard/support/${ticket.id}`)}
                   className="bg-white dark:bg-[#262B40]/40 border border-sky-200 dark:border-gray-700 rounded-xl p-4 hover:shadow-md transition cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-2">

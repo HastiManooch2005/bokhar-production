@@ -15,7 +15,8 @@ import EditProfile from "./components/customers/Edit";
 import WalletPage from "./components/customers/Wallet";
 import OrderTracking from "./components/customers/OrderTracking";
 import SecurityPrivacy from "./components/customers/privacy/SecurityPrivacy";
-import Support from "./components/customers/Support";
+import Support from "./components/customers/support/Support";
+import CustomerTicket from "./components/customers/support/CustomerTicket";
 import Devices from "./components/customers/Devices";
 
 import Landing from "./pages/Landing";
@@ -91,6 +92,7 @@ const hideNavbar =
           element={<SecurityPrivacy />}
         />
         <Route path="/customer-dashboard/support" element={<Support />} />
+        <Route path="/customer-dashboard/support/:id" element={<CustomerTicket />} />
 
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route
