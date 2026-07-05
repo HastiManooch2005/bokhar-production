@@ -46,18 +46,19 @@ function AppContent() {
 const [currentPath, setCurrentPath] = useState("");
 
 useEffect(() => {
-  const hashPath = location.hash
-    ? location.hash.replace("#", "")
-    : window.location.hash.replace("#", "");
-
+  const rawHash = location.hash || window.location.hash || "";
+  const hashPath = rawHash.replace(/^#/, "");
   setCurrentPath(hashPath || "/");
 }, [location]);
 
-// صفحه اصلی و پنل ادمین نوبار ندارند
+// صفحه اصلی، پنل ادمین و چت تیکت نوبار ندارند
+const normalizedPath = currentPath.replace(/^#/, "");
 const hideNavbar =
-  currentPath === "/" ||
-  currentPath === "" ||
-  currentPath.startsWith("/admin-dashboard");
+  normalizedPath === "/" ||
+  normalizedPath === "" ||
+  normalizedPath.startsWith("/admin-dashboard") ||
+  new RegExp("^/customer-dashboard/support/").test(normalizedPath) ||
+  new RegExp("^customer-dashboard/support/").test(normalizedPath);
   
   return (
     <div

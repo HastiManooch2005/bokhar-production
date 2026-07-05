@@ -8,6 +8,9 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
+  Shirt,
+  Wrench,
+  Tag,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -32,16 +35,14 @@ export default function Support() {
   }, [theme]);
 
   const [tickets, setTickets] = useState([]);
+  const [contactMode, setContactMode] = useState("support");
 
   const fetchTickets = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/tickets/`,
-        {
-          credentials: "include",
-        }
+        `${import.meta.env.VITE_API_URL}/tickets/?type=${contactMode}`,
+        { credentials: "include" }
       );
-
       const data = await response.json();
       setTickets(data);
     } catch (error) {
@@ -51,36 +52,47 @@ export default function Support() {
 
   useEffect(() => {
     fetchTickets();
-  }, []);
+  }, [contactMode]);
+
+  const closeTicket = async (ticketId, e) => {
+    e.stopPropagation();
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/tickets/${ticketId}/close/`,
+        { method: "POST", credentials: "include" }
+      );
+      if (!response.ok) throw new Error("خطا در بستن تیکت");
+      await fetchTickets();
+    } catch (error) {
+      console.error(error);
+      alert("خطا در بستن تیکت");
+    }
+  };
 
   const sendMessage = async () => {
     if (!message.trim() || !subject.trim()) return;
-
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/tickets/`,
         {
           method: "POST",
           credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             subject: subject,
             body: message,
+            type: contactMode,
           }),
         }
       );
-
       if (!response.ok) {
         const err = await response.json();
         throw new Error(err.detail || "خطا در ارسال تیکت");
       }
-
       alert("پیام شما با موفقیت ارسال شد ✅");
-
       setMessage("");
       setSubject("");
+      setSelectedCategory("");
       await fetchTickets();
     } catch (error) {
       console.error(error);
@@ -88,11 +100,31 @@ export default function Support() {
     }
   };
 
-  const faqs = [
-    { question: "زمان تحویل سفارش چقدر است؟", answer: "معمولاً بین ۲ تا ۳ روز کاری" },
-    { question: "اگر لباس آسیب ببیند چه می‌شود؟", answer: "پشتیبانی موضوع را بررسی و جبران می‌کند" },
-    { question: "امکان لغو سفارش هست؟", answer: "قبل از شروع شستشو امکان لغو وجود دارد" },
+  const supportFaqs = [
+    { question: "چطور رمز عبورم را تغییر دهم؟", answer: "از منوی پروفایل > تنظیمات > تغییر رمز عبور اقدام کنید" },
+    { question: "پرداخت ناموفق شد، پولم کجاست؟", answer: "مبلغ تا ۷۲ ساعت به حساب شما برمی‌گردد" },
+    { question: "چطور حساب کاربری‌ام را حذف کنم؟", answer: "با پشتیبانی تماس بگیرید یا تیکت ارسال کنید" },
   ];
+
+  const drycleaningFaqs = [
+    { question: "زمان تحویل سفارش چقدر است؟", answer: "معمولاً بین ۲ تا ۳ روز کاری" },
+    { question: "اگر لباس آسیب ببیند چه می‌شود؟", answer: "خشکشویی موضوع را بررسی و جبران می‌کند" },
+    { question: "امکان لغو سفارش هست؟", answer: "قبل از شروع شستشو امکان لغو وجود دارد" },
+    { question: "مواد شوینده شما ضد حساسیت است؟", answer: "بله، ما از مواد شوینده استاندارد و ضد حساسیت استفاده می‌کنیم" },
+  ];
+
+  const faqs = contactMode === "support" ? supportFaqs : drycleaningFaqs;
+
+  const drycleaningCategories = [
+    "تأخیر در تحویل",
+    "کیفیت شستشو",
+    "آسیب دیدگی لباس",
+    "قیمت و فاکتور",
+    "لغو سفارش",
+    "سایر",
+  ];
+
+  const [selectedCategory, setSelectedCategory] = useState("");
 
   useEffect(() => {
     faqRefs.current.forEach((ref, idx) => {
@@ -118,14 +150,10 @@ export default function Support() {
 
   const getStatusText = (status) => {
     switch (status) {
-      case "answered":
-        return "پاسخ داده شده";
-      case "pending":
-        return "در انتظار پاسخ";
-      case "closed":
-        return "بسته شده";
-      default:
-        return "در انتظار پاسخ";
+      case "answered": return "پاسخ داده شده";
+      case "pending": return "در انتظار پاسخ";
+      case "closed": return "بسته شده";
+      default: return "در انتظار پاسخ";
     }
   };
 
@@ -149,82 +177,142 @@ export default function Support() {
         {/* Header */}
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-200">پشتیبانی</h1>
-
-          {/* Back Button */}
           <button
             onClick={() => navigate("/customer-dashboard")}
             className="ms-auto w-10 h-10 rounded-full shadow-sm hover:shadow-md cursor-pointer
               bg-white/80 hover:bg-gray-200 border-sky-300 shadow-sky-200
-               dark:bg-[#262B40] dark:hover:bg-[#2d3350] dark:border-gray-600
-               dark:shadow-black/40 flex items-center justify-center transition"
+              dark:bg-[#262B40] dark:hover:bg-[#2d3350] dark:border-gray-600
+              dark:shadow-black/40 flex items-center justify-center transition"
           >
             <ArrowLeft size={20} className="text-gray-700 dark:text-gray-300" />
           </button>
         </div>
 
-        {/* تماس */}
+        {/* Toggle Switch */}
+        <div className="bg-white dark:bg-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-1.5 flex gap-1">
+          <button
+            onClick={() => setContactMode("support")}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+              contactMode === "support"
+                ? "bg-sky-500 text-white shadow-md"
+                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2d3350]"
+            }`}
+          >
+            <Wrench size={16} />
+            ارتباط با پشتیبانی
+          </button>
+          <button
+            onClick={() => setContactMode("drycleaning")}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+              contactMode === "drycleaning"
+                ? "bg-sky-500 text-white shadow-md"
+                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2d3350]"
+            }`}
+          >
+            <Shirt size={16} />
+            ارتباط با خشکشویی
+          </button>
+        </div>
+
+        {/* تماس — شماره متفاوت */}
         <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-4 flex items-center justify-between transition">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-full bg-green-100 dark:bg-[#262B40] flex items-center justify-center">
               <Phone className="text-green-600 dark:text-[#8AA1C4]" />
             </div>
             <div>
-              <p className="font-medium text-gray-900 dark:text-gray-200">تماس با پشتیبانی</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">همه روزه ۹ تا ۱۸</p>
+              <p className="font-medium text-gray-900 dark:text-gray-200">
+                {contactMode === "support" ? "تماس با پشتیبانی" : "تماس با خشکشویی"}
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {contactMode === "support" ? "همه روزه ۹ تا ۱۸" : "همه روزه ۸ تا ۲۲"}
+              </p>
             </div>
           </div>
           <a
-            href="tel:02112345678"
+            href={contactMode === "support" ? "tel:02112345678" : "tel:02187654321"}
             className="text-green-600 dark:text-[#8AA1C4] font-medium"
           >
-            تماس
+            {contactMode === "support" ? "۰۲۱۱۲۳۴۵۶۷۸" : "۰۲۱۸۷۶۵۴۳۲۱"}
           </a>
         </div>
 
-        {/* ارسال پیام */}
+        {/* ارسال پیام — فرم متفاوت */}
         <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-4 transition">
           <div className="flex items-center gap-3 mb-3">
             <MessageCircle className="text-blue-600 dark:text-[#8AA1C4]" />
-            <p className="font-medium text-gray-900 dark:text-gray-200">ارسال پیام</p>
+            <p className="font-medium text-gray-900 dark:text-gray-200">
+              {contactMode === "support" ? "ارسال پیام به پشتیبانی" : "ارسال پیام به خشکشویی"}
+            </p>
           </div>
 
-          {/* Subject Input */}
+          {contactMode === "drycleaning" && (
+            <div className="mb-3">
+              <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">دسته‌بندی موضوع</label>
+              <div className="overflow-x-auto pb-2 -mx-1 px-1">
+                <div className="flex gap-2 whitespace-nowrap">
+                  {drycleaningCategories.map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => {
+                        setSelectedCategory(cat);
+                        setSubject(cat);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition shrink-0 ${
+                        selectedCategory === cat
+                          ? "bg-sky-500 text-white border-sky-500"
+                          : "bg-white dark:bg-[#1a1f2e] border-sky-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-sky-50 dark:hover:bg-[#2d3350]"
+                      }`}
+                    >
+                      <Tag size={12} className="inline ml-1" />
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           <input
             type="text"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            placeholder="عنوان تیکت..."
-            className="
-              w-full border rounded-xl p-3 mb-3 focus:outline-none focus:ring-2 focus:ring-[#8AA1C4]
+            placeholder={contactMode === "support" ? "عنوان تیکت..." : "موضوع یا دسته‌بندی..."}
+            className="w-full border rounded-xl p-3 mb-3 focus:outline-none focus:ring-2 focus:ring-[#8AA1C4]
               bg-white dark:bg-[#1a1f2e] border-sky-300 dark:border-gray-600 text-gray-900 dark:text-gray-200
-              placeholder:text-gray-400 dark:placeholder:text-gray-500
-            "
+              placeholder:text-gray-400 dark:placeholder:text-gray-500"
           />
 
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="پیام خود را اینجا بنویسید..."
-            className="
-              w-full border rounded-xl p-3 resize-none h-28 focus:outline-none focus:ring-2 focus:ring-[#8AA1C4]
+            placeholder={
+              contactMode === "support"
+                ? "مشکل یا سوال خود را اینجا بنویسید..."
+                : "جزئیات سفارش یا مشکل لباس خود را بنویسید..."
+            }
+            className="w-full border rounded-xl p-3 resize-none h-28 focus:outline-none focus:ring-2 focus:ring-[#8AA1C4]
               bg-white dark:bg-[#1a1f2e] border-sky-300 dark:border-gray-600 text-gray-900 dark:text-gray-200
-              placeholder:text-gray-400 dark:placeholder:text-gray-500
-            "
+              placeholder:text-gray-400 dark:placeholder:text-gray-500"
           />
           <button
             onClick={sendMessage}
             disabled={!message.trim() || !subject.trim()}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed dark:bg-[#8AA1C4] dark:hover:bg-[#7a93b8] dark:disabled:bg-[#262B40] text-white rounded-xl p-3 mt-3 transition font-medium"
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed
+              dark:bg-[#8AA1C4] dark:hover:bg-[#7a93b8] dark:disabled:bg-[#262B40]
+              text-white rounded-xl p-3 mt-3 transition font-medium"
           >
-            ارسال پیام
+            {contactMode === "support" ? "ارسال به پشتیبانی" : "ارسال به خشکشویی"}
           </button>
         </div>
 
-        {/* لیست تیکت‌ها */}
+        {/* لیست تیکت‌ها — فقط تیکت‌های همین حالت */}
         <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-4 transition">
           <div className="flex items-center gap-3 mb-4">
             <MessageSquare className="text-purple-600 dark:text-[#8AA1C4]" />
-            <p className="font-medium text-gray-900 dark:text-gray-200">تیکت‌های من</p>
+            <p className="font-medium text-gray-900 dark:text-gray-200">
+              {contactMode === "support" ? "تیکت‌های پشتیبانی" : "تیکت‌های خشکشویی"}
+            </p>
             <span className="mr-auto text-sm text-gray-500 dark:text-gray-400">
               {tickets.length} تیکت
             </span>
@@ -233,7 +321,11 @@ export default function Support() {
           {tickets.length === 0 ? (
             <div className="text-center py-8 text-gray-400 dark:text-gray-500">
               <MessageSquare size={40} className="mx-auto mb-2 opacity-50" />
-              <p>هنوز تیکتی ارسال نکرده‌اید</p>
+              <p>
+                {contactMode === "support"
+                  ? "هنوز تیکتی به پشتیبانی ارسال نکرده‌اید"
+                  : "هنوز تیکتی به خشکشویی ارسال نکرده‌اید"}
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -243,32 +335,36 @@ export default function Support() {
                   onClick={() => navigate(`/customer-dashboard/support/${ticket.id}`)}
                   className="bg-white dark:bg-[#262B40]/40 border border-sky-200 dark:border-gray-700 rounded-xl p-4 hover:shadow-md transition cursor-pointer"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 dark:text-gray-200 truncate">
-                        {ticket.subject}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                        {ticket.body}
-                      </p>
-                    </div>
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border shrink-0 ${getStatusColor(ticket.status)}`}
-                    >
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-200 truncate flex-1">
+                      {ticket.subject}
+                    </h3>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border shrink-0 ${getStatusColor(ticket.status)}`}>
                       {getStatusIcon(ticket.status)}
                       {getStatusText(ticket.status)}
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 mt-3 text-xs text-gray-400 dark:text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <Clock size={12} />
-                      {new Date(ticket.created_at).toLocaleDateString("fa-IR")}
-                    </span>
-                    {ticket.updated_at && ticket.updated_at !== ticket.created_at && (
+
+                  <div className="flex items-center justify-between mt-3">
+                    <div className="flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
                       <span className="flex items-center gap-1">
-                        <MessageCircle size={12} />
-                        آخرین بروزرسانی: {new Date(ticket.updated_at).toLocaleDateString("fa-IR")}
+                        <Clock size={12} />
+                        {new Date(ticket.created_at).toLocaleDateString("fa-IR")}
                       </span>
+                      {ticket.updated_at && ticket.updated_at !== ticket.created_at && (
+                        <span className="flex items-center gap-1">
+                          <MessageCircle size={12} />
+                          {new Date(ticket.updated_at).toLocaleDateString("fa-IR")}
+                        </span>
+                      )}
+                    </div>
+                    {ticket.status !== "closed" && (
+                      <button
+                        onClick={(e) => closeTicket(ticket.id, e)}
+                        className="text-xs text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 transition font-medium"
+                      >
+                        بستن تیکت
+                      </button>
                     )}
                   </div>
                 </div>
@@ -277,13 +373,14 @@ export default function Support() {
           )}
         </div>
 
-        {/* سوالات متداول */}
+        {/* سوالات متداول — متفاوت */}
         <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-4 transition">
           <div className="flex items-center gap-3 mb-3">
             <HelpCircle className="text-orange-600 dark:text-[#8AA1C4]" />
-            <p className="font-medium text-gray-900 dark:text-gray-200">سوالات متداول</p>
+            <p className="font-medium text-gray-900 dark:text-gray-200">
+              {contactMode === "support" ? "سوالات متداول پشتیبانی" : "سوالات متداول خشکشویی"}
+            </p>
           </div>
-
           <div className="space-y-2 text-gray-900 dark:text-gray-200">
             {faqs.map((faq, idx) => (
               <div key={idx} className="border-b last:border-none border-gray-200 dark:border-gray-700">
@@ -294,9 +391,7 @@ export default function Support() {
                   {faq.question}
                   <ChevronDown
                     size={18}
-                    className={`transition-transform duration-300 ${
-                      openFAQ === idx ? "rotate-180" : ""
-                    }`}
+                    className={`transition-transform duration-300 ${openFAQ === idx ? "rotate-180" : ""}`}
                   />
                 </button>
                 <div
