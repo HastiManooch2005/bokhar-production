@@ -26,6 +26,8 @@ import Notifications from "./pages/Notifications";
 import AdminOrders from "./components/admin/orders/AdminOrders";
 import AdminCustomers from "./components/admin/customers/AdminCustomers";
 import CustomerTransactions from "./components/admin/customers/CustomerTransactions";
+import AdminMessage from "./components/admin/message/AdminMessage";
+import Ticket from "./components/admin/message/Ticket";
 import AdminReports from "./components/admin/reports/AdminReports";
 import AboutDryCleaning from "./pages/AboutDryCleaning";
 import AboutUs from "./pages/AboutUs"
@@ -120,6 +122,8 @@ const hideNavbar =
             </ServicesProvider>
           }
         />
+        <Route path="/admin-dashboard/message" element={<AdminMessage />} />
+        <Route path="/admin-dashboard/message/:id" element={<Ticket />} />
         <Route path="/admin-dashboard/reports" element={<AdminReports />} />
         <Route path="/aboutDryCleaning" element={<AboutDryCleaning />} />
         <Route path="/aboutUs" element={<AboutUs />} />
