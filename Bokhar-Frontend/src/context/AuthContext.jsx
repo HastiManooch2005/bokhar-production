@@ -38,33 +38,23 @@ export function AuthProvider({ children }) {
   // ================= refresh token =================
   const tryRefreshToken = useCallback(async () => {
   if (isRefreshing.current) return false;
+
   isRefreshing.current = true;
 
   try {
-    // ۱. حتماً توکن CSRF را دریافت و ارسال کنید
     const csrfToken = await ensureCSRFToken();
 
     const res = await fetch(`${API_BASE}/refresh/`, {
       method: "POST",
       credentials: "include",
       headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": csrfToken // اضافه شدن هدر برای عبور از csrf_protect
+        "X-CSRFToken": csrfToken,
       },
     });
 
-    if (!res.ok) {
-      // اگر واقعاً رفرش توکن منقضی شده بود (بعد از ۷ روز)
-      return false;
-    }
-
-    // ۲. برای بررسی وضعیت جدید، نیازی به ریکوئست مجدد به verify نیست،
-    // چون خود متد refresh در بک‌اند کوکی‌های جدید را ست کرده است.
-    setUser((prev) => ({ ...prev, isAuthenticated: true }));
-    return true;
-
+    return res.ok;
   } catch (err) {
-    console.error("Refresh error:", err.message);
+    console.error("Refresh error:", err);
     return false;
   } finally {
     isRefreshing.current = false;
@@ -94,12 +84,35 @@ export function AuthProvider({ children }) {
       }
 
       if (res.status === 401) {
-        const refreshed = await tryRefreshToken();
-        if (!refreshed && lastVerify.current === currentVerify) {
-          setUser({ isAuthenticated: false });
+
+    const refreshed = await tryRefreshToken();
+
+    if (refreshed) {
+
+        const retry = await fetch(`${API_BASE}/verify/`, {
+            credentials: "include",
+        });
+
+        if (retry.ok) {
+            const result = await retry.json();
+
+            if (lastVerify.current !== currentVerify) return;
+
+            setUser({
+                isAuthenticated: true,
+                ...result,
+            });
+
+            return;
         }
-        return;
-      }
+    }
+
+    if (lastVerify.current === currentVerify) {
+        setUser({ isAuthenticated: false });
+    }
+
+    return;
+}
 
       throw new Error("Verify failed");
     } catch (err) {

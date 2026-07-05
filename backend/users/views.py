@@ -73,7 +73,7 @@ class SendOTPView(APIView):
         if serializer.is_valid():
             phone = serializer.validated_data["phone"]
             code = generate_otp(phone)
-            send_sms.delay(phone, code)
+            #send_sms.delay(phone, code)
             print(f"OTP for {phone}: {code}", flush=True)
             return Response({"detail": "کد ارسال شد"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -194,46 +194,116 @@ class LogOutView(APIView):
         return response
 
 
+from django.conf import settings
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
+
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+
+import jwt as pyjwt
+
+from .models import UserSession
+
+
 @method_decorator(csrf_protect, name="dispatch")
 class RefreshTokenView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
-        refresh_name = settings.SIMPLE_JWT.get("AUTH_COOKIE_REFRESH", "refresh")
-        old_refresh_token = request.COOKIES.get(refresh_name)
 
-        if not old_refresh_token:
+        refresh_cookie_name = settings.SIMPLE_JWT.get(
+            "AUTH_COOKIE_REFRESH",
+            "refresh",
+        )
+
+        refresh = request.COOKIES.get(refresh_cookie_name)
+
+        if not refresh:
             return Response(
                 {"detail": "نشست شما به پایان رسیده است"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
+        serializer = TokenRefreshSerializer(
+            data={"refresh": refresh}
+        )
+
         try:
-            old_refresh = RefreshToken(old_refresh_token)
-            new_refresh = old_refresh.rotate()
+            serializer.is_valid(raise_exception=True)
 
-            # آپدیت session با jti جدید
-            import jwt as pyjwt
-            old_decoded = pyjwt.decode(old_refresh_token, options={"verify_signature": False})
-            new_decoded = pyjwt.decode(str(new_refresh), options={"verify_signature": False})
-            UserSession.objects.filter(
-                refresh_token_jti=old_decoded["jti"]
-            ).update(refresh_token_jti=new_decoded["jti"])
+            access = serializer.validated_data["access"]
+            new_refresh = serializer.validated_data.get("refresh")
 
-            response = Response({"detail": "توکن نوسازی شد"}, status=status.HTTP_200_OK)
-            return _set_jwt_cookies(response, new_refresh)
-
-        except (TokenError, InvalidToken):
             response = Response(
-                {"detail": "اعتبارنامه نامعتبر است"},
-                status=status.HTTP_401_UNAUTHORIZED,
+                {"detail": "توکن با موفقیت نوسازی شد"},
+                status=status.HTTP_200_OK,
             )
-            response.delete_cookie(
-                settings.SIMPLE_JWT.get("AUTH_COOKIE", "access"), path="/"
+
+            response.set_cookie(
+                key=settings.SIMPLE_JWT["AUTH_COOKIE"],
+                value=access,
+                httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
+                secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
+                samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
+                max_age=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME_SECONDS"],
+                path="/",
             )
-            response.delete_cookie(refresh_name, path="/api/refresh/")
+
+            # اگر Rotation فعال باشد
+            if new_refresh:
+
+                response.set_cookie(
+                    key=refresh_cookie_name,
+                    value=new_refresh,
+                    httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
+                    secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
+                    samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
+                    max_age=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME_SECONDS"],
+                    path="/api/refresh/",
+                )
+
+                old_payload = pyjwt.decode(
+                    refresh,
+                    options={"verify_signature": False},
+                )
+
+                new_payload = pyjwt.decode(
+                    new_refresh,
+                    options={"verify_signature": False},
+                )
+
+                UserSession.objects.filter(
+                    refresh_token_jti=old_payload["jti"]
+                ).update(
+                    refresh_token_jti=new_payload["jti"]
+                )
+
             return response
 
+        except (TokenError, InvalidToken):
+
+            response = Response(
+                {"detail": "Refresh Token نامعتبر است"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+            response.delete_cookie(
+                settings.SIMPLE_JWT["AUTH_COOKIE"],
+                path="/",
+            )
+
+            response.delete_cookie(
+                refresh_cookie_name,
+                path="/api/refresh/",
+            )
+
+            return response
 
 @method_decorator(csrf_protect, name="dispatch")
 class VerifyTokenView(APIView):
