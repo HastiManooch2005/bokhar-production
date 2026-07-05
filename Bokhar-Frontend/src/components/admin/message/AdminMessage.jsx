@@ -9,7 +9,7 @@ import {
   FiAlertCircle,
 } from "react-icons/fi";
 
-function TicketCard({ ticket, onClick }) {
+function TicketCard({ ticket, onClick, onClose }) {
   const { title, user, status, createdAt } = ticket;
 
   const badgeStyle =
@@ -50,7 +50,18 @@ function TicketCard({ ticket, onClick }) {
 
       <div className="space-y-2 text-sm text-slate-600 dark:text-gray-300">
         <p>کاربر: {user}</p>
-        <p>{createdAt}</p>
+        <div className="flex items-center justify-between">
+          <p>{createdAt}</p>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose?.();
+            }}
+            className="text-xs text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 transition font-medium"
+          >
+            بستن تیکت
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -86,7 +97,7 @@ export default function AdminMessage() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
-  const tickets = [
+  const [tickets, setTickets] = useState([
     {
       id: 1,
       title: "مشکل در ثبت سفارش",
@@ -108,7 +119,13 @@ export default function AdminMessage() {
       status: "closed",
       createdAt: "1405/04/10",
     },
-  ];
+  ]);
+
+  const closeTicket = (id) => {
+    setTickets((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, status: "closed" } : t))
+    );
+  };
 
   const filteredTickets = useMemo(() => {
     const query = search.toLowerCase();
@@ -188,6 +205,7 @@ export default function AdminMessage() {
                   key={ticket.id}
                   ticket={ticket}
                   onClick={() => navigate(`/admin-dashboard/message/${ticket.id}`)}
+                  onClose={() => closeTicket(ticket.id)}
                 />
               ))}
             </div>

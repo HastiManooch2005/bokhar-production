@@ -399,16 +399,18 @@ export default function Ticket() {
 
           <div className="flex items-end gap-2 max-w-3xl mx-auto">
             <button
-              onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+              onClick={handleSend}
+              disabled={!replyText.trim()}
               className={`
                 p-3 rounded-2xl transition shrink-0
-                ${showAttachmentMenu
-                  ? "bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-300"
-                  : "bg-gray-100 dark:bg-gray-700 text-slate-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
+                ${
+                  replyText.trim()
+                    ? "bg-sky-500 hover:bg-sky-600 text-white shadow-lg"
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed"
                 }
               `}
             >
-              <FiPaperclip className="text-lg" />
+              <FiSend className="text-lg" />
             </button>
 
             <textarea
@@ -429,19 +431,18 @@ export default function Ticket() {
               "
               style={{ minHeight: "48px", maxHeight: "120px" }}
             />
+
             <button
-              onClick={handleSend}
-              disabled={!replyText.trim()}
+              onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
               className={`
                 p-3 rounded-2xl transition shrink-0
-                ${
-                  replyText.trim()
-                    ? "bg-sky-500 hover:bg-sky-600 text-white shadow-lg"
-                    : "bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed"
+                ${showAttachmentMenu
+                  ? "bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-300"
+                  : "bg-gray-100 dark:bg-gray-700 text-slate-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
                 }
               `}
             >
-              <FiSend className="text-lg" />
+              <FiPaperclip className="text-lg" />
             </button>
           </div>
         </div>
