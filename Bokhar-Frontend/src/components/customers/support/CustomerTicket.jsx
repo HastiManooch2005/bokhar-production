@@ -16,6 +16,71 @@ import {
   FiExternalLink,
 } from "react-icons/fi";
 
+// ─── دیتای فیک برای تست UI ───
+const FAKE_TICKET = {
+  id: 42,
+  subject: "مشکل در پرداخت آنلاین - کارت بانکی",
+  status: "pending",
+  created_at: "2026-07-05T08:30:00Z",
+  messages: [
+    {
+      id: 1,
+      text: "سلام! به پشتیبانی خوش آمدید. 🎉\n\nلطفاً مشکل خود را به صورت کامل توضیح دهید تا بتوانم بهترین راهنمایی را ارائه دهم.",
+      isCustomer: false,
+      time: "۰۹:۳۰",
+      type: "text",
+    },
+    {
+      id: 2,
+      text: "سلام، من وقتی می‌خوام پرداخت کنم خطای «تراکنش ناموفق» می‌گیره. چند بار هم امتحان کردم ولی فرقی نکرد.",
+      isCustomer: true,
+      time: "۰۹:۳۵",
+      type: "text",
+    },
+    {
+      id: 3,
+      text: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=300&fit=crop",
+      isCustomer: true,
+      time: "۰۹:۳۶",
+      type: "image",
+      fileName: "screenshot-error.jpg",
+      fileSize: "۲۴۵.۳ KB",
+    },
+    {
+      id: 4,
+      text: "ممنون از ارسال اسکرین‌شات! 👍\n\nبررسی کردم، مشکل از سمت درگاه بانکی بوده و الان رفع شده. لطفاً دوباره تلاش کنید. اگر باز هم مشکل داشتید، لطفاً شماره کارت و بانک خود را اعلام کنید.",
+      isCustomer: false,
+      time: "۰۹:۴۵",
+      type: "text",
+    },
+    {
+      id: 5,
+      text: "blob:fake-receipt-url",
+      isCustomer: true,
+      time: "۱۰:۰۲",
+      type: "file",
+      fileName: "receipt.pdf",
+      fileSize: "۱۸.۲ KB",
+    },
+    {
+      id: 6,
+      text: "https://www.google.com/maps?q=35.6892,51.3890",
+      isCustomer: true,
+      time: "۱۰:۱۵",
+      type: "location",
+      lat: 35.6892,
+      lng: 51.3890,
+    },
+    {
+      id: 7,
+      text: "ممنون! اطلاعات کامل شد. ✅\n\nظرف ۲۴ ساعت آینده نتیجه را پیامک می‌کنیم. اگر سوال دیگری دارید همینجا بپرسید.",
+      isCustomer: false,
+      time: "۱۰:۲۰",
+      type: "text",
+    },
+  ],
+};
+
 export default function CustomerTicket() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -28,16 +93,21 @@ export default function CustomerTicket() {
 
   const [ticket, setTicket] = useState(null);
 
-  // دریافت جزئیات تیکت از API
+  // دریافت جزئیات تیکت از API (یا دیتای فیک)
   const fetchTicket = async () => {
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/tickets/${id}/`,
-        { credentials: "include" }
-      );
-      if (!response.ok) throw new Error("خطا در دریافت تیکت");
-      const data = await response.json();
-      setTicket(data);
+      // برای تست UI بدون API، از دیتای فیک استفاده کن:
+      await new Promise((resolve) => setTimeout(resolve, 800)); // شبیه‌سازی لودینگ
+      setTicket(FAKE_TICKET);
+
+      // وقتی API آماده شد، این کد رو فعال کن:
+      // const response = await fetch(
+      //   `${import.meta.env.VITE_API_URL}/tickets/${id}/`,
+      //   { credentials: "include" }
+      // );
+      // if (!response.ok) throw new Error("خطا در دریافت تیکت");
+      // const data = await response.json();
+      // setTicket(data);
     } catch (error) {
       console.error(error);
     } finally {
@@ -310,7 +380,7 @@ export default function CustomerTicket() {
               <div
                 key={msg.id}
                 className={`flex ${
-                  msg.isCustomer ? "justify-end" : "justify-start"
+                  msg.isCustomer ? "justify-start" : "justify-end"
                 }`}
               >
                 <div
@@ -319,8 +389,8 @@ export default function CustomerTicket() {
                     px-4 py-3 rounded-2xl text-sm
                     ${
                       msg.isCustomer
-                        ? "bg-emerald-100/80 dark:bg-emerald-900/30 text-slate-800 dark:text-gray-100 rounded-tl-sm"
-                        : "bg-sky-100/80 dark:bg-[#8AA1C4]/30 text-slate-800 dark:text-gray-100 rounded-tr-sm"
+                        ? "bg-emerald-100/80 dark:bg-emerald-900/30 text-slate-800 dark:text-gray-100 rounded-tr-sm"
+                        : "bg-sky-100/80 dark:bg-[#8AA1C4]/30 text-slate-800 dark:text-gray-100 rounded-tl-sm"
                     }
                   `}
                 >
