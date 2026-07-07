@@ -274,6 +274,7 @@ class UserSessionSerializer(serializers.ModelSerializer):
             "device_name",
             "device_brand",
             "device_model",
+            "device_fingerprint",
             "os", 
             "os_version",
             "browser", 

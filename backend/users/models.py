@@ -115,10 +115,19 @@ class Address(models.Model):
 
 
 # ===============================
-# UserSession Model (Updated with device_name & client hints)
+# UserSession Model (Updated with device_fingerprint)
 # ===============================
 class UserSession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sessions")
+    
+    # شناسه یکتای دستگاه برای جلوگیری از ثبت نشست تکراری
+    device_fingerprint = models.CharField(
+        max_length=64, 
+        blank=True, 
+        db_index=True,
+        verbose_name="شناسه دستگاه"
+    )
+    
     ip_address = models.GenericIPAddressField()
     user_agent = models.TextField()
 

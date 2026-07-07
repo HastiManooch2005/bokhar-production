@@ -1,5 +1,9 @@
 import re
+import hashlib
 import jwt as pyjwt
+
+from django.utils import timezone
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 
 
 def parse_user_agent(user_agent_string):
@@ -220,15 +224,9 @@ def get_client_hints(request):
 
 def create_user_session(request, user, refresh_token):
     """
-    ایجاد نشست کاربر با اطلاعات کامل دستگاه (User-Agent + Client Hints)
-
-    Args:
-        request: HttpRequest object
-        user: User instance
-        refresh_token: RefreshToken instance (یا string)
-
-    Returns:
-        UserSession: instance ساخته شده
+    ایجاد یا آپدیت نشست کاربر بر اساس فینگرپرینت دستگاه.
+    اگه همین دستگاه قبلاً نشست فعال داشت → نشست قبلی رو آپدیت کن.
+    اگه نه → نشست جدید بساز.
     """
     from .models import UserSession
 
@@ -237,12 +235,33 @@ def create_user_session(request, user, refresh_token):
     client_hints = get_client_hints(request)
     client_ip = get_client_ip(request)
 
+    # ═══════════════════════════════════════════════════════
+    # ساخت فینگرپرینت دستگاه
+    # اگه مدل دقیق داریم (Client Hints) → فقط مدل (ثابت‌ترین)
+    # اگه نداریم → از ترکیب نوع دستگاه + OS استفاده کن
+    # ═══════════════════════════════════════════════════════
+    device_model = client_hints.get('device_model', '')
+    
+    if device_model:
+        # مدل دقیق داریم (مثلاً iPhone14,2 یا SM-S901B)
+        # فقط مدل → حتی با آپدیت iOS یا مرورگر، همون نشست می‌مونه
+        fingerprint_components = [device_model]
+    else:
+        # مدل نداریم → fallback به ترکیب ثابت‌ترین بخش‌ها
+        # device = "iPhone" | "Windows PC" | "Mac" | ...
+        # os = "iOS" | "Windows" | "macOS" | ...
+        fingerprint_components = [
+            ua_info['device'],
+            ua_info['os'],
+        ]
+    
+    device_fingerprint = hashlib.sha256(
+        '|'.join(filter(None, fingerprint_components)).encode()
+    ).hexdigest()
+
     # استخراج JTI از refresh token
     try:
-        if hasattr(refresh_token, '__str__'):
-            token_str = str(refresh_token)
-        else:
-            token_str = refresh_token
+        token_str = str(refresh_token)
         decoded = pyjwt.decode(token_str, options={"verify_signature": False})
         jti = decoded.get('jti')
     except Exception as e:
@@ -253,19 +272,62 @@ def create_user_session(request, user, refresh_token):
         print("[SESSION ERROR] No JTI found in refresh token!")
         return None
 
-    # غیرفعال کردن نشست‌های قبلی با همین JTI
+    # ═══════════════════════════════════════════════════════
+    # چک کن ببین همین دستگاه قبلاً نشست فعال داره؟
+    # ═══════════════════════════════════════════════════════
+    existing_session = UserSession.objects.filter(
+        user=user,
+        device_fingerprint=device_fingerprint,
+        is_active=True,
+    ).first()
+
+    if existing_session:
+        # ═══════════════════════════════════════════════════
+        # همون دستگاهه → نشست قبلی رو آپدیت کن
+        # ═══════════════════════════════════════════════════
+        print(f"[SESSION UPDATE] Existing session found: id={existing_session.id}")
+
+        # توکن قدیمی رو بلک‌لیست کن (چون الان توکن جدید گرفته)
+        try:
+            old_outstanding = OutstandingToken.objects.get(
+                jti=existing_session.refresh_token_jti
+            )
+            BlacklistedToken.objects.get_or_create(token=old_outstanding)
+        except OutstandingToken.DoesNotExist:
+            pass
+
+        # آپدیت فیلدها
+        existing_session.refresh_token_jti = jti
+        existing_session.ip_address = client_ip
+        existing_session.user_agent = user_agent_string
+        existing_session.device_name = client_hints['device_name']
+        existing_session.device_brand = client_hints['device_brand']
+        existing_session.device_model = client_hints['device_model']
+        existing_session.device = ua_info['device']
+        existing_session.os = ua_info['os']
+        existing_session.os_version = ua_info['os_version']
+        existing_session.browser = ua_info['browser']
+        existing_session.browser_version = ua_info['browser_version']
+        existing_session.last_used = timezone.now()
+        existing_session.save()
+
+        print(f"[SESSION UPDATED] id={existing_session.id}, user={user.phone}")
+        return existing_session
+
+    # ═══════════════════════════════════════════════════════
+    # دستگاه جدیده → نشست جدید بساز
+    # ═══════════════════════════════════════════════════════
+    # غیرفعال کردن نشست‌های قبلی با همین JTI (احتیاطی)
     UserSession.objects.filter(refresh_token_jti=jti).update(is_active=False)
 
-    # ایجاد نشست جدید با Client Hints
     session = UserSession.objects.create(
         user=user,
+        device_fingerprint=device_fingerprint,
         ip_address=client_ip,
         user_agent=user_agent_string,
-        # Client Hints (دقیق‌تر)
         device_name=client_hints['device_name'],
         device_brand=client_hints['device_brand'],
         device_model=client_hints['device_model'],
-        # User-Agent (fallback)
         device=ua_info['device'],
         os=ua_info['os'],
         os_version=ua_info['os_version'],
