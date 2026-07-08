@@ -11,9 +11,11 @@ import {
   Shirt,
   Wrench,
   Tag,
+  Loader2,
 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { getUserTickets, createTicket, closeTicket } from "../../../api/ticketApi";
 
 export default function Support() {
   const navigate = useNavigate();
@@ -35,68 +37,60 @@ export default function Support() {
   }, [theme]);
 
   const [tickets, setTickets] = useState([]);
+  const [loadingTickets, setLoadingTickets] = useState(false);
+  const [sending, setSending] = useState(false);
   const [contactMode, setContactMode] = useState("support");
 
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
+    setLoadingTickets(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/tickets/?type=${contactMode}`,
-        { credentials: "include" }
-      );
-      const data = await response.json();
+      const data = await getUserTickets();
       setTickets(data);
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching tickets:", error);
+      if (error.status === 401) {
+        navigate("/login");
+      }
+    } finally {
+      setLoadingTickets(false);
     }
-  };
+  }, [navigate]);
 
   useEffect(() => {
     fetchTickets();
-  }, [contactMode]);
+  }, [fetchTickets]);
 
-  const closeTicket = async (ticketId, e) => {
+  const handleCloseTicket = async (ticketId, e) => {
     e.stopPropagation();
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/tickets/${ticketId}/close/`,
-        { method: "POST", credentials: "include" }
+      await closeTicket(ticketId);
+      setTickets((prev) =>
+        prev.map((t) => (t.id === ticketId ? { ...t, status: "closed" } : t))
       );
-      if (!response.ok) throw new Error("خطا در بستن تیکت");
-      await fetchTickets();
     } catch (error) {
-      console.error(error);
+      console.error("Error closing ticket:", error);
       alert("خطا در بستن تیکت");
     }
   };
 
-  const sendMessage = async () => {
+  const handleSendMessage = async () => {
     if (!message.trim() || !subject.trim()) return;
+    setSending(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/tickets/`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            subject: subject,
-            body: message,
-            type: contactMode,
-          }),
-        }
-      );
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.detail || "خطا در ارسال تیکت");
-      }
+      await createTicket({
+        subject: subject,
+        body: message,
+      });
       alert("پیام شما با موفقیت ارسال شد ✅");
       setMessage("");
       setSubject("");
       setSelectedCategory("");
       await fetchTickets();
     } catch (error) {
-      console.error(error);
-      alert(error.message);
+      console.error("Error sending ticket:", error);
+      alert(error.detail || "خطا در ارسال تیکت");
+    } finally {
+      setSending(false);
     }
   };
 
@@ -139,6 +133,7 @@ export default function Support() {
     switch (status) {
       case "answered":
         return <CheckCircle2 size={16} className="text-green-500" />;
+      case "open":
       case "pending":
         return <Clock size={16} className="text-amber-500" />;
       case "closed":
@@ -151,6 +146,7 @@ export default function Support() {
   const getStatusText = (status) => {
     switch (status) {
       case "answered": return "پاسخ داده شده";
+      case "open": return "در انتظار پاسخ";
       case "pending": return "در انتظار پاسخ";
       case "closed": return "بسته شده";
       default: return "در انتظار پاسخ";
@@ -161,6 +157,7 @@ export default function Support() {
     switch (status) {
       case "answered":
         return "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700";
+      case "open":
       case "pending":
         return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700";
       case "closed":
@@ -214,7 +211,7 @@ export default function Support() {
           </button>
         </div>
 
-        {/* تماس — شماره متفاوت */}
+        {/* تماس */}
         <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-4 flex items-center justify-between transition">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-full bg-green-100 dark:bg-[#262B40] flex items-center justify-center">
@@ -237,7 +234,7 @@ export default function Support() {
           </a>
         </div>
 
-        {/* ارسال پیام — فرم متفاوت */}
+        {/* ارسال پیام */}
         <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-4 transition">
           <div className="flex items-center gap-3 mb-3">
             <MessageCircle className="text-blue-600 dark:text-[#8AA1C4]" />
@@ -296,17 +293,27 @@ export default function Support() {
               placeholder:text-gray-400 dark:placeholder:text-gray-500"
           />
           <button
-            onClick={sendMessage}
-            disabled={!message.trim() || !subject.trim()}
+            onClick={handleSendMessage}
+            disabled={!message.trim() || !subject.trim() || sending}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed
               dark:bg-[#8AA1C4] dark:hover:bg-[#7a93b8] dark:disabled:bg-[#262B40]
-              text-white rounded-xl p-3 mt-3 transition font-medium"
+              text-white rounded-xl p-3 mt-3 transition font-medium flex items-center justify-center gap-2"
           >
-            {contactMode === "support" ? "ارسال به پشتیبانی" : "ارسال به خشکشویی"}
+            {sending ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                در حال ارسال...
+              </>
+            ) : (
+              <>
+                <MessageCircle size={18} />
+                {contactMode === "support" ? "ارسال به پشتیبانی" : "ارسال به خشکشویی"}
+              </>
+            )}
           </button>
         </div>
 
-        {/* لیست تیکت‌ها — فقط تیکت‌های همین حالت */}
+        {/* لیست تیکت‌ها */}
         <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-4 transition">
           <div className="flex items-center gap-3 mb-4">
             <MessageSquare className="text-purple-600 dark:text-[#8AA1C4]" />
@@ -318,7 +325,11 @@ export default function Support() {
             </span>
           </div>
 
-          {tickets.length === 0 ? (
+          {loadingTickets ? (
+            <div className="flex items-center justify-center py-8 text-gray-400">
+              <Loader2 size={32} className="animate-spin" />
+            </div>
+          ) : tickets.length === 0 ? (
             <div className="text-center py-8 text-gray-400 dark:text-gray-500">
               <MessageSquare size={40} className="mx-auto mb-2 opacity-50" />
               <p>
@@ -349,7 +360,9 @@ export default function Support() {
                     <div className="flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
                       <span className="flex items-center gap-1">
                         <Clock size={12} />
-                        {new Date(ticket.created_at).toLocaleDateString("fa-IR")}
+                        {ticket.created_at
+                          ? new Date(ticket.created_at).toLocaleDateString("fa-IR")
+                          : ""}
                       </span>
                       {ticket.updated_at && ticket.updated_at !== ticket.created_at && (
                         <span className="flex items-center gap-1">
@@ -360,7 +373,7 @@ export default function Support() {
                     </div>
                     {ticket.status !== "closed" && (
                       <button
-                        onClick={(e) => closeTicket(ticket.id, e)}
+                        onClick={(e) => handleCloseTicket(ticket.id, e)}
                         className="text-xs text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 transition font-medium"
                       >
                         بستن تیکت
@@ -373,7 +386,7 @@ export default function Support() {
           )}
         </div>
 
-        {/* سوالات متداول — متفاوت */}
+        {/* سوالات متداول */}
         <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-4 transition">
           <div className="flex items-center gap-3 mb-3">
             <HelpCircle className="text-orange-600 dark:text-[#8AA1C4]" />
