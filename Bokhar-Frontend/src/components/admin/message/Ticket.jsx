@@ -38,11 +38,13 @@ export default function Ticket() {
   const [ticket, setTicket] = useState(null);
 
   const fetchTicket = useCallback(async () => {
+    if (!id) return;
     setLoading(true);
     setError(null);
     try {
       const data = await getTicketDetail(id);
       setTicket(data);
+      return data;
     } catch (err) {
       console.error("Error fetching ticket:", err);
       if (err.status === 403) {
@@ -71,13 +73,19 @@ export default function Ticket() {
     }
   }, [ticket?.messages]);
 
+  // ========================== ارسال پیام ==========================
+
   const sendMessage = async (content, type, extra = {}) => {
     setSending(true);
     try {
       let data;
+
       if (type === "file" || type === "image") {
         data = new FormData();
-        data.append("body", extra.file);
+        data.append("file", extra.file);
+        data.append("body", "");
+        data.append("file_name", extra.file.name);
+        data.append("file_type", detectFileType(extra.file));
       } else if (type === "location") {
         data = {
           body: content,
@@ -93,7 +101,7 @@ export default function Ticket() {
       setReplyText("");
     } catch (err) {
       console.error("Error sending message:", err);
-      alert("خطا در ارسال پیام");
+      alert(err.detail || err.body?.[0] || "خطا در ارسال پیام");
     } finally {
       setSending(false);
     }
@@ -114,6 +122,14 @@ export default function Ticket() {
   const handleFileSelect = (e, type) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    const MAX_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      alert("حجم فایل نباید بیشتر از ۱۰ مگابایت باشد");
+      e.target.value = "";
+      return;
+    }
+
     sendMessage(null, type, { file });
     setShowAttachmentMenu(false);
     e.target.value = "";
@@ -132,11 +148,15 @@ export default function Ticket() {
         sendMessage(mapsUrl, "location", { lat: latitude, lng: longitude });
         setShowAttachmentMenu(false);
       },
-      () => {
-        alert("دسترسی به موقعیت مکانی رد شد");
-      }
+      (err) => {
+        console.error("Geolocation error:", err);
+        alert("دسترسی به موقعیت مکانی رد شد یا خطا رخ داد");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
     );
   };
+
+  // ========================== رندر پیام ==========================
 
   const renderMessageContent = (msg) => {
     const type = msg.file_type || "text";
@@ -151,6 +171,9 @@ export default function Ticket() {
                 alt={msg.file_name || "تصویر"}
                 className="rounded-xl max-w-full max-h-64 object-cover cursor-pointer"
                 onClick={() => window.open(msg.file_url || msg.body, "_blank")}
+                onError={(e) => {
+                  e.target.style.display = "none";
+                }}
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-xl transition flex items-center justify-center opacity-0 group-hover:opacity-100">
                 <FiExternalLink className="text-white text-2xl" />
@@ -178,7 +201,12 @@ export default function Ticket() {
               <FiPaperclip className="text-sky-600 dark:text-sky-300" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium truncate">{msg.file_name || "فایل"}</p>
+              <p className="text-xs font-medium truncate">
+                {msg.file_name || "فایل"}
+              </p>
+              <p className="text-[10px] opacity-50">
+                {type === "video" ? "ویدیو" : type === "audio" ? "صوت" : "فایل"}
+              </p>
             </div>
             <FiDownload className="text-xs opacity-50" />
           </a>
@@ -211,6 +239,8 @@ export default function Ticket() {
         );
     }
   };
+
+  // ========================== رندر UI ==========================
 
   if (loading && !ticket) {
     return (
@@ -404,6 +434,7 @@ export default function Ticket() {
             <input
               ref={fileInputRef}
               type="file"
+              accept=".pdf,.doc,.docx,.zip,.rar,.txt"
               className="hidden"
               onChange={(e) => handleFileSelect(e, "file")}
             />
@@ -450,12 +481,14 @@ export default function Ticket() {
 
               <button
                 onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+                disabled={sending}
                 className={`
                   p-3 rounded-2xl transition shrink-0
                   ${showAttachmentMenu
                     ? "bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-300"
                     : "bg-gray-100 dark:bg-gray-700 text-slate-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
                   }
+                  disabled:opacity-50
                 `}
               >
                 <FiPaperclip className="text-lg" />
@@ -466,4 +499,14 @@ export default function Ticket() {
       </main>
     </div>
   );
+}
+
+// helper محلی
+function detectFileType(file) {
+  if (!file) return "";
+  const mime = file.type || "";
+  if (mime.startsWith("image/")) return "image";
+  if (mime.startsWith("video/")) return "video";
+  if (mime.startsWith("audio/")) return "audio";
+  return "file";
 }
