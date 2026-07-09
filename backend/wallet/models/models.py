@@ -119,7 +119,7 @@ class WalletTransaction(models.Model):
         FAILED  = "failed",  " ناموفق"
 
     refund = models.ForeignKey(
-        RefundRequest,
+        'RefundRequest',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
