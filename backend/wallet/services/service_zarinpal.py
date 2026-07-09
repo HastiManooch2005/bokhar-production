@@ -27,13 +27,39 @@ class ZarinPalService:
         self.verify_url   = zp["VERIFY_URL"]
         self.payment_url  = zp["PAYMENT_URL"]
         self.callback_url = zp["CALLBACK_URL"]
-        self.refund_url   = zp.get(
-            "REFUND_URL",
-            "https://api.zarinpal.com/pg/v4/payment/refund.json",
+        self.graphql_url = zp.get(
+            "GRAPHQL_URL",
+            "https://next.zarinpal.com/api/v4/graphql",
         )
-        # فقط برای refund لازم است
         self.access_token = zp.get("ACCESS_TOKEN")
 
+    def _graphql(self, query: str, variables: dict) -> tuple[bool, dict]:
+        """
+        ارسال Query یا Mutation به GraphQL زرین پال
+        """
+
+        if not self.access_token:
+            return False, {
+                "message": "ACCESS_TOKEN تنظیم نشده است",
+                "code": -401,
+            }
+
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
+
+        payload = {
+            "query": query,
+            "variables": variables,
+        }
+
+        return self._post(
+            self.graphql_url,
+            payload,
+            headers=headers,
+        )
     # ------------------------------------------------------------------
     # PRIVATE
     # ------------------------------------------------------------------
@@ -155,50 +181,3 @@ class ZarinPalService:
         logger.error(f"ZarinPal verify failed — code={error['code']} msg={error['message']}")
         return {"success": False, "error": error["message"], "code": error["code"]}
 
-    # ------------------------------------------------------------------
-    def request_refund(self, session_id: str, amount: int, description: str = "CUSTOMER_REQUEST") -> dict:
-        """
-        استرداد وجه به روش زرین‌پال (برگشت به کارت بانکی اصلی).
-        نیاز به ACCESS_TOKEN دارد (از پنل زرین‌پال بگیرید).
-
-        ⚠️  این متد فقط برای RefundRequest با destination=bank استفاده می‌شود.
-            برای destination=wallet، موجودی کیف پول داخل اپ شارژ می‌شود
-            و نیازی به فراخوانی زرین‌پال نیست.
-
-        :param session_id:  شناسه session پرداخت در زرین‌پال
-        :param amount:      مبلغ به ریال
-        :param description: دلیل استرداد
-        :return:
-            موفق  → {"success": True, "refund_id": "..."}
-            خطا   → {"success": False, "error": "...", "code": ...}
-        """
-        if not self.access_token:
-            logger.error("ZarinPal ACCESS_TOKEN is not configured")
-            return {"success": False, "error": "تنظیمات استرداد ناقص است (ACCESS_TOKEN)", "code": -412}
-
-        if not session_id:
-            return {"success": False, "error": "session_id الزامی است", "code": -410}
-
-        if amount <= 0:
-            return {"success": False, "error": "مبلغ استرداد نامعتبر است", "code": -411}
-
-        payload = {
-            "session_id":  session_id,
-            "amount":       amount,
-            "description":  description,
-        }
-        headers = {"Authorization": f"Bearer {self.access_token}"}
-
-        ok, result = self._post(self.refund_url, payload, headers)
-        if not ok:
-            return {"success": False, "error": result["message"], "code": result["code"]}
-
-        data = result.get("data")
-        if data:
-            refund_id = data.get("id") or data.get("refund_id") or data.get("reference_id")
-            logger.info(f"ZarinPal refund OK — refund_id={refund_id} amount={amount}")
-            return {"success": True, "refund_id": refund_id}
-
-        error = self._extract_error(result, "استرداد وجه ناموفق")
-        logger.error(f"ZarinPal refund failed — code={error['code']} msg={error['message']}")
-        return {"success": False, "error": error["message"], "code": error["code"]}

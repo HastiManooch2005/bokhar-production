@@ -1,4 +1,4 @@
-from models.log_models import *
+from ..models.log_models import *
 
 def create_audit_log(action, user=None, payment=None, old_data=None, new_data=None, ip=None):
     FinancialAuditLog.objects.create(

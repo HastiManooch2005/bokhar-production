@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from order.models import Order
-from wallet.models import RefundRequest, WalletTransaction, WithdrawalRequest
+from ..models.models import RefundRequest, WalletTransaction, WithdrawalRequest
 
 
 # =========================================================
@@ -14,6 +14,22 @@ class PaymentCreateSerializer(serializers.Serializer):
     """
     pass  # در صورت نیاز فیلدهای extra مثل description اینجا اضافه کن
 
+
+from rest_framework import serializers
+
+
+
+class RefundProcessSerializer(serializers.Serializer):
+    uuid = serializers.UUIDField()
+
+    def validate_uuid(self, value):
+        try:
+            refund = RefundRequest.objects.get(uuid=value)
+        except RefundRequest.DoesNotExist:
+            raise serializers.ValidationError("درخواست یافت نشد.")
+
+        self.context["refund"] = refund
+        return value
 
 # =========================================================
 # 2. تأیید پرداخت (callback زرین‌پال)

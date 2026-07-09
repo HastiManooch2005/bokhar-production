@@ -6,5 +6,6 @@ app_name = "walllet"
 
 urlpatterns = [
     #path("", include("backend.wallet.urls_wallet.admin_urls")),
-    path("", include("backend.wallet.urls_wallet.payment_urls")),
+    path("", include("wallet.urls_wallet.payment_urls")),
+    path("",include("wallet.urls_wallet.oauth_urls"))
 ]

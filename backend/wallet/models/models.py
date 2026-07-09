@@ -7,8 +7,7 @@ from django.utils import timezone
 
 from users.models import User
 from order.models import Order
-
-
+from .setting_payment_models import *
 # =========================================================
 # WALLET — کیف پول کاربر
 # =========================================================
@@ -70,6 +69,8 @@ class PaymentSession(models.Model):
     verify_response  = models.JSONField(default=dict)   # پاسخ تأیید
     callback_payload = models.JSONField(default=dict)   # داده‌های بازگشتی
 
+
+
     status      = models.CharField(max_length=20, choices=Status.choices, default=Status.INITIATED)
     is_verified = models.BooleanField(default=False)
     fail_reason = models.TextField(blank=True)
@@ -110,11 +111,20 @@ class WalletTransaction(models.Model):
         PAYMENT           = "payment",          "پرداخت سفارش"
         WITHDRAWAL        = "withdrawal",       "برداشت به حساب"
         REFUND_TO_WALLET  = "refund_to_wallet", "استرداد به کیف پول"
+        REFUND = "refund","استرداد به حساب"
 
     class Status(models.TextChoices):
         PENDING = "pending", "در انتظار"
         SUCCESS = "success", "موفق"
-        FAILED  = "failed",  "ناموفق"
+        FAILED  = "failed",  " ناموفق"
+
+    refund = models.ForeignKey(
+        RefundRequest,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transactions",
+    )
 
     uuid             = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     wallet           = models.ForeignKey(Wallet, on_delete=models.CASCADE, null=True,blank=True,related_name="transactions")
@@ -172,6 +182,9 @@ class RefundRequest(models.Model):
     reason      = models.TextField(blank=True)
     status      = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     fail_reason = models.TextField(blank=True)
+
+    external_refund_id = models.CharField(max_length=100, blank=True)
+    terminal_id = models.CharField(max_length=50, blank=True)
 
     processed_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)

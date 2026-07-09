@@ -148,7 +148,7 @@ class WalletChargeVerifyView(APIView):
 
 
 # =========================================================
-# 6. استرداد سفارش (به کیف پول یا حساب بانکی)
+# 6. استرداد سفارش (به کیف پول)
 # =========================================================
 class RefundOrderView(APIView):
     """
@@ -189,6 +189,66 @@ class RefundOrderView(APIView):
         )
         return Response({"detail": message, **result}, status=status.HTTP_200_OK)
 
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from rest_framework import status
+
+from ..serializers.serializers import *
+
+
+from rest_framework import status
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.exceptions import ValidationError
+
+from ..serializers.serializers import RefundProcessSerializer
+from ..services.refund import *
+
+
+
+class RefundProcessAPIView(APIView):
+
+    permission_classes = [IsAdminUser]
+
+    def post(self, request):
+
+        serializer = RefundProcessSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        refund = serializer.context["refund"]
+
+        try:
+
+            result = RefundService().process_refund(
+                refund_id=refund.id,
+            )
+
+            return Response(
+                result,
+                status=status.HTTP_200_OK,
+            )
+
+        except ValidationError as exc:
+
+            return Response(
+                {
+                    "success": False,
+                    "error": str(exc.detail),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception as exc:
+
+            return Response(
+                {
+                    "success": False,
+                    "error": str(exc),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 # =========================================================
 # 7. برداشت از کیف پول به حساب بانکی

@@ -1,3 +1,53 @@
+from django.db import models
+
+from users.models import User
+
+
+class PaymentTerminal(models.Model):
+
+    merchant_id = models.CharField(max_length=100)
+
+    client_id = models.IntegerField()
+
+    client_secret = models.CharField(max_length=255)
+
+    access_token = models.TextField(blank=True)
+
+    refresh_token = models.TextField(blank=True)
+
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    token_type = models.CharField(
+        max_length=20,
+        default="Bearer"
+    )
+
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 """from django.db import models
 
 from backend.users.models import User
@@ -200,3 +250,5 @@ class Settlement(models.Model):  # برای تسویه حساب
 
     created_at = models.DateTimeField(auto_now_add=True)
 """
+
+
