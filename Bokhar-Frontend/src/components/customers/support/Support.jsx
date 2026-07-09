@@ -12,6 +12,8 @@ import {
   Wrench,
   Tag,
   Loader2,
+  Archive,
+  Inbox,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -40,6 +42,7 @@ export default function Support() {
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [sending, setSending] = useState(false);
   const [contactMode, setContactMode] = useState("support");
+  const [viewMode, setViewMode] = useState("active"); // 'active' or 'archive'
 
   const fetchTickets = useCallback(async () => {
     setLoadingTickets(true);
@@ -49,7 +52,7 @@ export default function Support() {
     } catch (error) {
       console.error("Error fetching tickets:", error);
       if (error.status === 401) {
-        navigate("/login");
+        navigate("/shop");
       }
     } finally {
       setLoadingTickets(false);
@@ -161,14 +164,19 @@ export default function Support() {
       case "pending":
         return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700";
       case "closed":
-        return "bg-gray-50 text-gray-600 border-gray-200 dark:bg-[#262B40] dark:text-gray-400 dark:border-gray-700";
+        return "bg-gray-50 text-gray-500 border-gray-200 dark:bg-[#262B40] dark:text-gray-400 dark:border-gray-700";
       default:
         return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700";
     }
   };
 
+  // Filter tickets based on view mode
+  const activeTickets = tickets.filter(t => t.status !== "closed");
+  const archivedTickets = tickets.filter(t => t.status === "closed");
+  const displayedTickets = viewMode === "active" ? activeTickets : archivedTickets;
+
   return (
-    <div dir="rtl" className="min-h-screen p-4 md:p-8">
+    <div dir="rtl" className="min-h-screen p-4 md:p-8 bg-gray-50 dark:bg-[#0f111a]">
       <div className="md:max-w-3xl md:mx-auto space-y-6 md:mt-15 mb-20 md:mb-0">
 
         {/* Header */}
@@ -177,7 +185,7 @@ export default function Support() {
           <button
             onClick={() => navigate("/customer-dashboard")}
             className="ms-auto w-10 h-10 rounded-full shadow-sm hover:shadow-md cursor-pointer
-              bg-white/80 hover:bg-gray-200 border-sky-300 shadow-sky-200
+              bg-white/80 hover:bg-gray-200 border border-gray-200 shadow-gray-200
               dark:bg-[#262B40] dark:hover:bg-[#2d3350] dark:border-gray-600
               dark:shadow-black/40 flex items-center justify-center transition"
           >
@@ -186,7 +194,7 @@ export default function Support() {
         </div>
 
         {/* Toggle Switch */}
-        <div className="bg-white dark:bg-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-1.5 flex gap-1">
+        <div className="bg-white dark:bg-[#262B40] border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm p-1.5 flex gap-1">
           <button
             onClick={() => setContactMode("support")}
             className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
@@ -212,7 +220,7 @@ export default function Support() {
         </div>
 
         {/* تماس */}
-        <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-4 flex items-center justify-between transition">
+        <div className="bg-white/80 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm p-4 flex items-center justify-between transition backdrop-blur-md">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-full bg-green-100 dark:bg-[#262B40] flex items-center justify-center">
               <Phone className="text-green-600 dark:text-[#8AA1C4]" />
@@ -235,9 +243,9 @@ export default function Support() {
         </div>
 
         {/* ارسال پیام */}
-        <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-4 transition">
+        <div className="bg-white/80 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm p-4 transition backdrop-blur-md">
           <div className="flex items-center gap-3 mb-3">
-            <MessageCircle className="text-blue-600 dark:text-[#8AA1C4]" />
+            <MessageCircle className="text-sky-600 dark:text-[#8AA1C4]" />
             <p className="font-medium text-gray-900 dark:text-gray-200">
               {contactMode === "support" ? "ارسال پیام به پشتیبانی" : "ارسال پیام به خشکشویی"}
             </p>
@@ -258,7 +266,7 @@ export default function Support() {
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition shrink-0 ${
                         selectedCategory === cat
                           ? "bg-sky-500 text-white border-sky-500"
-                          : "bg-white dark:bg-[#1a1f2e] border-sky-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-sky-50 dark:hover:bg-[#2d3350]"
+                          : "bg-white dark:bg-[#1a1f2e] border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-sky-50 dark:hover:bg-[#2d3350]"
                       }`}
                     >
                       <Tag size={12} className="inline ml-1" />
@@ -276,7 +284,7 @@ export default function Support() {
             onChange={(e) => setSubject(e.target.value)}
             placeholder={contactMode === "support" ? "عنوان تیکت..." : "موضوع یا دسته‌بندی..."}
             className="w-full border rounded-xl p-3 mb-3 focus:outline-none focus:ring-2 focus:ring-[#8AA1C4]
-              bg-white dark:bg-[#1a1f2e] border-sky-300 dark:border-gray-600 text-gray-900 dark:text-gray-200
+              bg-white dark:bg-[#1a1f2e] border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200
               placeholder:text-gray-400 dark:placeholder:text-gray-500"
           />
 
@@ -289,13 +297,13 @@ export default function Support() {
                 : "جزئیات سفارش یا مشکل لباس خود را بنویسید..."
             }
             className="w-full border rounded-xl p-3 resize-none h-28 focus:outline-none focus:ring-2 focus:ring-[#8AA1C4]
-              bg-white dark:bg-[#1a1f2e] border-sky-300 dark:border-gray-600 text-gray-900 dark:text-gray-200
+              bg-white dark:bg-[#1a1f2e] border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200
               placeholder:text-gray-400 dark:placeholder:text-gray-500"
           />
           <button
             onClick={handleSendMessage}
             disabled={!message.trim() || !subject.trim() || sending}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed
+            className="w-full bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 disabled:cursor-not-allowed
               dark:bg-[#8AA1C4] dark:hover:bg-[#7a93b8] dark:disabled:bg-[#262B40]
               text-white rounded-xl p-3 mt-3 transition font-medium flex items-center justify-center gap-2"
           >
@@ -314,37 +322,72 @@ export default function Support() {
         </div>
 
         {/* لیست تیکت‌ها */}
-        <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-4 transition">
+        <div className="bg-white/80 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm p-4 transition backdrop-blur-md">
+          
+          {/* Header: [Ticket Icon] Title Count [Archive Button] */}
           <div className="flex items-center gap-3 mb-4">
             <MessageSquare className="text-purple-600 dark:text-[#8AA1C4]" />
             <p className="font-medium text-gray-900 dark:text-gray-200">
-              {contactMode === "support" ? "تیکت‌های پشتیبانی" : "تیکت‌های خشکشویی"}
+              {viewMode === "active" 
+                ? (contactMode === "support" ? "تیکت‌های پشتیبانی" : "تیکت‌های خشکشویی")
+                : "تیکت‌های بایگانی شده"
+              }
             </p>
             <span className="mr-auto text-sm text-gray-500 dark:text-gray-400">
-              {tickets.length} تیکت
+              {displayedTickets.length} تیکت
             </span>
+            
+            {/* Archive / Back Button */}
+            {viewMode === "active" ? (
+              <button
+                onClick={() => setViewMode("archive")}
+                className="w-9 h-9 rounded-[10px] border border-gray-200 dark:border-gray-600
+                  bg-white dark:bg-[#262B40] text-gray-600 dark:text-gray-300
+                  hover:bg-gray-50 dark:hover:bg-[#2d3350] hover:shadow-sm
+                  flex items-center justify-center transition-all"
+                title="بایگانی"
+              >
+                <Archive size={18} />
+              </button>
+            ) : (
+              <button
+                onClick={() => setViewMode("active")}
+                className="w-9 h-9 rounded-[10px] border border-gray-200 dark:border-gray-600
+                  bg-white dark:bg-[#262B40] text-gray-600 dark:text-gray-300
+                  hover:bg-gray-50 dark:hover:bg-[#2d3350] hover:shadow-sm
+                  flex items-center justify-center transition-all"
+                title="بازگشت"
+              >
+                <Inbox size={18} />
+              </button>
+            )}
           </div>
 
           {loadingTickets ? (
             <div className="flex items-center justify-center py-8 text-gray-400">
               <Loader2 size={32} className="animate-spin" />
             </div>
-          ) : tickets.length === 0 ? (
+          ) : displayedTickets.length === 0 ? (
             <div className="text-center py-8 text-gray-400 dark:text-gray-500">
               <MessageSquare size={40} className="mx-auto mb-2 opacity-50" />
               <p>
-                {contactMode === "support"
-                  ? "هنوز تیکتی به پشتیبانی ارسال نکرده‌اید"
-                  : "هنوز تیکتی به خشکشویی ارسال نکرده‌اید"}
+                {viewMode === "active"
+                  ? (contactMode === "support"
+                      ? "هنوز تیکتی به پشتیبانی ارسال نکرده‌اید"
+                      : "هنوز تیکتی به خشکشویی ارسال نکرده‌اید")
+                  : "تیکت بسته‌شده‌ای وجود ندارد"
+                }
               </p>
             </div>
           ) : (
             <div className="space-y-3">
-              {tickets.map((ticket) => (
+              {displayedTickets.map((ticket) => (
                 <div
                   key={ticket.id}
                   onClick={() => navigate(`/customer-dashboard/support/${ticket.id}`)}
-                  className="bg-white dark:bg-[#262B40]/40 border border-sky-200 dark:border-gray-700 rounded-xl p-4 hover:shadow-md transition cursor-pointer"
+                  className={`bg-white dark:bg-[#262B40]/40 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:shadow-md transition cursor-pointer ${
+                    ticket.status === "closed" ? "opacity-75 grayscale-[0.3]" : ""
+                  }`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="font-semibold text-gray-900 dark:text-gray-200 truncate flex-1">
@@ -387,7 +430,7 @@ export default function Support() {
         </div>
 
         {/* سوالات متداول */}
-        <div className="bg-sky-50 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-sky-200 dark:border-gray-700 rounded-2xl shadow p-4 transition">
+        <div className="bg-white/80 dark:bg-gradient-to-br dark:from-[#1a1f2e] dark:via-[#1e2335] dark:to-[#262B40] border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm p-4 transition backdrop-blur-md">
           <div className="flex items-center gap-3 mb-3">
             <HelpCircle className="text-orange-600 dark:text-[#8AA1C4]" />
             <p className="font-medium text-gray-900 dark:text-gray-200">
