@@ -7,7 +7,7 @@ class PaymentTerminal(models.Model):
 
     merchant_id = models.CharField(max_length=100)
 
-    client_id = models.IntegerField()
+    client_id = models.CharField(max_length=100)
 
     client_secret = models.CharField(max_length=255)
 
