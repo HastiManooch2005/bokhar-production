@@ -2,18 +2,17 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
-from ..models.models import *
+from order.models import Order, OrderStatus
 
-from order.models import Order, OrderItem, OrderStatus, OrderStatusLog
-from order.serializers import OrderCreateSerializer
-from users.models import User
-from  ..models.models import PaymentSession, Wallet, WalletTransaction, WithdrawalRequest
-from ..monitoring.monitoring.metric import *
-from ..utils.lock_utils import DistributedLock
-from ..utils.utils import *
-from .service_helper import create_audit_log
-from .service_refund import *
+from ..models.models import (
+    PaymentSession,
+    RefundRequest,
+    Wallet,
+    WalletTransaction,
+)
 
+from ..models.setting_payment_models import PaymentTerminal
+from .service_refund import RefundService
 
 
 class Refund:
@@ -33,22 +32,34 @@ class Refund:
     )
 
     # -------------------------------------------------------
+    # Active Terminal
+    # -------------------------------------------------------
+
+    def _get_terminal(self):
+
+        terminal = (
+            PaymentTerminal.objects
+            .filter(is_active=True)
+            .first()
+        )
+
+        if terminal is None:
+            raise ValidationError(
+                "ترمینال فعال زرین پال پیدا نشد."
+            )
+
+        return terminal
+
+    # -------------------------------------------------------
     # BANK REFUND
     # -------------------------------------------------------
 
     def process_refund(
-            self,
-            refund_id: int,
-            method: str = "PAYA",
-            reason: str = "CUSTOMER_REQUEST",
+        self,
+        refund_id: int,
+        method: str = "PAYA",
+        reason: str = "CUSTOMER_REQUEST",
     ):
-        """
-        ارسال درخواست استرداد وجه به زرین‌پال
-        """
-
-        # -------------------------------------------------
-        # Step 1 - آماده‌سازی
-        # -------------------------------------------------
 
         with transaction.atomic():
 
@@ -64,22 +75,27 @@ class Refund:
 
             if refund.status != RefundRequest.Status.APPROVED:
                 raise ValidationError(
-                    "درخواست استرداد هنوز تأیید نشده است."
+                    "Refund request is not approved."
                 )
 
             if refund.amount < self.MIN_REFUND_AMOUNT:
                 raise ValidationError(
-                    "حداقل مبلغ استرداد ۲۰۰۰۰ ریال است."
+                    "Refund amount is کمتر از حداقل مجاز."
                 )
 
             if method not in self.VALID_METHODS:
                 raise ValidationError(
-                    "روش استرداد نامعتبر است."
+                    "Invalid refund method."
                 )
 
             if reason not in self.VALID_REASONS:
                 raise ValidationError(
-                    "دلیل استرداد نامعتبر است."
+                    "Invalid refund reason."
+                )
+
+            if not refund.payment.session_id:
+                raise ValidationError(
+                    "Session ID یافت نشد."
                 )
 
             refund.status = RefundRequest.Status.PROCESSING
@@ -93,28 +109,28 @@ class Refund:
             )
 
             wallet_transaction = WalletTransaction.objects.create(
+                wallet=refund.user.wallet,
                 refund=refund,
+                payment_session=refund.payment,
                 order=refund.order,
                 amount=refund.amount,
                 transaction_type=WalletTransaction.Type.REFUND,
                 status=WalletTransaction.Status.PENDING,
-                description=f"Refund Order #{refund.order_id}",
+                description=f"Refund Order #{refund.order.id}",
             )
 
-        # -------------------------------------------------
-        # Step 2 - Call ZarinPal API (خارج از Transaction)
-        # -------------------------------------------------
+        terminal = self._get_terminal()
+
+        refund_service = RefundService(
+            terminal=terminal,
+        )
 
         try:
-
-            refund_service = RefundService(
-                terminal=refund.payment.terminal
-            )
 
             result = refund_service.request_refund(
                 session_id=refund.payment.session_id,
                 amount=refund.amount,
-                description=f"Refund Order #{refund.order_id}",
+                description=f"Refund Order #{refund.order.id}",
                 method=method,
                 reason=reason,
             )
@@ -125,136 +141,169 @@ class Refund:
                 "refund_status": "FAILED",
                 "error": str(exc),
             }
+            # -------------------------------------------------
+            # Step 3 - Save Result
+            # -------------------------------------------------
 
-        # -------------------------------------------------
-        # Step 3 - ذخیره نتیجه
-        # -------------------------------------------------
+            with transaction.atomic():
 
-        with transaction.atomic():
-
-            refund = (
-                RefundRequest.objects
-                .select_for_update()
-                .get(id=refund_id)
-            )
-
-            wallet_transaction = (
-                WalletTransaction.objects
-                .select_for_update()
-                .get(id=wallet_transaction.id)
-            )
-
-            refund.external_refund_id = result.get("refund_id")
-            refund.terminal_id = result.get("terminal_id")
-
-            refund_status = result.get("refund_status")
-
-            if refund_status == "SUCCESS":
-
-                refund.status = RefundRequest.Status.COMPLETED
-                refund.completed_at = timezone.now()
-
-                wallet_transaction.status = (
-                    WalletTransaction.Status.SUCCESS
+                refund = (
+                    RefundRequest.objects
+                    .select_for_update()
+                    .get(id=refund_id)
                 )
 
-            elif refund_status == "PENDING":
+                payment = (
+                    PaymentSession.objects
+                    .select_for_update()
+                    .get(id=refund.payment_id)
+                )
 
-                refund.status = RefundRequest.Status.PROCESSING
+                wallet_transaction = (
+                    WalletTransaction.objects
+                    .select_for_update()
+                    .get(id=wallet_transaction.id)
+                )
+
+                refund.external_refund_id = result.get("refund_id", "")
+                refund.terminal_id = result.get("terminal_id", "")
+
+                refund_status = result.get("refund_status")
+
+                if refund_status == "SUCCESS":
+
+                    refund.status = RefundRequest.Status.COMPLETED
+                    refund.completed_at = timezone.now()
+
+                    payment.status = PaymentSession.Status.REFUNDED
+                    payment.refunded_at = timezone.now()
+
+                    wallet_transaction.status = (
+                        WalletTransaction.Status.SUCCESS
+                    )
+
+                    payment.save(
+                        update_fields=[
+                            "status",
+                            "refunded_at",
+                        ]
+                    )
+
+                elif refund_status == "PENDING":
+
+                    refund.status = RefundRequest.Status.PROCESSING
+
+                else:
+
+                    refund.status = RefundRequest.Status.FAILED
+
+                    refund.fail_reason = result.get(
+                        "error",
+                        "Refund failed."
+                    )
+
+                    wallet_transaction.status = (
+                        WalletTransaction.Status.FAILED
+                    )
+
+                refund.save()
+
+                wallet_transaction.save()
+
+            return {
+                "success": refund_status in (
+                    "SUCCESS",
+                    "PENDING",
+                ),
+                "pending": refund_status == "PENDING",
+                "refund_status": refund_status,
+                "refund_id": refund.external_refund_id,
+                "terminal_id": refund.terminal_id,
+                "status": refund.status,
+            }
+
+        # -------------------------------------------------------
+        # MAIN REFUND
+        # -------------------------------------------------------
+
+        @transaction.atomic
+        def refund_order(
+                self,
+                *,
+                order: Order,
+                destination: str,
+                reason: str = "",
+        ):
+
+            if order.status != OrderStatus.PAID:
+                raise ValidationError(
+                    "Only paid orders can be refunded."
+                )
+
+            payment = (
+                order.payment_sessions
+                .filter(
+                    status=PaymentSession.Status.PAID,
+                    is_verified=True,
+                )
+                .first()
+            )
+
+            if payment is None:
+                raise ValidationError(
+                    "Successful payment not found."
+                )
+
+            if not payment.session_id:
+                raise ValidationError(
+                    "Session ID not found."
+                )
+
+            if payment.amount != order.final_price:
+                raise ValidationError(
+                    "Payment amount mismatch."
+                )
+
+            refund_request = RefundRequest.objects.create(
+                user=order.user,
+                order=order,
+                payment=payment,
+                amount=payment.amount,
+                destination=destination,
+                reason=reason,
+                status=RefundRequest.Status.APPROVED,
+            )
+
+            if destination == RefundRequest.Destination.BANK:
+
+                transaction.on_commit(
+                    lambda: self.process_refund(
+                        refund_request.id,
+                    )
+                )
+
+            elif destination == RefundRequest.Destination.WALLET:
+
+                raise NotImplementedError(
+                    "Wallet refund not implemented."
+                )
 
             else:
 
-                refund.status = RefundRequest.Status.FAILED
-
-                wallet_transaction.status = (
-                    WalletTransaction.Status.FAILED
+                raise ValidationError(
+                    "Invalid refund destination."
                 )
 
-                refund.fail_reason = result.get(
-                    "error",
-                    "Refund failed.",
-                )
+            order.status = OrderStatus.RETURNED
 
-            refund.save()
-
-            wallet_transaction.save()
-
-        return {
-            "success": refund_status in ("SUCCESS", "PENDING"),
-            "refund_id": refund.external_refund_id,
-            "terminal_id": refund.terminal_id,
-            "refund_status": refund_status,
-            "status": refund.status,
-            "pending": refund_status == "PENDING",
-        }
-    # -------------------------------------------------------
-    # MAIN REFUND
-    # -------------------------------------------------------
-
-    @transaction.atomic
-    def refund_order(
-        self,
-        *,
-        order: Order,
-        destination: str,
-        reason: str = "",
-    ) -> dict:
-
-        if order.status != OrderStatus.PAID:
-            raise ValidationError(
-                "فقط سفارش‌های پرداخت‌شده قابل استرداد هستند."
+            order.save(
+                update_fields=[
+                    "status",
+                ]
             )
 
-        payment = (
-            order.payment_sessions
-            .filter(status=PaymentSession.Status.PAID)
-            .first()
-        )
-
-        if payment is None:
-            raise ValidationError(
-                "هیچ پرداخت موفقی یافت نشد."
-            )
-
-        if payment.amount != order.final_price:
-            raise ValidationError(
-                "مبلغ پرداخت با مبلغ سفارش مطابقت ندارد."
-            )
-
-        refund_request = RefundRequest.objects.create(
-            user=order.user,
-            order=order,
-            payment=payment,
-            amount=order.final_price,
-            destination=destination,
-            reason=reason,
-            status=RefundRequest.Status.APPROVED,
-        )
-
-
-        if destination == RefundRequest.Destination.BANK:
-
-            transaction.on_commit(
-                lambda: self.process_refund(
-                    refund_request.id
-                )
-            )
-
-        else:
-
-            raise ValidationError(
-                "مقصد استرداد نامعتبر است."
-            )
-
-        order.status = OrderStatus.RETURNED
-
-        order.save(
-            update_fields=[
-                "status",
-            ]
-        )
-
-        return {
-            "refund_id": str(refund_request.uuid),
-            "destination": destination,
-        }
+            return {
+                "refund_request_id": refund_request.uuid,
+                "destination": destination,
+                "status": refund_request.status,
+            }

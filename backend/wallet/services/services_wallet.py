@@ -249,6 +249,7 @@ class WalletPaymentService:
 
                 payment.status       = PaymentSession.Status.PAID
                 payment.is_verified  = True
+                payment.session_id = verify_result.get("session_id", "")
                 payment.ref_id       = verify_result["ref_id"]
                 payment.card_pan     = verify_result.get("card_pan", "")
                 payment.verify_response  = verify_result

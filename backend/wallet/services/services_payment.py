@@ -196,12 +196,12 @@ class PaymentService:
                     }
 
                 # ثبت نتیجه پرداخت
-                payment.status      = PaymentSession.Status.PAID
+                payment.session_id = verify_result["session_id"]
+                payment.ref_id = verify_result["ref_id"]
+                payment.card_pan = verify_result.get("card_pan", "")
+                payment.status = PaymentSession.Status.PAID
                 payment.is_verified = True
-                payment.ref_id      = verify_result["ref_id"]
-                payment.card_pan    = verify_result.get("card_pan", "")
-                payment.callback_payload = callback_payload or {}
-                payment.paid_at     = timezone.now()
+                payment.paid_at = timezone.now()
                 payment.verified_at = timezone.now()
 
                 # ساخت سفارش (فقط اینجا، نه در initiate)

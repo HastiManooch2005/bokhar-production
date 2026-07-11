@@ -47,7 +47,9 @@ class GraphQLClient:
 
         data = response.json()
 
-        if "errors" in data:
-            raise Exception(data["errors"])
+        errors = data.get("errors")
+
+        if errors:
+            raise Exception(errors[0]["message"])
 
         return data["data"]

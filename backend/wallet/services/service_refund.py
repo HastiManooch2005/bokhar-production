@@ -1,13 +1,10 @@
-from payments.enums import RefundMethod, RefundReason
-from payments.exceptions import (
-    RefundNotFound,
-    RefundValidationError,
-)
-from payments.graphql.refund import (
+from rest_framework.exceptions import ValidationError
+
+from ..graphql.refund import (
     ADD_REFUND_MUTATION,
     REFUND_INQUIRY_QUERY,
 )
-from payments.services.graphql_client import GraphQLClient
+from .graphql_client import GraphQLClient
 
 
 class RefundService:
@@ -17,19 +14,13 @@ class RefundService:
     def __init__(self, terminal):
         self.graphql = GraphQLClient(terminal)
 
-    def _validate(
-        self,
-        session_id: str,
-        amount: int,
-    ) -> None:
+    def _validate(self, session_id: str, amount: int):
 
         if not session_id:
-            raise RefundValidationError(
-                "session_id is required."
-            )
+            raise ValidationError("session_id is required.")
 
         if amount < self.MIN_AMOUNT:
-            raise RefundValidationError(
+            raise ValidationError(
                 f"Refund amount must be at least {self.MIN_AMOUNT} Rials."
             )
 
@@ -39,8 +30,8 @@ class RefundService:
         session_id: str,
         amount: int,
         description: str = "",
-        method: RefundMethod = RefundMethod.CARD,
-        reason: RefundReason = RefundReason.CUSTOMER_REQUEST,
+        method: str = "PAYA",
+        reason: str = "CUSTOMER_REQUEST",
     ):
 
         self._validate(
@@ -52,8 +43,8 @@ class RefundService:
             "session_id": session_id,
             "amount": amount,
             "description": description or None,
-            "method": method.value,
-            "reason": reason.value,
+            "method": method,
+            "reason": reason,
         }
 
         result = self.graphql.execute(
@@ -64,14 +55,12 @@ class RefundService:
         resource = result.get("resource")
 
         if resource is None:
-            raise RefundValidationError(
+            raise ValidationError(
                 "Invalid response received from ZarinPal."
             )
 
+        # طبق مستندات، timeline در پاسخ AddRefund همیشه یک آبجکت است.
         timeline = resource.get("timeline") or {}
-
-        if isinstance(timeline, list):
-            timeline = timeline[-1] if timeline else {}
 
         return {
             "refund_id": resource.get("id"),
@@ -97,23 +86,20 @@ class RefundService:
             },
         )
 
-        sessions = result.get("Session", [])
+        # طبق مستندات، Session همیشه یک لیست است.
+        sessions = result.get("Session") or []
 
         if not sessions:
-            raise RefundNotFound(
-                "Refund session not found."
-            )
+            raise ValidationError("Refund session not found.")
 
         session = sessions[0]
 
+        # طبق مستندات، timeline در پاسخ SessionById همیشه یک آبجکت است.
         timeline = session.get("timeline") or {}
-
-        if isinstance(timeline, list):
-            timeline = timeline[-1] if timeline else {}
 
         return {
             "session_id": session.get("id"),
-            "terminal_id": session.get("terminal", {}).get("id"),
+            "terminal_id": (session.get("terminal") or {}).get("id"),
             "amount": session.get("amount"),
             "status": session.get("status"),
             "refund_status": timeline.get("refund_status"),

@@ -75,6 +75,12 @@ class PaymentSession(models.Model):
     is_verified = models.BooleanField(default=False)
     fail_reason = models.TextField(blank=True)
 
+    zarinpal_session_id = models.CharField(
+        max_length=50,
+        blank=True,
+        db_index=True,
+    )
+
     expire_at   = models.DateTimeField(null=True, blank=True)
     paid_at     = models.DateTimeField(null=True, blank=True)
     verified_at = models.DateTimeField(null=True, blank=True)
