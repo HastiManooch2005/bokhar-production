@@ -60,6 +60,7 @@ def _set_jwt_cookies(response, refresh_token):
         max_age=int(simple_jwt.get("REFRESH_TOKEN_LIFETIME_SECONDS", 604800)),
         path="/api/refresh/",
     )
+    print(response)
     return response
 
 

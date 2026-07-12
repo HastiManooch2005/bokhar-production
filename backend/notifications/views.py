@@ -1,16 +1,21 @@
+from time import timezone
+from datetime import datetime, timedelta,timezone
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from wallet.models.models import *
 from .serializers import *
+from django.core.cache import cache
+from order.models import *
+from discounts.models import *
 
 # Create your models here.
 
 # Create your views here.
 # تاریخچه تراکنش
 # اینو برای این کامنت کردم که مدل هنوز ران نگرفتیم
-"""class HistoryWalletTransaction(APIView):
+class HistoryWalletTransaction(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -23,7 +28,7 @@ from .serializers import *
                 return Response(cached, status=status.HTTP_200_OK)
 
             wallet_transactions = (
-                Transaction.objects
+                WalletTransaction.objects
                 .filter(user=user)
                 .order_by("-created_at")
             )
@@ -48,9 +53,9 @@ from .serializers import *
                 {"status": "error", "message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-"""
 
-"""class WalletDisplay(APIView):
+
+class WalletDisplay(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
@@ -59,7 +64,7 @@ from .serializers import *
             "balance":wallet.available_balance,
             "lock_balance":wallet.locked_balance
         }
-        return Response({"status": "success", "data":data}, status=status.HTTP_200_OK)"""
+        return Response({"status": "success", "data":data}, status=status.HTTP_200_OK)
 
 
 # تاریخچه سفارش

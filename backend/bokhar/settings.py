@@ -4,6 +4,9 @@ from pathlib import Path
 
 from celery.schedules import crontab
 from decouple import config
+
+
+
 NESHAN_API_KEY = config("NESHAN_API_KEY")
 
 # ---------------- BASE ----------------
@@ -111,6 +114,13 @@ CELERY_BEAT_SCHEDULE = {
     'clear-report-daily': {
         'task': 'notifications.tasks.send_sms_to_seller_daily_report',
         'schedule': crontab(hour=8, minute=0),
+
+    },
+    "refund-inquiry-every-5-min": {
+
+        "task": "wallet.tasks.check_pending_refunds",
+
+        "schedule": crontab(minute="*/5"),
 
     },
 
@@ -278,3 +288,9 @@ PAYAMAK_USERNAME = config("PAYAMAK_USERNAME")
 PAYAMAK_API_KEY = config("PAYAMAK_API_KEY")
 PAYAMAK_SENDER = config("PAYAMAK_SENDER")
 
+#-------------------zarin pal ------------------------------------------
+ZARINPAL_MERCHANT_ID = config("ZARINPAL_MERCHANT_ID")
+ZARINPAL_REQUEST_URL=config("REQUEST_URL")
+ZARINPAL_VERIFY_URL=config("VERIFY_URL")
+ZARINPAL_PAYMENT_URL=config("PAYMENT_URL")
+ZARINPAL_CALLBACK_URL = config("CALLBACK_URL")

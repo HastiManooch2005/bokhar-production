@@ -5,17 +5,17 @@ from ..views import *
 
 urlpatterns = [
     # تاریخچه تراکنش‌های کیف پول
-    # path(
-    #    'wallet-transactions/',
-    #   HistoryWalletTransaction.as_view(),
-    #  name='wallet-transaction-history'
-    # ),
+     path(
+       'wallet-transactions/',
+      HistoryWalletTransaction.as_view(),
+      name='wallet-transaction-history'
+     ),
     # تاریخچه تراکنش‌های کیف پول
-    # path(
-    #    'wallet/',
-    #   walletDisplay.as_view(),
-    #  name='wallet-transaction-history'
-    # ),
+     path(
+       'wallet/',
+       WalletDisplay.as_view(),
+      name='wallet-transaction-history'
+     ),
     # تاریخچه سفارش‌ها
     # تاریخچه سفارش‌ها
     path("orders/history/", HistoryOrder.as_view(), name="order-history"),
