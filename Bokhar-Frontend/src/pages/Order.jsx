@@ -33,7 +33,7 @@ const initialState = {
         discountAmount: 0,
       },
   factorTotal: 0,
-  originalFactorTotal: 0,  // اضافه شده برای نگهداری قیمت اصلی قبل از تخفیف آیتم‌ها
+  originalFactorTotal: 0,
 };
 
 // -------------------- reducer --------------------
@@ -47,7 +47,7 @@ function reducer(state, action) {
       return { ...state, orderData: { ...state.orderData, ...action.payload } };
     case "SET_FACTOR_TOTAL":
       return { ...state, factorTotal: action.payload };
-    case "SET_ORIGINAL_FACTOR_TOTAL":  // اضافه شده
+    case "SET_ORIGINAL_FACTOR_TOTAL":
       return { ...state, originalFactorTotal: action.payload };
     case "RESET_ORDER":
       return { ...initialState, step: 1, maxStep: 1 };
@@ -79,13 +79,10 @@ export default function Order() {
 
   // -------------------- memoized values (مهم برای جلوگیری از حلقه بی‌نهایت) --------------------
   
-  // مموریزه کردن datetime برای جلوگیری از ساخت آبجکت جدید در هر رندر
   const dateTimeValue = useMemo(() => orderData.datetime, [orderData.datetime]);
   
-  // مموریزه کردن location برای جلوگیری از ساخت آبجکت جدید در هر رندر
   const locationValue = useMemo(() => orderData.location, [orderData.location]);
 
-  // محاسبه هزینه سرویس از دیتای ذخیره شده
   const servicePrice = useMemo(() => {
     return orderData.datetime?.pricing?.amount || 0;
   }, [orderData.datetime?.pricing?.amount]);
@@ -98,7 +95,6 @@ export default function Order() {
     return orderData.datetime?.pricing?.hours || 0;
   }, [orderData.datetime?.pricing?.hours]);
 
-  // محاسبه مبلغ نهایی: جمع خرید + هزینه سرویس - تخفیف
   const finalTotal = useMemo(() => {
     return factorTotal + servicePrice - (orderData.discountAmount || 0);
   }, [factorTotal, servicePrice, orderData.discountAmount]);
@@ -113,7 +109,6 @@ export default function Order() {
   const handleNext = useCallback(() => {
     const currentType = stepType(step);
 
-    // ولیدیشن مرحله مکان
     if (currentType === "location") {
       const { location } = orderData;
       if (!location?.coords || !location?.plaque || !location?.unit) {
@@ -122,7 +117,6 @@ export default function Order() {
       }
     }
 
-    // ولیدیشن مرحله زمان
     if (currentType === "time") {
       const { delivery, pickup } = orderData.datetime;
       if (!delivery?.date || !delivery?.time || !pickup?.date || !pickup?.time) {
@@ -163,12 +157,10 @@ export default function Order() {
   }, []);
 
   const handleFactorTotalChange = useCallback((data) => {
-    // اگر object باشد (فرمت جدید) هر دو مقدار را ذخیره می‌کنیم
     if (data && typeof data === 'object') {
       dispatch({ type: "SET_FACTOR_TOTAL", payload: data.total });
       dispatch({ type: "SET_ORIGINAL_FACTOR_TOTAL", payload: data.originalTotal });
     } else {
-      // پشتیبانی از فرمت قدیمی (فقط عدد)
       dispatch({ type: "SET_FACTOR_TOTAL", payload: data });
     }
   }, []);
@@ -198,26 +190,24 @@ export default function Order() {
     return false;
   }, [orderData.discountCode, factorTotal]);
 
-  const submitOrder = useCallback(async () => {
+  const handlePayment = useCallback(async () => {
     try {
-      // ارسال کل دیتا شامل pricing به سرور
-      const total = finalTotal;
-      await axios.post(`${API_URL}/orders/`, {
-        ...orderData,
-        subtotal: factorTotal,
-        servicePrice: servicePrice,
-        total,
-      });
-      toast.success("سفارش با موفقیت ثبت شد ✅");
-      ["orderData", "orderStep", "orderMaxStep"].forEach((key) =>
-        localStorage.removeItem(key)
+      const response = await axios.post(
+        `${API_URL}/payments/initiate/`,
+        orderData,
+        { withCredentials: true }
       );
-      dispatch({ type: "RESET_ORDER" });
+      const { payment_url } = response.data;
+      if (payment_url) {
+        window.location.href = payment_url;
+      } else {
+        toast.error("خطا در دریافت لینک پرداخت.");
+      }
     } catch (err) {
       console.error(err);
-      toast.error("خطا در ثبت سفارش. لطفاً دوباره تلاش کنید.");
+      toast.error("خطا در شروع پرداخت. لطفاً دوباره تلاش کنید.");
     }
-  }, [orderData, factorTotal, servicePrice, finalTotal]);
+  }, [orderData]);
 
   // -------------------- render --------------------
   return (
@@ -240,7 +230,6 @@ export default function Order() {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.25 }}
           >
-            {/* مرحله ۱: فاکتور */}
             {stepType(step) === "factor" && (
               <Factor
                 onTotalChange={handleFactorTotalChange}
@@ -248,7 +237,6 @@ export default function Order() {
               />
             )}
 
-            {/* مرحله ۲: انتخاب مکان */}
             {stepType(step) === "location" && (
               <MapSelector
                 initialPosition={locationValue?.coords}
@@ -259,7 +247,6 @@ export default function Order() {
               />
             )}
 
-            {/* مرحله ۳: انتخاب زمان */}
             {stepType(step) === "time" && (
               <DateTimeRangePicker
                 value={dateTimeValue}
@@ -271,11 +258,10 @@ export default function Order() {
               />
             )}
 
-            {/* مرحله ۴: پرداخت */}
             {stepType(step) === "payment" && (
               <Payment
                 subtotal={factorTotal}
-                originalSubtotal={originalFactorTotal}  // اضافه شده
+                originalSubtotal={originalFactorTotal}
                 total={finalTotal}
                 servicePrice={servicePrice}
                 serviceType={serviceType}
@@ -288,7 +274,7 @@ export default function Order() {
                 goToLocationStep={() => goToStep(2)}
                 setDiscountCode={setDiscountCode}
                 applyDiscount={applyDiscount}
-                handlePayment={submitOrder}
+                handlePayment={handlePayment}
               />
             )}
           </motion.div>

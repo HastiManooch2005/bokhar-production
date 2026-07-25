@@ -49,6 +49,8 @@ class PaymentInitiateView(APIView):
 # =========================================================
 # 2. تأیید پرداخت سفارش — verify (callback زرین‌پال)
 # =========================================================
+FRONTEND_URL = config("https://bokhar.online/", default="http://localhost:5173")
+
 class PaymentVerifyView(APIView):
     """
     GET /api/payments/verify/?Authority=xxx&Status=OK
@@ -73,6 +75,7 @@ class PaymentVerifyView(APIView):
         service = PaymentService(zarinpal_client=_make_service())
         result = service.verify_payment(
             authority=authority,
+            user=request.user,
             callback_payload=dict(request.query_params),
         )
         return Response(result, status=status.HTTP_200_OK)

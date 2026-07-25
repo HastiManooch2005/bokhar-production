@@ -1,13 +1,14 @@
 import logging
+from datetime import date
 from time import perf_counter
 
 from django.db import transaction
 from django.utils import timezone
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from order.models import Order, OrderItem, OrderStatus, OrderStatusLog
 from order.serializers import OrderCreateSerializer
-from users.models import User
+from users.models import User, Address
 from  ..models.models import PaymentSession, Wallet, WalletTransaction, WithdrawalRequest
 from ..monitoring.monitoring import *
 from ..utils.lock_utils import DistributedLock
@@ -25,34 +26,92 @@ class PaymentService:
     # ------------------------------------------------------------------
     # PRIVATE HELPERS
     # ------------------------------------------------------------------
-    def _create_order(self, user: User, pricing: dict) -> Order:
+    def _serialize_pricing_snapshot(self, pricing: dict) -> dict:
         """
-        سفارش را داخل یک تراکنش اتمیک می‌سازد.
+        pricing خروجی OrderCreateSerializer.create() است و شامل شیء‌های مدل جنگو است
+        (Product, ProductPricingTab, Size, Address, ...) که در JSONField قابل ذخیره نیستند.
+        این متد یک نسخهٔ فقط-ID و JSON-safe می‌سازد تا بین initiate و verify (که ممکن است
+        در دو request/worker جدا اجرا شوند) امن ذخیره و بازیابی شود.
+        """
+        return {
+            "address_id": pricing["address"].id,
+            "pickup_template_id": pricing["pickup_template"].id,
+            "delivery_template_id": pricing["delivery_template"].id,
+            "applied_coupon_id": pricing["applied_coupon"].id if pricing.get("applied_coupon") else None,
+            "subtotal_raw": pricing["subtotal_raw"],
+            "total_item_discounts": pricing["total_item_discounts"],
+            "subtotal_after_items": pricing["subtotal_after_items"],
+            "order_discount_amount": pricing["order_discount_amount"],
+            "pickup_cost": pricing["pickup_cost"],
+            "delivery_cost": pricing["delivery_cost"],
+            "rush_fee": pricing["rush_fee"],
+            "percent_fee": pricing["percent_fee"],
+            "final_price": pricing["final_price"],
+            "description": pricing.get("description", ""),
+            "pickup_date": pricing["pickup_date"].isoformat(),
+            "pickup_shift": pricing["pickup_shift"],
+            "delivery_date": pricing["delivery_date"].isoformat(),
+            "delivery_shift": pricing["delivery_shift"],
+            "computed_items": [
+                {
+                    "product_id": i["product"].id,
+                    "pricing_tab_id": i["pricing_tab"].id,
+                    "size_id": i["size"].id if i.get("size") else None,
+                    "material_name": i["material_name"],
+                    "quantity": i["quantity"],
+                    "original_price": i["original_price"],
+                    "item_discount": i["item_discount"],
+                    "final_item_price": i["final_item_price"],
+                    "applied_product_discount_id": (
+                        i["applied_product_discount"].id if i.get("applied_product_discount") else None
+                    ),
+                }
+                for i in pricing["computed_items"]
+            ],
+        }
+
+    def _create_order(self, user: User, snapshot: dict) -> Order:
+        """
+        سفارش را از روی snapshot (فقط-ID، JSON-safe) می‌سازد.
         فقط بعد از تأیید پرداخت فراخوانی می‌شود.
         """
+        address = Address.objects.filter(id=snapshot["address_id"], user=user).first()
+
         order = Order.objects.create(
             user=user,
-            address=pricing["address"],
-            pickup_date=pricing["pickup_date"],
-            pickup_shift=pricing["pickup_shift"],
-            delivery_date=pricing["delivery_date"],
-            delivery_shift=pricing["delivery_shift"],
-            description=pricing.get("description", ""),
+            address=address,
+            pickup_date=date.fromisoformat(snapshot["pickup_date"]),
+            pickup_shift=snapshot["pickup_shift"],
+            delivery_date=date.fromisoformat(snapshot["delivery_date"]),
+            delivery_shift=snapshot["delivery_shift"],
+            description=snapshot.get("description", ""),
             status=OrderStatus.PAID,
-            final_price=pricing["final_price"],
+            final_price=snapshot["final_price"],
+            subtotal_raw=snapshot["subtotal_raw"],
+            total_item_discounts=snapshot["total_item_discounts"],
+            subtotal_after_items=snapshot["subtotal_after_items"],
+            order_discount_amount=snapshot["order_discount_amount"],
+            pickup_cost=snapshot["pickup_cost"],
+            delivery_cost=snapshot["delivery_cost"],
+            rush_fee=snapshot["rush_fee"],
+            percent_fee=snapshot["percent_fee"],
+            applied_coupon_id=snapshot["applied_coupon_id"],
             paid_at=timezone.now(),
         )
         OrderItem.objects.bulk_create([
             OrderItem(
                 order=order,
-                product=i["product"],
-                size=i["size"],
-                pricing_tab=i["pricing_tab"],
+                product_id=i["product_id"],
+                size_id=i["size_id"],
+                pricing_tab_id=i["pricing_tab_id"],
                 material=i["material_name"],
                 quantity=i["quantity"],
+                original_price=i["original_price"],
+                item_discount=i["item_discount"],
                 price=i["final_item_price"],
+                applied_product_discount_id=i["applied_product_discount_id"],
             )
-            for i in pricing["computed_items"]
+            for i in snapshot["computed_items"]
         ])
         system_user, _ = User.objects.get_or_create(
             phone="12345678900", defaults={"fullname": "system"}
@@ -75,7 +134,7 @@ class PaymentService:
         دریافت لینک درگاه از زرین‌پال.
 
         ⚠️  سفارش اینجا ساخته نمی‌شود — فقط بعد از تأیید پرداخت ساخته می‌شود.
-        snapshot قیمت داخل gateway_request ذخیره می‌شود تا در verify استفاده شود.
+        snapshot قیمت (فقط-ID، JSON-safe) داخل gateway_request ذخیره می‌شود.
         """
         PAYMENT_TOTAL.inc()
         check_payment_cooldown(user.id, "gateway_pay")
@@ -90,13 +149,14 @@ class PaymentService:
             record_payment_failure(user.id, "gateway_pay")
             raise ValidationError("سبد خرید خالی است")
 
-        # ساخت session — بدون terminal چون حذف شد
+        snapshot = self._serialize_pricing_snapshot(pricing)
+
         payment = PaymentSession.objects.create(
             user=user,
             type=PaymentSession.Type.ORDER,
             amount=pricing["final_price"],
             status=PaymentSession.Status.INITIATED,
-            gateway_request={"pricing_snapshot": pricing},
+            gateway_request={"pricing_snapshot": snapshot},
         )
 
         create_audit_log(
@@ -106,7 +166,6 @@ class PaymentService:
             new_data={"amount": payment.amount},
         )
 
-        # درخواست به زرین‌پال
         t0 = perf_counter()
         result = self.gateway.request_payment(
             amount=payment.amount,
@@ -137,10 +196,10 @@ class PaymentService:
     # ------------------------------------------------------------------
     # 2. VERIFY PAYMENT — تأیید پرداخت بعد از redirect کاربر
     # ------------------------------------------------------------------
-    def verify_payment(self, *, authority: str, callback_payload: dict = None) -> dict:
+    def verify_payment(self, *, authority: str, user: User = None, callback_payload: dict = None) -> dict:
         """
-        مرحله دوم: تأیید با زرین‌پال، ساخت سفارش، ثبت تراکنش کیف پول.
         Idempotent است — اگر قبلاً تأیید شده باشد همان نتیجه را برمی‌گرداند.
+        :param user: اگر پاس داده شود، مالکیت تراکنش چک می‌شود (جلوگیری از IDOR).
         """
         with DistributedLock(key=f"verify:{authority}", timeout=60, blocking_timeout=1):
             with transaction.atomic():
@@ -153,7 +212,13 @@ class PaymentService:
                 if not payment:
                     raise ValidationError("تراکنش یافت نشد.")
 
-                # idempotent: قبلاً تأیید شده
+                if user is not None and payment.user_id != user.id:
+                    logger.warning(
+                        f"Ownership mismatch on verify — authority={authority} "
+                        f"owner={payment.user_id} requester={user.id}"
+                    )
+                    raise PermissionDenied("این تراکنش متعلق به شما نیست.")
+
                 if payment.is_verified:
                     return {
                         "success":  True,
@@ -162,7 +227,6 @@ class PaymentService:
                         "ref_id":   payment.ref_id,
                     }
 
-                # تأیید با زرین‌پال
                 t0 = perf_counter()
                 verify_result = self.gateway.verify_payment(
                     authority=authority,
@@ -185,7 +249,6 @@ class PaymentService:
                     )
                     return {"success": False, "error": verify_result.get("error")}
 
-                # بعد از تأیید زرین‌پال، یک‌بار دیگر چک می‌کنیم (race condition)
                 payment.refresh_from_db()
                 if payment.is_verified:
                     return {
@@ -195,8 +258,6 @@ class PaymentService:
                         "ref_id":   payment.ref_id,
                     }
 
-                # ثبت نتیجه پرداخت
-                payment.session_id = verify_result["session_id"]
                 payment.ref_id = verify_result["ref_id"]
                 payment.card_pan = verify_result.get("card_pan", "")
                 payment.status = PaymentSession.Status.PAID
@@ -204,15 +265,13 @@ class PaymentService:
                 payment.paid_at = timezone.now()
                 payment.verified_at = timezone.now()
 
-                # ساخت سفارش (فقط اینجا، نه در initiate)
                 if not payment.order_id:
-                    pricing = payment.gateway_request.get("pricing_snapshot")
-                    order = self._create_order(payment.user, pricing)
+                    snapshot = payment.gateway_request.get("pricing_snapshot")
+                    order = self._create_order(payment.user, snapshot)
                     payment.order = order
 
                 payment.save()
 
-                # ثبت تراکنش کیف پول (تاریخچه)
                 wallet, _ = Wallet.objects.get_or_create(
                     user=payment.user,
                     defaults={"is_active": True},
@@ -245,16 +304,10 @@ class PaymentService:
                 }
 
     # ------------------------------------------------------------------
-    # 3. WITHDRAW TO BANK — برداشت آزاد از کیف پول به حساب بانکی
+    # 3. WITHDRAW TO BANK
     # ------------------------------------------------------------------
     @transaction.atomic
     def withdraw_to_bank(self, *, user: User, amount: int, iban: str, account_holder: str) -> dict:
-        """
-        کاربر می‌تواند موجودی کیف پولش را به حساب بانکی خودش منتقل کند.
-
-        ⚠️  این عملیات مستقل از هر سفارش است و ربطی به request_refund ندارد.
-            درخواست ثبت می‌شود و ادمین/تسک آن را از طریق پنل زرین‌پال پردازش می‌کند.
-        """
         self._check_withdrawal_eligibility(user)
         check_payment_cooldown(user.id, "withdraw")
 
@@ -264,7 +317,6 @@ class PaymentService:
             record_payment_failure(user.id, "withdraw")
             raise ValidationError("موجودی کافی نیست.")
 
-        # قفل موجودی تا پردازش توسط ادمین
         wallet.available_balance -= amount
         wallet.locked_balance    += amount
         wallet.save(update_fields=["available_balance", "locked_balance"])
@@ -292,16 +344,12 @@ class PaymentService:
             new_data={"amount": amount, "iban": iban, "withdrawal_id": withdrawal.id},
         )
 
-        # پردازش واقعی توسط ادمین یا Celery task انجام می‌شود
         return {
             "success":       True,
             "withdrawal_id": str(withdrawal.uuid),
             "message":       "درخواست برداشت ثبت شد و در صف پردازش قرار گرفت.",
         }
 
-    # ------------------------------------------------------------------
-    # PRIVATE: WITHDRAWAL ELIGIBILITY CHECK
-    # ------------------------------------------------------------------
     def _check_withdrawal_eligibility(self, user: User) -> None:
         wallet = getattr(user, "wallet", None)
         if not wallet or not wallet.is_active:
@@ -309,6 +357,3 @@ class PaymentService:
         if wallet.withdraw_blocked_util and timezone.now() < wallet.withdraw_blocked_util:
             remaining_hours = (wallet.withdraw_blocked_util - timezone.now()).total_seconds() / 3600
             raise ValidationError(f"برداشت تا {remaining_hours:.1f} ساعت دیگر امکان‌پذیر نیست.")
-
-
-

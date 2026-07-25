@@ -77,7 +77,10 @@ class WalletPaymentService:
                 pricing_tab=item["pricing_tab"],
                 material=item["material_name"],
                 quantity=item["quantity"],
+                original_price=item["original_price"],
+                item_discount=item["item_discount"],
                 price=item["final_item_price"],
+                applied_product_discount=item.get("applied_product_discount"),
             )
             for item in pricing["computed_items"]
         ])

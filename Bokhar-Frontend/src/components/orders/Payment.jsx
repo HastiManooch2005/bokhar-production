@@ -11,7 +11,7 @@ import {
 
 export default function Payment({
   subtotal,
-  originalSubtotal,  // قیمت اصلی قبل از تخفیف آیتم‌ها
+  originalSubtotal,
   total,
   servicePrice,
   serviceType,
@@ -29,15 +29,12 @@ export default function Payment({
   const [loading, setLoading] = useState(false);
   const [discountStatus, setDiscountStatus] = useState(null);
 
-  // محاسبه سود مشتری از تخفیف آیتم‌ها (تفاوت قیمت اصلی و نهایی سبد)
   const effectiveOriginalSubtotal = originalSubtotal || subtotal;
   const itemDiscountSavings = effectiveOriginalSubtotal - subtotal;
   
-  // محاسبه کل سود (تخفیف آیتم‌ها + کد تخفیف)
   const totalSavings = itemDiscountSavings + (discountAmount || 0);
   const hasAnyDiscount = totalSavings > 0;
   
-  // قیمت کل بدون هیچ تخفیفی (برای خط‌خوردن)
   const originalGrandTotal = effectiveOriginalSubtotal + (servicePrice || 0);
 
   const onApplyDiscount = async () => {
@@ -47,12 +44,12 @@ export default function Payment({
   };
 
   const onPay = async () => {
+    if (loading) return;
     setLoading(true);
     await handlePayment();
     setLoading(false);
   };
 
-  // تابع کمکی برای نام سرویس
   const getServiceLabel = () => {
     if (serviceType === 'express') return 'سرویس فوری (تا ۲۴ ساعت)';
     if (serviceType === 'standard') return 'سرویس استاندارد (تا ۴۸ ساعت)';
@@ -60,7 +57,6 @@ export default function Payment({
     return 'هزینه سرویس';
   };
 
-  // تعیین رنگ بر اساس نوع سرویس
   const getServiceColor = () => {
     if (serviceType === 'express') return 'text-red-600 dark:text-red-400';
     if (serviceType === 'standard') return 'text-amber-600 dark:text-amber-400';
@@ -102,7 +98,6 @@ export default function Payment({
 
         {/* Summary */}
         <div className="space-y-3 text-sm">
-          {/* جمع خرید - با نمایش خط‌خورده اگر تخفیف آیتم داریم */}
           {itemDiscountSavings > 0 ? (
             <div className="flex justify-between items-start">
               <span className="text-gray-600 dark:text-gray-300 pt-1">جمع خرید</span>
@@ -119,14 +114,12 @@ export default function Payment({
             <Row label="جمع خرید" value={`${subtotal.toLocaleString()} تومان`} />
           )}
 
-          {/* هزینه پیک */}
           <Row
             label="هزینه پیک"
             value="رایگان"
             valueClass="text-gray-500 dark:text-gray-300"
           />
 
-          {/* ردیف جدید: هزینه سرویس زمانی */}
           {servicePrice !== undefined && (
             <Row
               label={getServiceLabel()}
@@ -145,7 +138,6 @@ export default function Payment({
 
           <div className="h-px bg-sky-200 dark:bg-gray-700 my-2" />
 
-          {/* بخش مبلغ نهایی - مشابه فاکتور */}
           <div className="flex justify-between items-start pt-2">
             <div className="flex flex-col gap-1">
               <span className="text-gray-700 dark:text-gray-200 font-bold text-lg">
@@ -174,7 +166,6 @@ export default function Payment({
 
         {/* Delivery & Location Info */}
         <div className="space-y-3 text-sm rounded-2xl p-4 bg-white/60 dark:bg-[#262B40]/40 border border-sky-200 dark:border-gray-700">
-          {/* زمان تحویل دادن */}
           <div className="flex justify-between items-center">
             <span className="font-semibold text-gray-700 dark:text-gray-200">
               زمان تحویل دادن:
@@ -186,7 +177,6 @@ export default function Payment({
             </div>
           </div>
 
-          {/* زمان تحویل گرفتن */}
           <div className="flex justify-between items-center">
             <span className="font-semibold text-gray-700 dark:text-gray-200">
               زمان تحویل گرفتن:
@@ -195,11 +185,9 @@ export default function Payment({
               <span className="text-gray-600 dark:text-gray-300">
                 {datetime?.pickup?.date} — {datetime?.pickup?.time}
               </span>
-              {/* نمایش تعداد ساعت */}
             </div>
           </div>
 
-          {/* آدرس */}
           <div className="flex justify-between items-start">
             <div className="flex-1">
               <span className="font-semibold text-gray-700 dark:text-gray-200">
