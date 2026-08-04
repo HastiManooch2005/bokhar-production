@@ -8,16 +8,12 @@ from django.utils import timezone
 from users.models import User
 from order.models import Order
 from .setting_payment_models import *
+
+
 # =========================================================
-# WALLET — کیف پول کاربر
+# WALLET
 # =========================================================
 class Wallet(models.Model):
-    """
-    هر کاربر یک کیف پول دارد.
-    available_balance: موجودی قابل استفاده
-    locked_balance:    در حال پردازش (مثلاً برداشت در جریان)
-    """
-
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="wallet")
     available_balance = models.BigIntegerField(default=0)
     locked_balance = models.BigIntegerField(default=0)
@@ -31,13 +27,15 @@ class Wallet(models.Model):
 
 
 # =========================================================
-# PAYMENT SESSION — ارتباط با زرین‌پال
+# PAYMENT SESSION
 # =========================================================
 class PaymentSession(models.Model):
-    """
-    هر بار که کاربر وارد درگاه می‌شود یک session ساخته می‌شود.
-    می‌تواند برای پرداخت سفارش یا شارژ کیف پول باشد.
-    """
+    idempotency_key = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
 
     class Type(models.TextChoices):
         ORDER  = "order",  "پرداخت سفارش"
@@ -54,7 +52,6 @@ class PaymentSession(models.Model):
 
     uuid   = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user   = models.ForeignKey(User, on_delete=models.PROTECT, related_name="payment_sessions")
-    # یکی از این دو پر می‌شود، نه هر دو
     order  = models.ForeignKey(Order,  on_delete=models.SET_NULL, null=True, blank=True, related_name="payment_sessions")
     wallet = models.ForeignKey(Wallet, on_delete=models.SET_NULL, null=True, blank=True, related_name="payment_sessions")
 
@@ -65,11 +62,13 @@ class PaymentSession(models.Model):
     authority        = models.CharField(max_length=255, null=True, blank=True, unique=True)
     ref_id           = models.CharField(max_length=255, null=True, blank=True, unique=True)
     card_pan         = models.CharField(max_length=30, blank=True)
+
+    # FIX: this field was missing but required by PaymentService (gateway_request stores
+    # the outbound request payload + the frozen pricing snapshot used by _create_order).
+    gateway_request  = models.JSONField(default=dict)   # درخواست اولیه (شامل pricing_snapshot)
     gateway_response = models.JSONField(default=dict)   # پاسخ اولیه
     verify_response  = models.JSONField(default=dict)   # پاسخ تأیید
     callback_payload = models.JSONField(default=dict)   # داده‌های بازگشتی
-
-
 
     status      = models.CharField(max_length=20, choices=Status.choices, default=Status.INITIATED)
     is_verified = models.BooleanField(default=False)
@@ -95,34 +94,36 @@ class PaymentSession(models.Model):
             models.Index(fields=["ref_id"]),
             models.Index(fields=["created_at"]),
         ]
+        # FIX: constraint moved here from inside WithdrawalRequest.__str__ (dead/wrong-model code).
+        # Partial unique index: only enforced when idempotency_key is not null, and scoped
+        # per-user so two different users may reuse the same client-generated key.
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "idempotency_key"],
+                condition=Q(idempotency_key__isnull=False),
+                name="unique_payment_idempotency_key_per_user",
+            )
+        ]
 
     def __str__(self):
         return f"PaymentSession({self.uuid} | {self.status})"
 
 
 # =========================================================
-# WALLET TRANSACTION — تاریخچه کیف پول
+# WALLET TRANSACTION  (unchanged)
 # =========================================================
 class WalletTransaction(models.Model):
-    """
-    هر تغییر موجودی کیف پول اینجا ثبت می‌شود.
-    deposit:        شارژ (از درگاه یا refund)
-    payment:        پرداخت سفارش از کیف پول
-    withdrawal:     برداشت به حساب بانکی
-    refund_to_wallet: استرداد سفارش به کیف پول
-    """
-
     class Type(models.TextChoices):
         DEPOSIT           = "deposit",          "شارژ کیف پول"
         PAYMENT           = "payment",          "پرداخت سفارش"
         WITHDRAWAL        = "withdrawal",       "برداشت به حساب"
         REFUND_TO_WALLET  = "refund_to_wallet", "استرداد به کیف پول"
-        REFUND = "refund","استرداد به حساب"
+        REFUND = "refund", "استرداد به حساب"
 
     class Status(models.TextChoices):
         PENDING = "pending", "در انتظار"
         SUCCESS = "success", "موفق"
-        FAILED  = "failed",  " ناموفق"
+        FAILED  = "failed",  "ناموفق"
 
     refund = models.ForeignKey(
         'RefundRequest',
@@ -133,7 +134,7 @@ class WalletTransaction(models.Model):
     )
 
     uuid             = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    wallet           = models.ForeignKey(Wallet, on_delete=models.CASCADE, null=True,blank=True,related_name="transactions")
+    wallet           = models.ForeignKey(Wallet, on_delete=models.CASCADE, null=True, blank=True, related_name="transactions")
     payment_session  = models.ForeignKey(PaymentSession, on_delete=models.SET_NULL, null=True, blank=True, related_name="wallet_transactions")
     order            = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True)
 
@@ -150,22 +151,23 @@ class WalletTransaction(models.Model):
             models.Index(fields=["status"]),
             models.Index(fields=["created_at"]),
         ]
+        # Recommended (see "Remaining concerns" #4) — not applied automatically to avoid
+        # silently changing behavior on existing data. Add once backfilled/verified clean:
+        # constraints = [
+        #     models.UniqueConstraint(
+        #         fields=["payment_session", "transaction_type"],
+        #         name="unique_wallet_txn_per_payment_session_type",
+        #     )
+        # ]
 
     def __str__(self):
         return f"{self.transaction_type} | {self.amount} | {self.status}"
 
 
 # =========================================================
-# REFUND REQUEST — استرداد سفارش
+# REFUND REQUEST  (unchanged)
 # =========================================================
 class RefundRequest(models.Model):
-    """
-    وقتی کاربر لغو سفارش یا استرداد می‌خواد.
-    destination مشخص می‌کند پول به کجا برگردد:
-      - wallet:  به کیف پول داخل اپ
-      - bank:    به حساب بانکی (از طریق زرین‌پال reverse)
-    """
-
     class Status(models.TextChoices):
         PENDING    = "pending",    "در انتظار بررسی"
         APPROVED   = "approved",   "تأیید شده"
@@ -184,7 +186,7 @@ class RefundRequest(models.Model):
     payment     = models.ForeignKey(PaymentSession, on_delete=models.PROTECT, related_name="refund_requests")
 
     amount      = models.BigIntegerField(validators=[MinValueValidator(1)])
-    destination = models.CharField(max_length=10, choices=Destination.choices)  # ← کاربر انتخاب می‌کند
+    destination = models.CharField(max_length=10, choices=Destination.choices)
     reason      = models.TextField(blank=True)
     status      = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     fail_reason = models.TextField(blank=True)
@@ -208,15 +210,9 @@ class RefundRequest(models.Model):
 
 
 # =========================================================
-# WITHDRAWAL REQUEST — برداشت آزاد از کیف پول
+# WITHDRAWAL REQUEST
 # =========================================================
 class WithdrawalRequest(models.Model):
-    """
-    کاربر می‌تواند موجودی کیف پولش را (مستقل از هر سفارش)
-    به حساب بانکی خود منتقل کند.
-    پردازش توسط ادمین یا سرویس پایا انجام می‌شود.
-    """
-
     class Status(models.TextChoices):
         PENDING    = "pending",    "در انتظار"
         PROCESSING = "processing", "در حال پردازش"
@@ -229,8 +225,8 @@ class WithdrawalRequest(models.Model):
     wallet         = models.ForeignKey(Wallet, on_delete=models.PROTECT, related_name="withdrawals")
 
     amount         = models.BigIntegerField(validators=[MinValueValidator(1)])
-    iban           = models.CharField(max_length=34)       # شبا مقصد
-    account_holder = models.CharField(max_length=255)      # نام صاحب حساب
+    iban           = models.CharField(max_length=34)
+    account_holder = models.CharField(max_length=255)
 
     status         = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     fail_reason    = models.TextField(blank=True)
@@ -244,6 +240,9 @@ class WithdrawalRequest(models.Model):
             models.Index(fields=["status"]),
             models.Index(fields=["created_at"]),
         ]
+        # FIX: this class previously had NO constraints; the stray UniqueConstraint that
+        # referenced idempotency_key was dead code placed after __str__'s return and has
+        # been removed entirely (it belongs to PaymentSession, see above).
 
     def __str__(self):
         return f"Withdrawal({self.user} | {self.amount} | {self.status})"

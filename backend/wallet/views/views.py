@@ -17,6 +17,7 @@ from wallet.serializers import (
 from wallet.services.payment_service import PaymentService
 from wallet.services.wallet_service import WalletPaymentService
 from wallet.services.zarinpal_service import ZarinPalService
+from decouple import config
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +50,10 @@ class PaymentInitiateView(APIView):
 # =========================================================
 # 2. تأیید پرداخت سفارش — verify (callback زرین‌پال)
 # =========================================================
-FRONTEND_URL = config("https://bokhar.online/", default="http://localhost:5173")
-
+FRONTEND_URL = config(
+    "FRONTEND_URL",
+    default="http://localhost:5173"
+)
 class PaymentVerifyView(APIView):
     """
     GET /api/payments/verify/?Authority=xxx&Status=OK
@@ -76,7 +79,17 @@ class PaymentVerifyView(APIView):
         result = service.verify_payment(
             authority=authority,
             user=request.user,
-            callback_payload=dict(request.query_params),
+            callback_payload={
+                "query": dict(
+                    request.query_params
+                ),
+                "ip": request.META.get(
+                    "REMOTE_ADDR"
+                ),
+                "user_agent": request.META.get(
+                    "HTTP_USER_AGENT"
+                ),
+            },
         )
         return Response(result, status=status.HTTP_200_OK)
 

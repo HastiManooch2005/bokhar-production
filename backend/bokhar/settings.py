@@ -16,7 +16,7 @@ SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
 DJANGO_ENV = config("DJANGO_ENV", default="local")  # "local" | "production"
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0',  'https://bokhar.online','bokhar.online','www.bokhar.online']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', 'bokhar.online','www.bokhar.online']
 if DEBUG:
     ALLOWED_HOSTS += ["localhost", "127.0.0.1"]
 
@@ -122,6 +122,10 @@ CELERY_BEAT_SCHEDULE = {
 
         "schedule": crontab(minute="*/5"),
 
+    },
+    "expire-payment-sessions": {
+        "task": "wallet.tasks.expire_payment_sessions",
+        "schedule": crontab(minute="*/10"),
     },
 
 }
@@ -293,3 +297,15 @@ ZARINPAL_REQUEST_URL = config("ZARINPAL_REQUEST_URL")
 ZARINPAL_VERIFY_URL = config("ZARINPAL_VERIFY_URL")
 ZARINPAL_PAYMENT_URL = config("ZARINPAL_PAYMENT_URL")
 ZARINPAL_CALLBACK_URL = config("ZARINPAL_CALLBACK_URL")
+
+ZARINPAL = {
+    "MERCHANT_ID": config("ZARINPAL_MERCHANT_ID"),
+    "REQUEST_URL": config("ZARINPAL_REQUEST_URL"),
+    "VERIFY_URL": config("ZARINPAL_VERIFY_URL"),
+    "PAYMENT_URL": config("ZARINPAL_PAYMENT_URL"),
+    "CALLBACK_URL": config("ZARINPAL_CALLBACK_URL"),
+    "ACCESS_TOKEN": config(
+        "ZARINPAL_ACCESS_TOKEN",
+        default=""
+    ),
+}
