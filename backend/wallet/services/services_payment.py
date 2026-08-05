@@ -10,15 +10,22 @@ from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from order.models import Order, OrderItem, OrderStatus, OrderStatusLog
-from order.serializers import OrderCreateSerializer
+from order.cart_serializer import *
+from order.serializers import *
 from users.models import User, Address
 from ..models.models import PaymentSession, Wallet, WalletTransaction, WithdrawalRequest
-from ..monitoring.monitoring import *
+from ..monitoring.monoitoring.metric import *
+from ..monitoring.monoitoring.telemetry import *
 from ..utils.lock_utils import DistributedLock
 from ..utils.utils import *
 from .service_helper import create_audit_log
 from django.db import transaction, IntegrityError
-
+from ..models import (
+    PaymentSession,
+    Wallet,
+    WalletTransaction,
+    WithdrawalRequest,
+)
 logger = logging.getLogger(__name__)
 
 
@@ -308,11 +315,21 @@ class PaymentService:
         PAYMENT_TOTAL.inc()
         check_payment_cooldown(user.id, "gateway_pay")
 
+        if idempotency_key:
+            existing = PaymentSession.objects.filter(
+                user=user,
+                idempotency_key=idempotency_key,
+            ).first()
+
             if existing:
                 logger.info(
                     "Returning existing payment session for idempotency key",
-                    extra={"payment_id": existing.id, "idempotency_key": idempotency_key},
+                    extra={
+                        "payment_id": existing.id,
+                        "idempotency_key": idempotency_key,
+                    },
                 )
+
                 return {
                     "payment_url": existing.gateway_response.get("payment_url", ""),
                     "authority": existing.authority,
@@ -348,15 +365,16 @@ class PaymentService:
         gateway_request_data = _clamp_json_size(gateway_request_data)
 
         try:
-        payment = PaymentSession.objects.create(
-            user=user,
-            type=PaymentSession.Type.ORDER,
-            amount=amount,
-            status=PaymentSession.Status.INITIATED,
-            expire_at=expire_at,
-            gateway_request=gateway_request_data,
-            idempotency_key=idempotency_key,
-        )
+            payment = PaymentSession.objects.create(
+                user=user,
+                type=PaymentSession.Type.ORDER,
+                amount=amount,
+                status=PaymentSession.Status.INITIATED,
+                expire_at=expire_at,
+                gateway_request=gateway_request_data,
+                idempotency_key=idempotency_key,
+            )
+
         except IntegrityError:
             payment = PaymentSession.objects.get(
                 user=user,
@@ -377,7 +395,7 @@ class PaymentService:
         )
 
         # Call gateway
-        t0 = perf_counter()
+        t0 = perf_counter()#برای اندازه‌گیری زمان اجرای یک بخش از کد استفاده می‌شود.
         logger.info(
             "Payment initiated",
             extra={
@@ -396,7 +414,7 @@ class PaymentService:
             description=description,
             mobile=phone,
         )
-        GATEWAY_REQUEST_DURATION.observe(perf_counter() - t0)
+        GATEWAY_REQUEST_DURATION.observe(perf_counter() - t0)#بعداً می‌فهمی تماس با زرین‌پال چقدر طول کشیده.
 
         if not result.get("success"):
             PAYMENT_FAILED.inc()
@@ -803,8 +821,11 @@ class PaymentService:
         if not wallet.is_active:
             raise ValidationError("Wallet is not active.")
 
-        if wallet.withdraw_blocked_util and timezone.now() < wallet.withdraw_blocked_util:
-            remaining = wallet.withdraw_blocked_util - timezone.now()
+        if (
+                    wallet.withdraw_blocked_until
+                    and timezone.now() < wallet.withdraw_blocked_until
+        ):
+            remaining = wallet.wallet.withdraw_blocked_until - timezone.now()
             remaining_hours = remaining.total_seconds() / 3600
             raise ValidationError(
                 f"برداشت تا {remaining_hours:.1f} ساعت دیگر امکان‌پذیر نیست."

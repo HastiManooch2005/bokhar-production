@@ -77,6 +77,11 @@ class RefundService:
         terminal_id: str,
         session_id: str,
     ):
+        if not terminal_id:
+            raise ValidationError("terminal_id is required.")
+
+        if not session_id:
+            raise ValidationError("session_id is required.")
 
         result = self.graphql.execute(
             query=REFUND_INQUIRY_QUERY,

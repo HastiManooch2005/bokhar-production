@@ -1,9 +1,13 @@
 import uuid
 from django.db import models
 from users.models import User
-from wallet.models import *
+from .models import *
 
 
+
+"""
+ین مدل یک لاگ حسابرسی مالی (Financial Audit Log) است. هدفش این است که هر اتفاق مهم مالی در سیستم را ثبت کند؛ مثلاً شروع پرداخت، موفق شدن پرداخت، ایجاد بازگشت وجه، برداشت و... تا بعداً بتوان بررسی کرد چه کسی، چه کاری، چه زمانی و با چه اطلاعاتی انجام داده است.
+"""
 class FinancialAuditLog(models.Model):
 
     class Action(models.TextChoices):

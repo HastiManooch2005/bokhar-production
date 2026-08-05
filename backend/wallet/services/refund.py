@@ -1,3 +1,5 @@
+import logging
+
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
@@ -13,6 +15,10 @@ from ..models.models import (
 
 from ..models.setting_payment_models import PaymentTerminal
 from .service_refund import RefundService
+
+
+
+logger = logging.getLogger(__name__)
 
 
 class Refund:
@@ -31,9 +37,6 @@ class Refund:
         "OTHER",
     )
 
-    # -------------------------------------------------------
-    # Active Terminal
-    # -------------------------------------------------------
 
     def _get_terminal(self):
 
@@ -43,22 +46,19 @@ class Refund:
             .first()
         )
 
-        if terminal is None:
+        if not terminal:
             raise ValidationError(
                 "ترمینال فعال زرین پال پیدا نشد."
             )
 
         return terminal
 
-    # -------------------------------------------------------
-    # BANK REFUND
-    # -------------------------------------------------------
 
     def process_refund(
         self,
         refund_id: int,
-        method: str = "PAYA",
-        reason: str = "CUSTOMER_REQUEST",
+        method="PAYA",
+        reason="CUSTOMER_REQUEST",
     ):
 
         with transaction.atomic():
@@ -73,30 +73,39 @@ class Refund:
                 .get(id=refund_id)
             )
 
+
             if refund.status != RefundRequest.Status.APPROVED:
                 raise ValidationError(
                     "Refund request is not approved."
                 )
 
+
             if refund.amount < self.MIN_REFUND_AMOUNT:
                 raise ValidationError(
-                    "Refund amount is کمتر از حداقل مجاز."
+                    "Refund amount is below minimum."
                 )
+
 
             if method not in self.VALID_METHODS:
                 raise ValidationError(
                     "Invalid refund method."
                 )
 
+
             if reason not in self.VALID_REASONS:
                 raise ValidationError(
                     "Invalid refund reason."
                 )
 
-            if not refund.payment.session_id:
+
+            payment = refund.payment
+
+
+            if not payment.session_id:
                 raise ValidationError(
-                    "Session ID یافت نشد."
+                    "Payment session id not found."
                 )
+
 
             refund.status = RefundRequest.Status.PROCESSING
             refund.processed_at = timezone.now()
@@ -108,202 +117,223 @@ class Refund:
                 ]
             )
 
-            wallet_transaction = WalletTransaction.objects.create(
-                wallet=refund.user.wallet,
-                refund=refund,
-                payment_session=refund.payment,
-                order=refund.order,
-                amount=refund.amount,
-                transaction_type=WalletTransaction.Type.REFUND,
-                status=WalletTransaction.Status.PENDING,
-                description=f"Refund Order #{refund.order.id}",
+
+            wallet, _ = Wallet.objects.get_or_create(
+                user=refund.user,
+                defaults={
+                    "is_active": True
+                }
             )
+
+
+            wallet_transaction = (
+                WalletTransaction.objects.create(
+                    wallet=wallet,
+                    refund=refund,
+                    payment_session=payment,
+                    order=refund.order,
+                    amount=refund.amount,
+                    transaction_type=
+                    WalletTransaction.Type.REFUND,
+                    status=
+                    WalletTransaction.Status.PENDING,
+                    description=
+                    f"Refund Order #{refund.order.id}",
+                )
+            )
+
 
         terminal = self._get_terminal()
 
-        refund_service = RefundService(
-            terminal=terminal,
+        service = RefundService(
+            terminal=terminal
         )
 
-        try:
 
-            result = refund_service.request_refund(
-                session_id=refund.payment.session_id,
-                amount=refund.amount,
-                description=f"Refund Order #{refund.order.id}",
-                method=method,
-                reason=reason,
+        result = service.request_refund(
+            session_id=payment.session_id,
+            amount=refund.amount,
+            description=f"Refund Order #{refund.order.id}",
+            method=method,
+            reason=reason,
+        )
+
+
+        with transaction.atomic():
+
+            refund = (
+                RefundRequest.objects
+                .select_for_update()
+                .get(id=refund_id)
             )
 
-        except Exception as exc:
 
-            result = {
-                "refund_status": "FAILED",
-                "error": str(exc),
-            }
-            # -------------------------------------------------
-            # Step 3 - Save Result
-            # -------------------------------------------------
-
-            with transaction.atomic():
-
-                refund = (
-                    RefundRequest.objects
-                    .select_for_update()
-                    .get(id=refund_id)
+            wallet_transaction = (
+                WalletTransaction.objects
+                .select_for_update()
+                .get(
+                    refund=refund
                 )
-
-                payment = (
-                    PaymentSession.objects
-                    .select_for_update()
-                    .get(id=refund.payment_id)
-                )
-
-                wallet_transaction = (
-                    WalletTransaction.objects
-                    .select_for_update()
-                    .get(id=wallet_transaction.id)
-                )
-
-                refund.external_refund_id = result.get("refund_id", "")
-                refund.terminal_id = result.get("terminal_id", "")
-
-                refund_status = result.get("refund_status")
-
-                if refund_status == "SUCCESS":
-
-                    refund.status = RefundRequest.Status.COMPLETED
-                    refund.completed_at = timezone.now()
-
-                    payment.status = PaymentSession.Status.REFUNDED
-                    payment.refunded_at = timezone.now()
-
-                    wallet_transaction.status = (
-                        WalletTransaction.Status.SUCCESS
-                    )
-
-                    payment.save(
-                        update_fields=[
-                            "status",
-                            "refunded_at",
-                        ]
-                    )
-
-                elif refund_status == "PENDING":
-
-                    refund.status = RefundRequest.Status.PROCESSING
-
-                else:
-
-                    refund.status = RefundRequest.Status.FAILED
-
-                    refund.fail_reason = result.get(
-                        "error",
-                        "Refund failed."
-                    )
-
-                    wallet_transaction.status = (
-                        WalletTransaction.Status.FAILED
-                    )
-
-                refund.save()
-
-                wallet_transaction.save()
-
-            return {
-                "success": refund_status in (
-                    "SUCCESS",
-                    "PENDING",
-                ),
-                "pending": refund_status == "PENDING",
-                "refund_status": refund_status,
-                "refund_id": refund.external_refund_id,
-                "terminal_id": refund.terminal_id,
-                "status": refund.status,
-            }
-
-        # -------------------------------------------------------
-        # MAIN REFUND
-        # -------------------------------------------------------
-
-        @transaction.atomic
-        def refund_order(
-                self,
-                *,
-                order: Order,
-                destination: str,
-                reason: str = "",
-        ):
-
-            if order.status != OrderStatus.PAID:
-                raise ValidationError(
-                    "Only paid orders can be refunded."
-                )
-
-            payment = (
-                order.payment_sessions
-                .filter(
-                    status=PaymentSession.Status.PAID,
-                    is_verified=True,
-                )
-                .first()
             )
 
-            if payment is None:
-                raise ValidationError(
-                    "Successful payment not found."
-                )
 
-            if not payment.session_id:
-                raise ValidationError(
-                    "Session ID not found."
-                )
-
-            if payment.amount != order.final_price:
-                raise ValidationError(
-                    "Payment amount mismatch."
-                )
-
-            refund_request = RefundRequest.objects.create(
-                user=order.user,
-                order=order,
-                payment=payment,
-                amount=payment.amount,
-                destination=destination,
-                reason=reason,
-                status=RefundRequest.Status.APPROVED,
+            refund.external_refund_id = (
+                result.get("refund_id")
             )
 
-            if destination == RefundRequest.Destination.BANK:
+            refund.terminal_id = (
+                result.get("terminal_id")
+            )
 
-                transaction.on_commit(
-                    lambda: self.process_refund(
-                        refund_request.id,
-                    )
+
+            status = result.get(
+                "refund_status"
+            )
+
+
+            if status == "SUCCESS":
+
+                refund.status = (
+                    RefundRequest.Status.COMPLETED
                 )
 
-            elif destination == RefundRequest.Destination.WALLET:
+                refund.completed_at = timezone.now()
 
-                raise NotImplementedError(
-                    "Wallet refund not implemented."
+
+                refund.payment.status = (
+                    PaymentSession.Status.REFUNDED
                 )
+
+                refund.payment.refunded_at = (
+                    timezone.now()
+                )
+
+
+                wallet_transaction.status = (
+                    WalletTransaction.Status.SUCCESS
+                )
+
+
+                refund.payment.save(
+                    update_fields=[
+                        "status",
+                        "refunded_at",
+                    ]
+                )
+
+
+            elif status == "PENDING":
+
+                refund.status = (
+                    RefundRequest.Status.PROCESSING
+                )
+
 
             else:
 
-                raise ValidationError(
-                    "Invalid refund destination."
+                refund.status = (
+                    RefundRequest.Status.FAILED
                 )
 
-            order.status = OrderStatus.RETURNED
+                wallet_transaction.status = (
+                    WalletTransaction.Status.FAILED
+                )
 
-            order.save(
-                update_fields=[
-                    "status",
-                ]
-            )
+
+                refund.fail_reason = (
+                    result.get(
+                        "error",
+                        "Refund failed"
+                    )
+                )
+
+
+            refund.save()
+
+            wallet_transaction.save()
+
 
             return {
-                "refund_request_id": refund_request.uuid,
-                "destination": destination,
-                "status": refund_request.status,
+                "success": status in (
+                    "SUCCESS",
+                    "PENDING",
+                ),
+                "refund_status": status,
+                "refund_id": refund.external_refund_id,
             }
+
+
+
+    @transaction.atomic
+    def refund_order(
+        self,
+        *,
+        order: Order,
+        destination: str,
+        reason=""
+    ):
+
+        from ..tasks import process_refund_task
+        if order.status != OrderStatus.PAID:
+            raise ValidationError(
+                "Only paid orders can be refunded."
+            )
+
+
+        payment = (
+            order.payment_sessions
+            .filter(
+                status=PaymentSession.Status.PAID,
+                is_verified=True,
+            )
+            .first()
+        )
+
+
+        if not payment:
+            raise ValidationError(
+                "Payment not found."
+            )
+
+
+        refund_request = RefundRequest.objects.create(
+            user=order.user,
+            order=order,
+            payment=payment,
+            amount=payment.amount,
+            destination=destination,
+            reason=reason,
+            status=RefundRequest.Status.APPROVED,
+        )
+
+
+        if destination == RefundRequest.Destination.BANK:
+
+            transaction.on_commit(
+                lambda:
+                process_refund_task.delay(
+                    refund_request.id
+                )
+            )
+
+
+        elif destination == RefundRequest.Destination.WALLET:
+
+            raise NotImplementedError(
+                "Wallet refund not implemented."
+            )
+
+
+        else:
+
+            raise ValidationError(
+                "Invalid destination."
+            )
+
+
+        return {
+            "refund_request_id":
+                str(refund_request.uuid),
+            "status":
+                refund_request.status,
+        }

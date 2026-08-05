@@ -22,6 +22,13 @@ from ..utils.utils import (
     check_payment_cooldown, record_payment_failure, reset_payment_cooldown,
 )
 
+from ..models import (
+    PaymentSession,
+    RefundRequest,
+    Wallet,
+    WalletTransaction,
+)
+
 logger = logging.getLogger(__name__)
 
 WITHDRAWAL_LOCK_HOURS = 3  # هر تغییر موجودی → ۳ ساعت قفل برداشت
@@ -34,6 +41,7 @@ def _lock_wallet_withdrawal(wallet: Wallet) -> None:
     فقط اگه قفل فعلی کمتر از ۳ ساعت مانده باشد، reset می‌شود.
     """
     wallet.withdraw_blocked_until = timezone.now() + timedelta(hours=WITHDRAWAL_LOCK_HOURS)
+    wallet.save()
 
 
 class WalletPaymentService:
@@ -252,14 +260,24 @@ class WalletPaymentService:
 
                 payment.status       = PaymentSession.Status.PAID
                 payment.is_verified  = True
-                payment.session_id = verify_result.get("session_id", "")
+                payment.zarinpal_session_id = verify_result.get("session_id", "")
                 payment.ref_id       = verify_result["ref_id"]
                 payment.card_pan     = verify_result.get("card_pan", "")
                 payment.verify_response  = verify_result
                 payment.callback_payload = callback_payload or {}
                 payment.paid_at      = timezone.now()
                 payment.verified_at  = timezone.now()
-                payment.save()
+                payment.save(update_fields=[
+                    "status",
+                    "is_verified",
+                    "zarinpal_session_id",
+                    "ref_id",
+                    "card_pan",
+                    "verify_response",
+                    "callback_payload",
+                    "paid_at",
+                    "verified_at",
+                ])
 
                 wallet, _ = Wallet.objects.get_or_create(user=user, defaults={"is_active": True})
                 wallet = Wallet.objects.select_for_update().get(pk=wallet.pk)

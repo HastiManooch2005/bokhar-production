@@ -131,7 +131,9 @@ class ZarinPalService:
 
         authority = result.get("data", {}).get("authority")
         if authority:
-            logger.info(f"ZarinPal request OK — authority={authority} amount={amount}")
+            logger.info(
+                f"ZarinPal payment request created — authority={authority[:8]}..."
+            )
             return {
                 "success":     True,
                 "authority":   authority,
@@ -139,7 +141,12 @@ class ZarinPalService:
             }
 
         error = self._extract_error(result)
-        logger.error(f"ZarinPal request failed — code={error['code']} msg={error['message']}")
+        logger.error(
+            "ZarinPal request failed",
+            extra={
+                "code": error["code"]
+            }
+        )
         return {"success": False, "error": error["message"], "code": error["code"]}
 
     # ------------------------------------------------------------------
@@ -169,7 +176,12 @@ class ZarinPalService:
 
         if code in (100, 101):
             already = (code == 101)
-            logger.info(f"ZarinPal verify OK — ref_id={data.get('ref_id')} already_verified={already}")
+            logger.info(
+                "ZarinPal payment verified",
+                extra={
+                    "already_verified": already
+                }
+            )
             return {
                 "success":          True,
                 "ref_id":           str(data.get("ref_id", "")),
