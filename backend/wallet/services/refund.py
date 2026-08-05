@@ -101,7 +101,7 @@ class Refund:
             payment = refund.payment
 
 
-            if not payment.session_id:
+            if not payment.zarinpal_session_id:
                 raise ValidationError(
                     "Payment session id not found."
                 )
@@ -151,7 +151,7 @@ class Refund:
 
 
         result = service.request_refund(
-            session_id=payment.session_id,
+            session_id=payment.zarinpal_session_id,
             amount=refund.amount,
             description=f"Refund Order #{refund.order.id}",
             method=method,
