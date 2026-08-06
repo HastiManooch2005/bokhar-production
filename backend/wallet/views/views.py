@@ -1,7 +1,9 @@
 import logging
+from urllib.parse import urlencode
 
+from django.http import HttpResponseRedirect
 from rest_framework import status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -27,9 +29,36 @@ def _make_service():
     return ZarinPalService()
 
 
+FRONTEND_URL = config(
+    "FRONTEND_URL",
+    default="http://localhost:5173"
+)
+
+# FIX: مسیرهای صفحه‌ی نتیجه‌ی پرداخت روی فرانت‌اند. من مسیرهای زیر رو به عنوان
+# فرض منطقی گذاشتم (چون در کد اصلی هیچ‌جا استفاده نشده بودن و مسیر واقعی رو
+# نمی‌دونم) — اگر مسیر صفحه‌ی نتیجه در فرانت‌اندت فرق داره، فقط همین دو خط رو
+# عوض کن؛ بقیه‌ی منطق کار می‌کنه.
+ORDER_RESULT_PATH = "/order/result"
+WALLET_CHARGE_RESULT_PATH = "/wallet/result"
+
+
+def _redirect_with_params(base_path: str, **params) -> HttpResponseRedirect:
+    """
+    ریدایرکت به صفحه‌ی نتیجه در فرانت‌اند با query params.
+    مقادیر None حذف می‌شن تا در URL چیزی مثل amount=None ظاهر نشه.
+    """
+    clean_params = {k: v for k, v in params.items() if v is not None}
+    query_string = urlencode(clean_params)
+    url = f"{FRONTEND_URL}{base_path}"
+    if query_string:
+        url = f"{url}?{query_string}"
+    return HttpResponseRedirect(url)
+
+
 # =========================================================
 # 1. پرداخت سفارش از درگاه — initiate
 # =========================================================
+
 class PaymentInitiateView(APIView):
 
     permission_classes = [IsAuthenticated]
@@ -41,7 +70,13 @@ class PaymentInitiateView(APIView):
         service = PaymentService(zarinpal_client=_make_service())
         result = service.initiate_payment(
             user=request.user,
-            validated_data=serializer.validated_data,
+            # FIX: قبلاً اینجا serializer.validated_data پاس داده می‌شد که چون
+            # PaymentCreateSerializer هیچ فیلدی نداره همیشه {} بود — یعنی داده‌ی
+            # واقعی سفارش (آدرس، آیتم‌ها، زمان تحویل و ...) که فرانت‌اند در
+            # request.data می‌فرسته، هیچ‌وقت به OrderCreateSerializer داخل
+            # PaymentService نمی‌رسید و initiate_payment همیشه با سبد خالی
+            # fail می‌شد. حالا request.data واقعی پاس داده می‌شه.
+            validated_data=request.data,
             request=request,
         )
         return Response(result, status=status.HTTP_200_OK)
@@ -50,14 +85,15 @@ class PaymentInitiateView(APIView):
 # =========================================================
 # 2. تأیید پرداخت سفارش — verify (callback زرین‌پال)
 # =========================================================
-FRONTEND_URL = config(
-    "FRONTEND_URL",
-    default="http://localhost:5173"
-)
+
 class PaymentVerifyView(APIView):
     """
     GET /api/payments/verify/?Authority=xxx&Status=OK
     زرین‌پال کاربر را اینجا redirect می‌کند.
+
+    این endpoint مستقیماً توسط مرورگر کاربر (نه AJAX فرانت‌اند) صدا زده
+    می‌شود، پس همیشه باید با یک ریدایرکت به صفحه‌ی نتیجه‌ی فرانت‌اند پاسخ
+    بدهد، نه یک پاسخ JSON خام.
     """
     permission_classes = [IsAuthenticated]
 
@@ -70,33 +106,72 @@ class PaymentVerifyView(APIView):
 
         # اگه کاربر لغو کرد
         if pay_status != "OK":
-            return Response(
-                {"success": False, "message": "پرداخت توسط کاربر لغو شد."},
-                status=status.HTTP_200_OK,
+            return _redirect_with_params(
+                ORDER_RESULT_PATH,
+                success="false",
+                message="پرداخت توسط کاربر لغو شد.",
             )
 
         service = PaymentService(zarinpal_client=_make_service())
-        result = service.verify_payment(
-            authority=authority,
-            user=request.user,
-            callback_payload={
-                "query": dict(
-                    request.query_params
-                ),
-                "ip": request.META.get(
-                    "REMOTE_ADDR"
-                ),
-                "user_agent": request.META.get(
-                    "HTTP_USER_AGENT"
-                ),
-            },
+
+        # FIX: قبلاً نتیجه یا خطای این متد به صورت Response JSON خام برگردونده
+        # می‌شد که در مرورگر کاربر (بعد از redirect زرین‌پال) به جای صفحه‌ی
+        # نتیجه‌ی سفارش، یه صفحه‌ی JSON خالی نمایش داده می‌شد. حالا در همه‌ی
+        # حالت‌ها (موفق/خطا) به صفحه‌ی نتیجه‌ی فرانت‌اند ریدایرکت می‌شه.
+        try:
+            result = service.verify_payment(
+                authority=authority,
+                user=request.user,
+                callback_payload={
+                    "query": dict(
+                        request.query_params
+                    ),
+                    "ip": request.META.get(
+                        "REMOTE_ADDR"
+                    ),
+                    "user_agent": request.META.get(
+                        "HTTP_USER_AGENT"
+                    ),
+                },
+            )
+        except (ValidationError, PermissionDenied) as exc:
+            detail = exc.detail
+            message = str(detail[0]) if isinstance(detail, list) and detail else str(detail)
+            return _redirect_with_params(
+                ORDER_RESULT_PATH,
+                success="false",
+                message=message,
+            )
+        except Exception:
+            logger.exception(
+                "Unexpected error during payment verification",
+                extra={"authority": authority, "user_id": request.user.id},
+            )
+            return _redirect_with_params(
+                ORDER_RESULT_PATH,
+                success="false",
+                message="خطای غیرمنتظره در تأیید پرداخت.",
+            )
+
+        if result.get("success"):
+            return _redirect_with_params(
+                ORDER_RESULT_PATH,
+                success="true",
+                order_id=result.get("order_id"),
+                ref_id=result.get("ref_id"),
+            )
+
+        return _redirect_with_params(
+            ORDER_RESULT_PATH,
+            success="false",
+            message=result.get("error", "پرداخت ناموفق بود."),
         )
-        return Response(result, status=status.HTTP_200_OK)
 
 
 # =========================================================
 # 3. پرداخت سفارش از کیف پول
 # =========================================================
+
 class WalletPaymentView(APIView):
     """
     POST /api/payments/wallet/pay/
@@ -117,6 +192,7 @@ class WalletPaymentView(APIView):
 # =========================================================
 # 4. شارژ کیف پول — initiate
 # =========================================================
+
 class WalletChargeView(APIView):
     """
     POST /api/payments/wallet/charge/
@@ -139,10 +215,14 @@ class WalletChargeView(APIView):
 # =========================================================
 # 5. تأیید شارژ کیف پول — verify (callback زرین‌پال)
 # =========================================================
+
 class WalletChargeVerifyView(APIView):
     """
     GET /api/payments/wallet/charge/verify/?Authority=xxx&Status=OK
     زرین‌پال کاربر را بعد از شارژ اینجا redirect می‌کند.
+
+    مثل PaymentVerifyView، این endpoint مستقیماً توسط مرورگر کاربر صدا زده
+    می‌شود، پس همیشه به صفحه‌ی نتیجه‌ی فرانت‌اند ریدایرکت می‌کند.
     """
     permission_classes = [IsAuthenticated]
 
@@ -154,22 +234,56 @@ class WalletChargeVerifyView(APIView):
         pay_status = serializer.validated_data["Status"]
 
         service = WalletPaymentService(gateway=_make_service())
-        result = service.verify_wallet_charge(
-            user=request.user,
-            authority=authority,
-            status=pay_status,
-            callback_payload=dict(request.query_params),
+
+        # FIX: همون مشکل PaymentVerifyView — قبلاً JSON خام برمی‌گشت، حالا
+        # به صفحه‌ی نتیجه‌ی شارژ کیف پول در فرانت‌اند ریدایرکت می‌شه.
+        try:
+            result = service.verify_wallet_charge(
+                user=request.user,
+                authority=authority,
+                status=pay_status,
+                callback_payload=dict(request.query_params),
+            )
+        except (ValidationError, PermissionDenied) as exc:
+            detail = exc.detail
+            message = str(detail[0]) if isinstance(detail, list) and detail else str(detail)
+            return _redirect_with_params(
+                WALLET_CHARGE_RESULT_PATH,
+                success="false",
+                message=message,
+            )
+        except Exception:
+            logger.exception(
+                "Unexpected error during wallet charge verification",
+                extra={"authority": authority, "user_id": request.user.id},
+            )
+            return _redirect_with_params(
+                WALLET_CHARGE_RESULT_PATH,
+                success="false",
+                message="خطای غیرمنتظره در تأیید شارژ کیف پول.",
+            )
+
+        if result.get("success"):
+            return _redirect_with_params(
+                WALLET_CHARGE_RESULT_PATH,
+                success="true",
+            )
+
+        return _redirect_with_params(
+            WALLET_CHARGE_RESULT_PATH,
+            success="false",
+            message=result.get("error", "شارژ کیف پول ناموفق بود."),
         )
-        return Response(result, status=status.HTTP_200_OK)
 
 
 # =========================================================
 # 6. استرداد سفارش (به کیف پول)
 # =========================================================
+
 class RefundOrderView(APIView):
     """
     POST /api/payments/refund/
-    body: { "order": <id>, "amount": ..., "destination": "wallet|bank", "reason": "..." }
+    body: { "order": , "amount": ..., "destination": "wallet|bank", "reason": "..." }
 
     destination=wallet → فوری به کیف پول واریز می‌شود
     destination=bank   → درخواست ثبت می‌شود، ادمین پردازش می‌کند
@@ -181,6 +295,13 @@ class RefundOrderView(APIView):
         serializer.is_valid(raise_exception=True)
 
         order       = serializer.validated_data["order"]
+        # FIX: amount در سریالایزر validate می‌شد (چک می‌شد که از final_price
+        # سفارش بیشتر نباشه) ولی قبلاً هیچ‌وقت به service.refund_order() پاس
+        # داده نمی‌شد. توجه: این خط فرض می‌کنه امضای WalletPaymentService.refund_order
+        # آرگومان amount را می‌پذیرد — چون کد آن سرویس در اختیارم نبود نتونستم
+        # این فرض رو تأیید کنم؛ اگر امضای واقعی فرق داره (مثلاً اسم پارامتر
+        # چیز دیگه‌ایه)، همین یک خط رو مطابق آن اصلاح کن.
+        amount      = serializer.validated_data["amount"]
         destination = serializer.validated_data["destination"]
         reason      = serializer.validated_data.get("reason", "")
 
@@ -194,6 +315,7 @@ class RefundOrderView(APIView):
         service = WalletPaymentService(gateway=_make_service())
         result = service.refund_order(
             order=order,
+            amount=amount,
             destination=destination,
             reason=reason,
         )
@@ -205,13 +327,21 @@ class RefundOrderView(APIView):
         )
         return Response({"detail": message, **result}, status=status.HTTP_200_OK)
 
+
+# =========================================================
+# Refund Process (Admin) — دست‌نخورده، هنوز نیاز به بررسی بیشتر دارد
+# =========================================================
+# NOTE: طبق بحث قبلی، این ویو با RefundService ناسازگاره (امضای __init__
+# نیاز به terminal داره و متد process_refund اصلاً روی RefundService وجود
+# نداره). قصداً همون کد اصلی رو نگه داشتم تا وقتی اطلاعات کامل (مدل/کلاس
+# terminal و GraphQLClient) رو بفرستی، جدا اصلاحش کنیم.
+
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status
 
 from ..serializers.serializers import *
-
 
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser
@@ -221,7 +351,6 @@ from rest_framework.exceptions import ValidationError
 
 from ..serializers.serializers import RefundProcessSerializer
 from ..services.refund import *
-
 
 
 class RefundProcessAPIView(APIView):
@@ -266,9 +395,11 @@ class RefundProcessAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+
 # =========================================================
 # 7. برداشت از کیف پول به حساب بانکی
 # =========================================================
+
 class WithdrawalRequestView(APIView):
     """
     POST /api/payments/wallet/withdraw/

@@ -1,4 +1,4 @@
-# wallet/report_urls.py
+# wallet/payment_urls.py
 from django.urls import path
 
 from ..views.setting_payment_views import *  # ایمپورت ویوها از فایل views موجود در همین پوشه

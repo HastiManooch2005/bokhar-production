@@ -9,10 +9,10 @@ from users.models import User
 from order.models import Order
 from .setting_payment_models import *
 
-
 # =========================================================
 # WALLET
 # =========================================================
+
 class Wallet(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="wallet")
     available_balance = models.BigIntegerField(default=0)
@@ -29,6 +29,7 @@ class Wallet(models.Model):
 # =========================================================
 # PAYMENT SESSION
 # =========================================================
+
 class PaymentSession(models.Model):
     idempotency_key = models.CharField(
         max_length=255,
@@ -63,8 +64,6 @@ class PaymentSession(models.Model):
     ref_id           = models.CharField(max_length=255, null=True, blank=True, unique=True)
     card_pan         = models.CharField(max_length=30, blank=True)
 
-    # FIX: this field was missing but required by PaymentService (gateway_request stores
-    # the outbound request payload + the frozen pricing snapshot used by _create_order).
     gateway_request  = models.JSONField(default=dict)   # درخواست اولیه (شامل pricing_snapshot)
     gateway_response = models.JSONField(default=dict)   # پاسخ اولیه
     verify_response  = models.JSONField(default=dict)   # پاسخ تأیید
@@ -94,9 +93,6 @@ class PaymentSession(models.Model):
             models.Index(fields=["ref_id"]),
             models.Index(fields=["created_at"]),
         ]
-        # FIX: constraint moved here from inside WithdrawalRequest.__str__ (dead/wrong-model code).
-        # Partial unique index: only enforced when idempotency_key is not null, and scoped
-        # per-user so two different users may reuse the same client-generated key.
         constraints = [
             models.UniqueConstraint(
                 fields=["user", "idempotency_key"],
@@ -110,8 +106,9 @@ class PaymentSession(models.Model):
 
 
 # =========================================================
-# WALLET TRANSACTION  (unchanged)
+# WALLET TRANSACTION
 # =========================================================
+
 class WalletTransaction(models.Model):
     class Type(models.TextChoices):
         DEPOSIT           = "deposit",          "شارژ کیف پول"
@@ -131,6 +128,16 @@ class WalletTransaction(models.Model):
         null=True,
         blank=True,
         related_name="transactions",
+    )
+
+    # FIX: این فیلد وجود نداشت ولی PaymentService.withdraw_to_bank ازش استفاده
+    # می‌کرد و باعث TypeError در هر درخواست برداشت می‌شد. حالا اضافه شد.
+    withdrawal_request = models.ForeignKey(
+        'WithdrawalRequest',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="wallet_transactions",
     )
 
     uuid             = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
@@ -167,6 +174,7 @@ class WalletTransaction(models.Model):
 # =========================================================
 # REFUND REQUEST  (unchanged)
 # =========================================================
+
 class RefundRequest(models.Model):
     class Status(models.TextChoices):
         PENDING    = "pending",    "در انتظار بررسی"
@@ -212,6 +220,7 @@ class RefundRequest(models.Model):
 # =========================================================
 # WITHDRAWAL REQUEST
 # =========================================================
+
 class WithdrawalRequest(models.Model):
     class Status(models.TextChoices):
         PENDING    = "pending",    "در انتظار"
@@ -231,6 +240,16 @@ class WithdrawalRequest(models.Model):
     status         = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     fail_reason    = models.TextField(blank=True)
 
+    # FIX: این فیلد وجود نداشت ولی PaymentService.withdraw_to_bank برای idempotency
+    # ازش استفاده می‌کرد (client_request_id) و باعث TypeError می‌شد. حالا اضافه شد.
+    # طراحی مشابه idempotency_key در PaymentSession: nullable + یکتا به ازای هر کاربر.
+    client_request_id = models.CharField(
+        max_length=64,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
     processed_at   = models.DateTimeField(null=True, blank=True)
     created_at     = models.DateTimeField(auto_now_add=True)
 
@@ -240,9 +259,13 @@ class WithdrawalRequest(models.Model):
             models.Index(fields=["status"]),
             models.Index(fields=["created_at"]),
         ]
-        # FIX: this class previously had NO constraints; the stray UniqueConstraint that
-        # referenced idempotency_key was dead code placed after __str__'s return and has
-        # been removed entirely (it belongs to PaymentSession, see above).
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "client_request_id"],
+                condition=Q(client_request_id__isnull=False),
+                name="unique_withdrawal_client_request_id_per_user",
+            )
+        ]
 
     def __str__(self):
         return f"Withdrawal({self.user} | {self.amount} | {self.status})"

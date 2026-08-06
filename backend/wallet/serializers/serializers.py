@@ -1,22 +1,19 @@
 from rest_framework import serializers
 
-from order.models import Order
+from order.models import Order, OrderStatus
 from ..models.models import RefundRequest, WalletTransaction, WithdrawalRequest
 
 
 # =========================================================
 # 1. پرداخت سفارش از درگاه
 # =========================================================
+
 class PaymentCreateSerializer(serializers.Serializer):
     """
     فقط داده‌های سفارش لازمه — terminal حذف شده.
     داده‌های سفارش (آدرس، آیتم‌ها و ...) از OrderCreateSerializer پردازش میشه.
     """
     pass  # در صورت نیاز فیلدهای extra مثل description اینجا اضافه کن
-
-
-from rest_framework import serializers
-
 
 
 class RefundProcessSerializer(serializers.Serializer):
@@ -31,9 +28,11 @@ class RefundProcessSerializer(serializers.Serializer):
         self.context["refund"] = refund
         return value
 
+
 # =========================================================
 # 2. تأیید پرداخت (callback زرین‌پال)
 # =========================================================
+
 class PaymentVerifySerializer(serializers.Serializer):
     """
     زرین‌پال فقط Authority و Status را در query string برمی‌گرداند.
@@ -54,6 +53,7 @@ class PaymentVerifySerializer(serializers.Serializer):
 # =========================================================
 # 3. شارژ کیف پول از درگاه
 # =========================================================
+
 class WalletChargeSerializer(serializers.Serializer):
     amount = serializers.IntegerField(
         min_value=100_000,
@@ -68,6 +68,7 @@ class WalletChargeSerializer(serializers.Serializer):
 # =========================================================
 # 4. پرداخت سفارش از کیف پول
 # =========================================================
+
 class WalletPaymentSerializer(serializers.Serializer):
     """
     داده‌های سفارش از OrderCreateSerializer پردازش میشه.
@@ -79,6 +80,7 @@ class WalletPaymentSerializer(serializers.Serializer):
 # =========================================================
 # 5. درخواست استرداد سفارش
 # =========================================================
+
 class RefundRequestSerializer(serializers.ModelSerializer):
     order       = serializers.PrimaryKeyRelatedField(queryset=Order.objects.all())
     destination = serializers.ChoiceField(choices=RefundRequest.Destination.choices)
@@ -91,7 +93,14 @@ class RefundRequestSerializer(serializers.ModelSerializer):
         order  = attrs["order"]
         amount = attrs["amount"]
 
-        if order.status != "paid":
+        # FIX: قبلاً اینجا با رشته‌ی خام "paid" مقایسه می‌شد در حالی که در
+        # جای دیگه‌ی پروژه (مثلاً payment_service.py: status=OrderStatus.PAID)
+        # همیشه از enum استفاده شده. اگر مقدار واقعی OrderStatus.PAID با رشته‌ی
+        # "paid" یکی نباشه (مثلاً "PAID" با حروف بزرگ)، این مقایسه همیشه False
+        # می‌شه و هیچ سفارشی — حتی سفارش‌های واقعاً پرداخت‌شده — قابل استرداد
+        # نخواهد بود. با مقایسه به enum، این وابستگی به مقدار دقیق رشته از بین
+        # می‌ره.
+        if order.status != OrderStatus.PAID:
             raise serializers.ValidationError(
                 {"order": "فقط سفارش‌های پرداخت‌شده قابل استرداد هستند."}
             )
@@ -121,6 +130,7 @@ class RefundRequestSerializer(serializers.ModelSerializer):
 # =========================================================
 # 6. درخواست برداشت از کیف پول به حساب بانکی
 # =========================================================
+
 class WithdrawalRequestSerializer(serializers.ModelSerializer):
     """
     کاربر IBAN و نام صاحب حساب را وارد می‌کند.
@@ -151,6 +161,7 @@ class WithdrawalRequestSerializer(serializers.ModelSerializer):
 # =========================================================
 # 7. تاریخچه تراکنش‌های کیف پول
 # =========================================================
+
 class WalletTransactionSerializer(serializers.ModelSerializer):
     transaction_type_display = serializers.CharField(
         source="get_transaction_type_display", read_only=True

@@ -6,6 +6,24 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
+def _mask_authority(authority: str) -> str:
+    """Mask authority for safe logging."""
+    if not authority or not isinstance(authority, str):
+        return "<invalid>"
+    if len(authority) <= 8:
+        return authority[:4] + "****"
+    return authority[:8] + "..."
+
+
+def _mask_card_pan(card_pan: str) -> str:
+    """Mask card PAN for safe logging."""
+    if not card_pan or not isinstance(card_pan, str):
+        return "<invalid>"
+    if len(card_pan) <= 4:
+        return "****"
+    return "****" + card_pan[-4:]
+
+
 class ZarinPalService:
     """
     سرویس ارتباط با زرین‌پال
@@ -55,11 +73,23 @@ class ZarinPalService:
             "variables": variables,
         }
 
-        return self._post(
+        ok, result = self._post(
             self.graphql_url,
             payload,
             headers=headers,
         )
+        if not ok:
+            return ok, result
+
+        data = result.get("data")
+        if not isinstance(data, dict):
+            return False, {
+                "message": "پاسخ GraphQL فاقد داده معتبر است",
+                "code": -23,
+            }
+
+        return True, result
+
     # ------------------------------------------------------------------
     # PRIVATE
     # ------------------------------------------------------------------
@@ -70,9 +100,15 @@ class ZarinPalService:
         """
         errors = result.get("errors", {})
         if isinstance(errors, list) and errors:
-            return {"message": errors[0].get("message", default), "code": errors[0].get("code", -1)}
+            code = errors[0].get("code")
+            if code is None:
+                code = -1
+            return {"message": errors[0].get("message", default), "code": code}
         if isinstance(errors, dict) and errors:
-            return {"message": errors.get("message", default), "code": errors.get("code", -1)}
+            code = errors.get("code")
+            if code is None:
+                code = -1
+            return {"message": errors.get("message", default), "code": code}
         return {"message": default, "code": -1}
 
     def _post(self, url: str, payload: dict, headers: dict = None) -> tuple[bool, dict]:
@@ -90,11 +126,17 @@ class ZarinPalService:
         except requests.exceptions.ConnectionError:
             return False, {"message": "عدم اتصال به درگاه", "code": -2}
         except Exception as e:
-            logger.exception(f"Unexpected HTTP error: {e}")
+            logger.exception("Unexpected HTTP error", extra={"error_type": type(e).__name__})
             return False, {"message": "خطای غیرمنتظره", "code": -3}
 
         if resp.status_code != 200:
-            logger.error(f"HTTP {resp.status_code} from ZarinPal — url={url}")
+            logger.error(
+                "HTTP error from ZarinPal",
+                extra={
+                    "http_status": resp.status_code,
+                    "url_endpoint": url,
+                }
+            )
             return False, {"message": f"خطای سرور (HTTP {resp.status_code})", "code": resp.status_code}
 
         try:
@@ -129,10 +171,19 @@ class ZarinPalService:
         if not ok:
             return {"success": False, "error": result["message"], "code": result["code"]}
 
-        authority = result.get("data", {}).get("authority")
+        data = result.get("data", {})
+        if not isinstance(data, dict):
+            logger.error(
+                "ZarinPal request failed: invalid data structure",
+                extra={"response_type": type(data).__name__}
+            )
+            return {"success": False, "error": "پاسخ نامعتبر از سرور", "code": -4}
+
+        authority = data.get("authority")
         if authority:
             logger.info(
-                f"ZarinPal payment request created — authority={authority[:8]}..."
+                "ZarinPal payment request created",
+                extra={"authority_prefix": _mask_authority(authority)}
             )
             return {
                 "success":     True,
@@ -161,6 +212,19 @@ class ZarinPalService:
             موفق  → {"success": True, "ref_id": "...", "already_verified": bool}
             خطا   → {"success": False, "error": "...", "code": ...}
         """
+        if authority is None or not isinstance(authority, str) or authority.strip() == "":
+            logger.warning(
+                "verify_payment called with invalid authority",
+                extra={
+                    "authority_type": type(authority).__name__ if authority is not None else "None",
+                }
+            )
+            return {
+                "success": False,
+                "error": "authority نامعتبر است",
+                "code": -12,
+            }
+
         payload = {
             "merchant_id": self.merchant_id,
             "amount":       amount,
@@ -172,24 +236,57 @@ class ZarinPalService:
             return {"success": False, "error": result["message"], "code": result["code"]}
 
         data = result.get("data", {})
+        if not isinstance(data, dict):
+            logger.error(
+                "ZarinPal verify failed: invalid data structure",
+                extra={
+                    "authority_prefix": _mask_authority(authority),
+                    "response_type": type(data).__name__,
+                }
+            )
+            return {"success": False, "error": "پاسخ نامعتبر از سرور", "code": -4}
+
         code = data.get("code")
 
         if code in (100, 101):
+            ref_id = data.get("ref_id")
+            if ref_id is None or (isinstance(ref_id, str) and ref_id.strip() == "") or ref_id == "":
+                logger.error(
+                    "ZarinPal verify succeeded but ref_id is missing",
+                    extra={
+                        "authority_prefix": _mask_authority(authority),
+                        "verify_code": code,
+                    }
+                )
+                return {
+                    "success": False,
+                    "error": "تراکنش تایید شد اما ref_id دریافت نشد",
+                    "code": -13,
+                }
+
             already = (code == 101)
+            card_pan = data.get("card_pan", "")
             logger.info(
                 "ZarinPal payment verified",
                 extra={
-                    "already_verified": already
+                    "already_verified": already,
+                    "authority_prefix": _mask_authority(authority),
+                    "card_pan_masked": _mask_card_pan(card_pan),
                 }
             )
             return {
                 "success":          True,
-                "ref_id":           str(data.get("ref_id", "")),
-                "card_pan":         data.get("card_pan", ""),
+                "ref_id":           str(ref_id),
+                "card_pan":         card_pan,
                 "already_verified": already,
             }
 
         error = self._extract_error(result, "تأیید پرداخت ناموفق")
-        logger.error(f"ZarinPal verify failed — code={error['code']} msg={error['message']}")
+        logger.error(
+            "ZarinPal verify failed",
+            extra={
+                "code": error["code"],
+                "authority_prefix": _mask_authority(authority),
+            }
+        )
         return {"success": False, "error": error["message"], "code": error["code"]}
-
