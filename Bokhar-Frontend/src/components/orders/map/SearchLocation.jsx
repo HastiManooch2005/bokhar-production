@@ -6,60 +6,73 @@ export default function SearchLocation({ onSelect }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedFromList, setSelectedFromList] = useState(false);
 
   // --- Auto Suggest ---
-useEffect(() => {
-  if (!query || query.trim().length < 2) {
-    setResults([]);
-    return;
-  }
-
-  const timeout = setTimeout(async () => {
-    try {
-      setLoading(true);
-
-      const res = await axios.get(
-  `${import.meta.env.VITE_API_URL}/order/neshan/search/`,
-  {
-    params: {
-      term: query,
-    },
-  }
-);
-
-setResults(res.data.items || []);
-    } catch (err) {
-      console.error("Search Error:", err);
-      setResults([]);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (selectedFromList) {
+      setSelectedFromList(false);
+      return;
     }
-  }, 400);
 
-  return () => clearTimeout(timeout);
-}, [query]);
+    if (!query || query.trim().length < 2) {
+      setResults([]);
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      try {
+        setLoading(true);
+
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_URL}/order/neshan/search/`,
+          {
+            params: {
+              term: query,
+            },
+          }
+        );
+
+        setResults(res.data.items || []);
+      } catch (err) {
+        console.error("Search Error:", err);
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [query, selectedFromList]);
 
   return (
     <div className="relative w-full">
       {/* INPUT */}
       <div
-        dir="rtl"
         className="
-          flex items-center gap-2
-          bg-white/80 dark:bg-[#262B40]/80
-          border border-sky-300 dark:border-gray-600
-          px-3 py-2 rounded-2xl
-          shadow-sm shadow-sky-200/60
-          focus-within:ring-1
-          focus-within:ring-sky-400
-          dark:focus-within:ring-[#8AA1C4]
-          transition-all
+          flex
+          items-center
+          gap-2
+
+          bg-white/90
+          dark:bg-[#262B40]
+
+          border
+          border-sky-300
+          dark:border-gray-600
+
+          rounded-2xl
+
+          px-4
+          py-3
+
+          shadow-md
+          shadow-sky-100
+
+          backdrop-blur
         "
       >
-        <Search
-          className="text-gray-500 dark:text-gray-300"
-          size={20}
-        />
+        <Search className="w-4 h-4 text-sky-500" />
 
         <input
           type="text"
@@ -105,25 +118,52 @@ setResults(res.data.items || []);
             overflow-y-auto
             scroll-smooth
             overscroll-contain
+
+            divide-y
+            divide-gray-100
+            dark:divide-gray-700
           "
         >
-{results.map((item, index) => (
-  <li
-    key={index}
-    onClick={() => {
-      onSelect({
-        lat: item.location.y,
-        lng: item.location.x,
-        address: item.address,
-      });
+          {results.map((item, index) => (
+            <li
+              key={index}
+              onClick={() => {
+                onSelect(item.location.y, item.location.x);
 
-      setQuery(item.address);
-      setResults([]);
-    }}
-  >
-    {item.title}
-  </li>
-))}
+                setSelectedFromList(true);
+                setQuery(item.address || item.title || "");
+                setResults([]);
+              }}
+              className="
+                flex
+                items-start
+                gap-3
+
+                px-4
+                py-3
+
+                cursor-pointer
+                transition-colors
+
+                hover:bg-sky-50
+                dark:hover:bg-slate-700/50
+              "
+            >
+              <MapPin className="w-4 h-4 mt-1 text-sky-500 shrink-0" />
+
+              <div className="flex flex-col">
+                <span className="text-sm text-gray-800 dark:text-gray-100">
+                  {item.title}
+                </span>
+
+                {item.address && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {item.address}
+                  </span>
+                )}
+              </div>
+            </li>
+          ))}
         </ul>
       )}
 

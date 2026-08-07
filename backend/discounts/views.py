@@ -29,7 +29,7 @@ class ProductDiscountViewSet(viewsets.ModelViewSet):
     
     def _create_category_discount(self, request, category_id):
         """ایجاد تخفیف برای همه مواد داخل دسته‌بندی"""
-        from backend.products.models import MaterialPrice  # ایمپورت مدل MaterialPrice
+        from products.models import MaterialPrice  # ایمپورت مدل MaterialPrice
         
         # گرفتن همه مواد رنگ/متریال محصولات این دسته
         materials = MaterialPrice.objects.filter(

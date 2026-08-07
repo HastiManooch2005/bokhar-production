@@ -16,9 +16,10 @@ from wallet.serializers.serializers import (
     WalletChargeSerializer,
     WithdrawalRequestSerializer,
 )
-from ..services.services_payment import PaymentService
-from ..services.services_wallet import WalletPaymentService
-from ..services.service_zarinpal import ZarinPalService
+
+from wallet.services.services_payment import PaymentService
+from wallet.services.services_wallet import WalletPaymentService
+from wallet.services.service_zarinpal import ZarinPalService
 from decouple import config
 
 logger = logging.getLogger(__name__)

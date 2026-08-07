@@ -3,8 +3,8 @@ from django.db import transaction
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from decimal import Decimal
-from backend.order import Order
-from backend.wallet.models.setting_payment_models import PaymentTerminal, TerminalBankAccount, Settlement
+from order import Order
+from wallet.models.setting_payment_models import PaymentTerminal, TerminalBankAccount, Settlement
 
 logger = logging.getLogger(__name__)
 

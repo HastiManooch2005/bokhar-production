@@ -4,7 +4,7 @@ from django.core.cache import cache
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from backend.users.models import User
+from users.models import User
 
 
 @pytest.fixture  # برای کدهای تکراری

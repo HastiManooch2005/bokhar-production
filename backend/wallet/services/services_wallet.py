@@ -8,7 +8,7 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from order.models import Order, OrderItem, OrderStatus, OrderStatusLog
-from order.serializers import OrderCreateSerializer
+from order.cart_serializer import OrderCreateSerializer
 from users.models import User
 from ..models.models import (
     PaymentSession, RefundRequest, Wallet, WalletTransaction,
