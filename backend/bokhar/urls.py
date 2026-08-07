@@ -43,7 +43,7 @@ urlpatterns = [
     path("api/notifications/", include("notifications.urls")),
     path("api/report/", include("report.urls")),
     path("metrics/", include("django_prometheus.urls")),
-
+    path("api/",include("wallet.urls"))
 
 ]
 

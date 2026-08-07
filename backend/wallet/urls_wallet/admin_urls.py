@@ -1,4 +1,4 @@
-# wallet/report_urls.py
+"""# wallet/report_urls.py
 from django.urls import path
 
 from ..views.setting_payment_views import *  # ایمپورت ویوها از فایل views موجود در همین پوشه
@@ -48,3 +48,4 @@ urlpatterns = [
         "settlements/<int:id>/", SettlementListView.as_view(), name="settlement-detail"
     ),
 ]
+"""
