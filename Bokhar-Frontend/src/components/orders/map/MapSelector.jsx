@@ -315,24 +315,31 @@ export default function MapSelector({
         <MapView
           position={coords}
           onPositionChange={safeSetCoords}
-          onMarkerClick={() => {
-            if (!isAuthenticated) {
-              if (isValidCoords(coords)) {
-                pendingCoords.current = coords;
-              } else {
-                console.error("onMarkerClick: coords is invalid:", coords);
-              }
-              setIsAuthModalOpen(true);
-              return;
-            }
+onMarkerClick={() => {
+  if (!isAuthenticated) {
+    if (isValidCoords(coords)) {
+      pendingCoords.current = coords;
+    } else {
+      console.error(
+        "onMarkerClick: coords is invalid:",
+        coords
+      );
+    }
 
-            onLocationSelect({
-              coords,
-              address,
-            });
+    setIsAuthModalOpen(true);
+    return;
+  }
 
-            goToNextStep?.();
-          }}
+  if (!isValidCoords(coords)) {
+    console.error(
+      "onMarkerClick: invalid coords:",
+      coords
+    );
+    toast.error("موقعیت مکانی نامعتبر است");
+    return;
+  }
+  setOpen(true);
+}}
         />
       </div>
 
