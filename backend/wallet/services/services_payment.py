@@ -615,7 +615,7 @@ class PaymentService:
                 timeout=_LOCK_TIMEOUT_SECONDS,
                 blocking_timeout=_LOCK_BLOCKING_SECONDS,
             )
-            lock_acquired = lock.acquire(blocking=False)
+            lock_acquired = lock.acquire()
             if not lock_acquired:
                 logger.warning(
                     "Payment verification lock contention",
