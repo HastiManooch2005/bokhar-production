@@ -14,6 +14,26 @@ import MapView from "./MapView";
 import SearchLocation from "./SearchLocation";
 import AddressModal from "./AddressModal";
 
+import { useAuth } from "../../../context/AuthContext";
+import AuthModal from "../../auth/AuthModal";
+
+// ---------------- VALIDATION ----------------
+
+const isValidCoords = (coords) =>
+  coords &&
+  typeof coords.lat === "number" &&
+  typeof coords.lng === "number" &&
+  !Number.isNaN(coords.lat) &&
+  !Number.isNaN(coords.lng);
+
+const DEFAULT_COORDS = { lat: 35.6892, lng: 51.389 };
+
+const resolveInitialCoords = (initialPosition) => {
+  if (isValidCoords(initialPosition)) {
+    return { lat: initialPosition.lat, lng: initialPosition.lng };
+  }
+  return { ...DEFAULT_COORDS };
+};
 
 export default function MapSelector({
   initialPosition,
@@ -23,11 +43,8 @@ export default function MapSelector({
 }) {
   // ---------------- STATE ----------------
 
-  const [coords, setCoords] = useState(
-    initialPosition || {
-      lat: 35.6892,
-      lng: 51.389,
-    },
+  const [coords, setCoords] = useState(() =>
+    resolveInitialCoords(initialPosition)
   );
 
   const [address, setAddress] = useState(initialAddress || "");
@@ -43,6 +60,14 @@ export default function MapSelector({
 
   const historyLock = useRef(false);
 
+  // ---------------- AUTH ----------------
+
+  const { isAuthenticated, loading: authLoading } = useAuth();
+
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  const pendingCoords = useRef(null);
+
   // ---------------- SAVED ADDRESSES ----------------
 
   const savedAddresses = useMemo(
@@ -51,28 +76,21 @@ export default function MapSelector({
         id: 1,
         title: "خانه",
         icon: Home,
-
         address: "تهران، آزادی",
-
         plaque: "12",
         unit: "3",
-
         coords: {
           lat: 35.6892,
           lng: 51.389,
         },
       },
-
       {
         id: 2,
         title: "محل کار",
         icon: BriefcaseBusiness,
-
         address: "تهران، ونک",
-
         plaque: "8",
         unit: "1",
-
         coords: {
           lat: 35.757,
           lng: 51.409,
@@ -82,25 +100,42 @@ export default function MapSelector({
     [],
   );
 
+  // ---------------- SAFE SETCOORDS ----------------
+
+  const safeSetCoords = useCallback((newCoords) => {
+    if (isValidCoords(newCoords)) {
+      setCoords({ lat: newCoords.lat, lng: newCoords.lng });
+    } else {
+      console.error("MapSelector: attempt to set invalid coords:", newCoords);
+    }
+  }, []);
+
   // ---------------- REVERSE GEOCODE ----------------
-useEffect(() => {
-  if (!coords) return;
 
-  const controller = new AbortController();
+  const runReverseGeocode = useCallback(async (targetCoords, signal) => {
+    if (!isValidCoords(targetCoords)) {
+      console.error("runReverseGeocode: invalid targetCoords:", targetCoords);
+      return;
+    }
 
-  const timeout = setTimeout(async () => {
     try {
       setLoadingAddress(true);
 
-const res = await fetch(
-  `${import.meta.env.VITE_API_URL}/order/neshan/reverse/?lat=${coords.lat}&lng=${coords.lng}`,
-  {
-    signal: controller.signal,
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("access")}`,
-    },
-  }
-);
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/order/neshan/reverse/?lat=${targetCoords.lat}&lng=${targetCoords.lng}`,
+        {
+          signal,
+          credentials: "include",
+        },
+      );
+
+      if (res.status === 401) {
+        pendingCoords.current = targetCoords;
+        setIsAuthModalOpen(true);
+        setLoadingAddress(false);
+        return;
+      }
+
       if (!res.ok) {
         throw new Error("Reverse geocode failed");
       }
@@ -119,13 +154,39 @@ const res = await fetch(
     } finally {
       setLoadingAddress(false);
     }
-  }, 700);
+  }, []);
 
-  return () => {
-    controller.abort();
-    clearTimeout(timeout);
-  };
-}, [coords]);
+  useEffect(() => {
+    if (!isValidCoords(coords)) return;
+
+    const controller = new AbortController();
+
+    const timeout = setTimeout(() => {
+      runReverseGeocode(coords, controller.signal);
+    }, 700);
+
+    return () => {
+      controller.abort();
+      clearTimeout(timeout);
+    };
+  }, [coords, runReverseGeocode]);
+
+  // ---------------- AUTH SUCCESS ----------------
+
+  const handleAuthSuccess = useCallback(() => {
+    setIsAuthModalOpen(false);
+
+    if (pendingCoords.current) {
+      const targetCoords = pendingCoords.current;
+      if (isValidCoords(targetCoords)) {
+        safeSetCoords(targetCoords);
+        runReverseGeocode(targetCoords);
+      } else {
+        console.error("handleAuthSuccess: pendingCoords is invalid:", targetCoords);
+      }
+      pendingCoords.current = null;
+    }
+  }, [safeSetCoords, runReverseGeocode]);
 
   // ---------------- CURRENT LOCATION ----------------
 
@@ -137,36 +198,54 @@ const res = await fetch(
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setCoords({
+        const newCoords = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
-        });
-
-        toast.success("موقعیت فعلی انتخاب شد");
+        };
+        if (isValidCoords(newCoords)) {
+          safeSetCoords(newCoords);
+          toast.success("موقعیت فعلی انتخاب شد");
+        } else {
+          console.error("handleCurrentLocation: geolocation returned invalid coords:", newCoords);
+          toast.error("موقعیت دریافتی نامعتبر است");
+        }
       },
-
       () => {
         toast.error("دسترسی به موقعیت مکانی رد شد");
       },
-
       {
         enableHighAccuracy: true,
         timeout: 10000,
       },
     );
-  }, []);
+  }, [safeSetCoords]);
 
   // ---------------- SELECT SAVED ----------------
 
   const handleSelectSaved = useCallback((item) => {
-    setCoords(item.coords);
+    if (!isAuthenticated) {
+      if (isValidCoords(item.coords)) {
+        pendingCoords.current = item.coords;
+      } else {
+        console.error("handleSelectSaved: item.coords is invalid:", item.coords);
+      }
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    if (!isValidCoords(item.coords)) {
+      console.error("handleSelectSaved: item.coords is invalid:", item.coords);
+      return;
+    }
+
+    safeSetCoords(item.coords);
     setAddress(item.address);
     setPlaque(item.plaque);
     setUnit(item.unit);
     setTitle(item.title);
     // با انتخاب آدرس ذخیره شده، مستقیماً مودال باز می‌شود (چون دکمه تایید حذف شده)
     setOpen(true);
-  }, []);
+  }, [isAuthenticated, safeSetCoords]);
 
   // ---------------- SUBMIT ----------------
 
@@ -221,37 +300,41 @@ const res = await fetch(
       className="
         fixed
         inset-0
-  
         z-10
         pt-[145px]
         md:pt-[90px]
-
         pb-[88px]
         md:pb-0
-
         overflow-hidden
-
         bg-white
         dark:bg-[#1a1f2e]
       "
     >
       {/* MAP */}
       <div className="absolute inset-0">
-<MapView
-  position={coords}
-  onPositionChange={setCoords}
-  onMarkerClick={() => {
-    onLocationSelect({
-      coords,
-      address,
-    });
+        <MapView
+          position={coords}
+          onPositionChange={safeSetCoords}
+          onMarkerClick={() => {
+            if (!isAuthenticated) {
+              if (isValidCoords(coords)) {
+                pendingCoords.current = coords;
+              } else {
+                console.error("onMarkerClick: coords is invalid:", coords);
+              }
+              setIsAuthModalOpen(true);
+              return;
+            }
 
-    goToNextStep?.();
-  }}
-/>
+            onLocationSelect({
+              coords,
+              address,
+            });
+
+            goToNextStep?.();
+          }}
+        />
       </div>
-
-      {/* TOP OVERLAY - حذف شد (سرچ به پایین منتقل شد) */}
 
       {/* LOCATION BUTTON */}
       <button
@@ -277,8 +360,6 @@ const res = await fetch(
         />
       </button>
 
-      {/* ⚠️ بخش آدرس‌های ذخیره شده خارج از باکس سفید حذف شد */}
-
       <div
         className="
           absolute
@@ -299,45 +380,51 @@ const res = await fetch(
           "
         >
           <div
-  className="
-    mb-3
-    flex
-    items-start
-    gap-2
-    rounded-xl
-    bg-sky-50
-    px-3
-    py-2
-  "
->
-  <MapPin
-    size={16}
-    className="text-sky-500 mt-1 shrink-0"
-  />
+            className="
+              mb-3
+              flex
+              items-start
+              gap-2
+              rounded-xl
+              bg-sky-50
+              px-3
+              py-2
+            "
+          >
+            <MapPin
+              size={16}
+              className="text-sky-500 mt-1 shrink-0"
+            />
 
-  <div className="min-w-0 flex-1">
-    <p className="text-xs text-gray-500">
-      آدرس انتخاب شده
-    </p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-gray-500">
+                آدرس انتخاب شده
+              </p>
 
-    <p className="text-sm truncate">
-      {loadingAddress
-        ? "در حال دریافت آدرس..."
-        : address}
-    </p>
-  </div>
-</div>
+              <p className="text-sm truncate">
+                {loadingAddress
+                  ? "در حال دریافت آدرس..."
+                  : address}
+              </p>
+            </div>
+          </div>
+
           {/* SEARCH - به داخل باکس سفید منتقل شد */}
           <div className="pointer-events-auto mb-4">
             <SearchLocation
               onSelect={(loc) => {
-                setCoords({
+                const newCoords = {
                   lat: loc.lat,
                   lng: loc.lng,
-                });
-                setAddress(loc.address);
-                // اگر می‌خواهید پس از جستجو هم مودال مستقیماً باز شود، خط زیر را فعال کنید:
-                // setOpen(true);
+                };
+                if (isValidCoords(newCoords)) {
+                  safeSetCoords(newCoords);
+                  setAddress(loc.address);
+                  // اگر می‌خواهید پس از جستجو هم مودال مستقیماً باز شود، خط زیر را فعال کنید:
+                  // setOpen(true);
+                } else {
+                  console.error("SearchLocation onSelect: invalid coords:", newCoords);
+                }
               }}
             />
           </div>
@@ -397,6 +484,12 @@ const res = await fetch(
         title={title}
         description={description}
         address={address}
+      />
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={handleAuthSuccess}
       />
     </div>
   );

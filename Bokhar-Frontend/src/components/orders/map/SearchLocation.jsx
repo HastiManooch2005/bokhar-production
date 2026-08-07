@@ -1,78 +1,102 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
 import { Search, MapPin } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 
 export default function SearchLocation({ onSelect }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedFromList, setSelectedFromList] = useState(false);
+const skipNextSearch = useRef(false);
 
-  // --- Auto Suggest ---
-  useEffect(() => {
-    if (selectedFromList) {
-      setSelectedFromList(false);
-      return;
-    }
+useEffect(() => {
+  if (skipNextSearch.current) {
+    skipNextSearch.current = false;
+    return;
+  }
 
-    if (!query || query.trim().length < 2) {
-      setResults([]);
-      return;
-    }
+  if (!query || query.trim().length < 2) {
+    setResults([]);
+    return;
+  }
 
-    const timeout = setTimeout(async () => {
-      try {
-        setLoading(true);
+  const timeout = setTimeout(async () => {
+    try {
+      setLoading(true);
 
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_URL}/order/neshan/search/`,
-          {
-            params: {
-              term: query,
-            },
-          }
-        );
+      const url = new URL(
+        `${import.meta.env.VITE_API_URL}/order/neshan/search/`
+      );
 
-        setResults(res.data.items || []);
-      } catch (err) {
-        console.error("Search Error:", err);
-        setResults([]);
-      } finally {
-        setLoading(false);
+      url.searchParams.append("term", query);
+
+      const res = await fetch(url, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error("Search failed");
       }
-    }, 400);
 
-    return () => clearTimeout(timeout);
-  }, [query, selectedFromList]);
+      const data = await res.json();
+
+      setResults(data.items || []);
+    } catch (err) {
+      console.error("Search Error:", err);
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  }, 400);
+
+  return () => clearTimeout(timeout);
+}, [query]);
+
+
+const handleSelect = (item) => {
+  const lat = item?.location?.y;
+  const lng = item?.location?.x;
+
+  if (lat == null || lng == null) {
+    console.error("Invalid location:", item);
+    return;
+  }
+
+  onSelect({
+    lat,
+    lng,
+    address: item.address || item.title || "",
+  });
+
+  // Prevent searching again after selecting a suggestion
+  skipNextSearch.current = true;
+
+  // Close suggestions immediately
+  setResults([]);
+
+  // Show selected address in input
+  setQuery(item.address || item.title || "");
+};
+
+
 
   return (
     <div className="relative w-full">
-      {/* INPUT */}
+
+
       <div
         className="
-          flex
-          items-center
-          gap-2
-
+          flex items-center gap-2
           bg-white/90
           dark:bg-[#262B40]
-
-          border
-          border-sky-300
-          dark:border-gray-600
-
+          border border-sky-300
           rounded-2xl
-
-          px-4
-          py-3
-
+          px-4 py-3
           shadow-md
-          shadow-sky-100
-
-          backdrop-blur
         "
       >
+
         <Search className="w-4 h-4 text-sky-500" />
+
 
         <input
           type="text"
@@ -84,14 +108,15 @@ export default function SearchLocation({ onSelect }) {
             bg-transparent
             outline-none
             text-sm
-            text-gray-700
-            dark:text-gray-200
           "
         />
+
       </div>
 
-      {/* RESULTS */}
+
+
       {results.length > 0 && (
+
         <ul
           dir="rtl"
           className="
@@ -99,90 +124,68 @@ export default function SearchLocation({ onSelect }) {
             bottom-full
             mb-2
             w-full
-
-            bg-white/95
-            dark:bg-[#262B40]/95
-
-            border
-            border-sky-300
-            dark:border-gray-600
-
+            bg-white
             rounded-2xl
-
             shadow-xl
-            shadow-sky-200/60
-
             z-50
-
             max-h-64
             overflow-y-auto
-            scroll-smooth
-            overscroll-contain
-
-            divide-y
-            divide-gray-100
-            dark:divide-gray-700
           "
         >
+
           {results.map((item, index) => (
+
             <li
               key={index}
-              onClick={() => {
-                onSelect(item.location.y, item.location.x);
-
-                setSelectedFromList(true);
-                setQuery(item.address || item.title || "");
-                setResults([]);
-              }}
+              onClick={() => handleSelect(item)}
               className="
                 flex
-                items-start
                 gap-3
-
                 px-4
                 py-3
-
                 cursor-pointer
-                transition-colors
-
                 hover:bg-sky-50
-                dark:hover:bg-slate-700/50
               "
             >
-              <MapPin className="w-4 h-4 mt-1 text-sky-500 shrink-0" />
 
-              <div className="flex flex-col">
-                <span className="text-sm text-gray-800 dark:text-gray-100">
+              <MapPin className="w-4 h-4 mt-1 text-sky-500" />
+
+
+              <div>
+
+                <div className="text-sm">
                   {item.title}
-                </span>
+                </div>
 
-                {item.address && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+
+                {
+                  item.address &&
+                  <div className="text-xs text-gray-500">
                     {item.address}
-                  </span>
-                )}
+                  </div>
+                }
+
               </div>
+
+
             </li>
+
           ))}
+
         </ul>
+
       )}
 
-      {/* LOADING */}
-      {loading && (
-        <div
-          className="
-            absolute
-            left-5
-            top-1/2
-            -translate-y-1/2
-            text-xs
-            text-gray-400
-            dark:text-gray-500
-          "
-        >
+
+
+      {
+        loading &&
+        <div className="absolute left-5 top-1/2 text-xs text-gray-400">
           در حال جستجو...
         </div>
-      )}
+      }
+
+
     </div>
   );
 }

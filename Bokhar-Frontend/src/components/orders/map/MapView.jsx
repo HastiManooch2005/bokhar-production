@@ -16,6 +16,15 @@ import { MapPin } from "lucide-react";
 
 import "leaflet/dist/leaflet.css";
 
+// ---------------- VALIDATION ----------------
+
+const isValidCoords = (coords) =>
+  coords &&
+  typeof coords.lat === "number" &&
+  typeof coords.lng === "number" &&
+  !Number.isNaN(coords.lat) &&
+  !Number.isNaN(coords.lng);
+
 // ---------------- DARK MODE ----------------
 
 function useDarkMode() {
@@ -53,7 +62,7 @@ const ChangeCenter = memo(function ChangeCenter({
   const prevPosition = useRef(position);
 
   useEffect(() => {
-    if (!position) return;
+    if (!isValidCoords(position)) return;
 
     const prev = prevPosition.current;
 
@@ -93,10 +102,13 @@ const MapEvents = memo(function MapEvents({
       clearTimeout(timeoutRef.current);
 
       timeoutRef.current = setTimeout(() => {
-        onPositionChange({
+        const newCoords = {
           lat: center.lat,
           lng: center.lng,
-        });
+        };
+        if (isValidCoords(newCoords)) {
+          onPositionChange(newCoords);
+        }
       }, 80);
     },
   });
@@ -110,10 +122,15 @@ export default function MapView({
   position,
   onPositionChange,
   onMarkerClick,
-
-
 }) {
   const isDark = useDarkMode();
+
+  // ---------------- GUARD ----------------
+
+  if (!isValidCoords(position)) {
+    console.error("MapView: invalid position received:", position);
+    return null;
+  }
 
   // ---------------- RENDER ----------------
 
@@ -125,34 +142,27 @@ export default function MapView({
         zoom={16}
         minZoom={5}
         maxZoom={19}
-
-        
         zoomControl={false}
-
         scrollWheelZoom
         doubleClickZoom
         touchZoom
         dragging
-
         preferCanvas
-
         fadeAnimation
         zoomAnimation
         markerZoomAnimation
-
         className="
           h-full
           w-full
           z-0
-
           [&_.leaflet-control-container]:hidden
         "
       >
         <ChangeCenter position={position} />
-<TileLayer
-  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-  attribution="&copy; OpenStreetMap"
-/>
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution="&copy; OpenStreetMap"
+        />
         <MapEvents
           onPositionChange={onPositionChange}
         />
@@ -161,114 +171,92 @@ export default function MapView({
       {/* CENTER SHADOW */}
       <div
         className="
-        absolute
-        left-1/2
-        top-1/2
-
-        z-[998]
-
-        h-5
-        w-5
-
-        -translate-x-1/2
-
-        rounded-full
-
-        bg-black/20
-
-        blur-md
-      "
+          absolute
+          left-1/2
+          top-1/2
+          z-[998]
+          h-5
+          w-5
+          -translate-x-1/2
+          rounded-full
+          bg-black/20
+          blur-md
+        "
       />
 
+      {/* FIXED MARKER */}
+      <div
+        onClick={onMarkerClick}
+        className="
+          absolute
+          left-1/2
+          top-1/2
+          z-[999]
+          -translate-x-1/2
+          -translate-y-full
+          cursor-pointer
+        "
+      >
+        <div
+          className="
+            absolute
+            left-1/2
+            top-[52px]
+            -translate-x-1/2
+            w-8
+            h-3
+            rounded-full
+            bg-black/20
+            blur-md
+          "
+        />
 
-{/* FIXED MARKER */}
-<div
-  onClick={onMarkerClick}
-  className="
-    absolute
-    left-1/2
-    top-1/2
-    z-[999]
-
-    -translate-x-1/2
-    -translate-y-full
-
-    cursor-pointer
-  "
->
-  <div
-    className="
-      absolute
-      left-1/2
-      top-[52px]
-
-      -translate-x-1/2
-
-      w-8
-      h-3
-
-      rounded-full
-
-      bg-black/20
-
-      blur-md
-    "
-  />
-
-  <MapPin
-  onClick={(e) => {
-    e.stopPropagation();
-    onMarkerClick?.();
-  }}
-  size={44}
-  strokeWidth={1.2}
-  className="
-    text-sky-500
-    dark:text-[#8AA1C4]
-    cursor-pointer
-    drop-shadow-[0_10px_20px_rgba(14,165,233,.4)]
-    dark:drop-shadow-[0_10px_20px_rgba(138,161,196,.4)]
-  "
-  fill="white"
-/>
-</div>
+        <MapPin
+          onClick={(e) => {
+            e.stopPropagation();
+            onMarkerClick?.();
+          }}
+          size={44}
+          strokeWidth={1.2}
+          className="
+            text-sky-500
+            dark:text-[#8AA1C4]
+            cursor-pointer
+            drop-shadow-[0_10px_20px_rgba(14,165,233,.4)]
+            dark:drop-shadow-[0_10px_20px_rgba(138,161,196,.4)]
+          "
+          fill="white"
+        />
+      </div>
 
       {/* GRADIENT OVERLAY */}
       <div
         className="
-        pointer-events-none
-
-        absolute
-        inset-x-0
-        top-0
-
-        h-24
-
-        bg-gradient-to-b
-        from-black/20
-        to-transparent
-
-        z-[997]
-      "
+          pointer-events-none
+          absolute
+          inset-x-0
+          top-0
+          h-24
+          bg-gradient-to-b
+          from-black/20
+          to-transparent
+          z-[997]
+        "
       />
 
       {/* BOTTOM FADE */}
       <div
         className="
-        pointer-events-none
-
-        absolute
-        inset-x-0
-        bottom-0
-
-        h-32
-
-        bg-gradient-to-t
-        from-black/20
-        to-transparent
-
-        z-[997]
-      "
+          pointer-events-none
+          absolute
+          inset-x-0
+          bottom-0
+          h-32
+          bg-gradient-to-t
+          from-black/20
+          to-transparentsetResults
+          z-[997]
+        "
       />
     </div>
   );
