@@ -40,6 +40,16 @@ export default function Payment({
     setLoading(false);
   };
 
+  // ✅ FIX: Use frontend pricing as fallback if backend returns 0
+  // This ensures the rush fee is always displayed even if backend summary hasn't updated yet
+  const effectiveRushFee = rushFee || datetime?.pricing?.amount || 0;
+  
+  // ✅ FIX: Use effectiveRushFee for service info display
+  // If backend provided rushFee, use that. Otherwise use frontend's pricing calculation
+  const serviceInfo = datetime?.pricing;
+  const serviceAmount = effectiveRushFee;
+  const serviceType = serviceInfo?.type || (effectiveRushFee > 0 ? (effectiveRushFee > 50000 ? 'express' : 'standard') : 'economy');
+
   return (
     <motion.div
       dir="rtl"
@@ -82,10 +92,24 @@ export default function Payment({
             valueClass="text-gray-500 dark:text-gray-300"
           />
 
-          {rushFee > 0 && (
+          {/* ✅ FIX: Use effectiveRushFee (backend + frontend fallback) for service display */}
+          {serviceAmount > 0 && (
+            <Row
+              label={
+                serviceType === 'express' ? 'سرویس فوری (۲۴ ساعته)' : 
+                serviceType === 'standard' ? 'سرویس استاندارد (۴۸ ساعته)' : 
+                'سرویس اقتصادی'
+              }
+              value={`${serviceAmount.toLocaleString()} تومان`}
+              valueClass="text-amber-600 dark:text-amber-400"
+            />
+          )}
+
+          {/* ✅ FIX: Show rush fee separately using effectiveRushFee */}
+          {effectiveRushFee > 0 && (
             <Row
               label="هزینه سرویس فوری"
-              value={`${rushFee.toLocaleString()} تومان`}
+              value={`${effectiveRushFee.toLocaleString()} تومان`}
             />
           )}
 
@@ -133,6 +157,25 @@ export default function Payment({
               </span>
             </div>
           </div>
+
+          {/* ✅ FIX: Use effectiveRushFee and serviceType for service info display */}
+          {serviceInfo && (
+            <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
+              <span className="font-semibold text-gray-700 dark:text-gray-200">
+                نوع سرویس:
+              </span>
+              <span className={`text-sm font-medium ${
+                serviceType === 'express' ? 'text-red-600 dark:text-red-400' :
+                serviceType === 'standard' ? 'text-amber-600 dark:text-amber-400' :
+                'text-emerald-600 dark:text-emerald-400'
+              }`}>
+                {serviceType === 'express' ? 'فوری (۲۴ ساعته)' : 
+                 serviceType === 'standard' ? 'استاندارد (۴۸ ساعته)' : 
+                 'اقتصادی (رایگان)'}
+                {serviceInfo.hours && ` — ${Math.round(serviceInfo.hours)} ساعت`}
+              </span>
+            </div>
+          )}
 
           <div className="flex justify-between items-start">
             <div className="flex-1">

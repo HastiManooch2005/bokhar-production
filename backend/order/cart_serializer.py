@@ -46,6 +46,9 @@ class OrderCreateSerializer(serializers.Serializer):
     delivery_shift = serializers.CharField()
     description = serializers.CharField(required=False, allow_blank=True)
     coupon_code = serializers.CharField(required=False, allow_blank=True)
+    
+    # ✅ FIX: Accept rush_fee_amount from frontend (used for preview/summary)
+    rush_fee_amount = serializers.IntegerField(required=False, default=0)
 
     def validate(self, data):
         if not data.get('address_id') and not data.get('new_address'):
@@ -103,7 +106,12 @@ class OrderCreateSerializer(serializers.Serializer):
             delivery_date=validated_data['delivery_date'],
             delivery_shift=delivery_shift_mapped  # ✅ FIX: Use mapped value
         )
-        order_type = temp_order.order_range_type()
+        
+        # ✅ FIX: Handle ValueError from order_range_type gracefully
+        try:
+            order_type = temp_order.order_range_type()
+        except ValueError as e:
+            raise serializers.ValidationError({"datetime": str(e)})
 
         available_pickup = get_available_pickup_capacity(
             pickup_shift_mapped 
@@ -120,7 +128,13 @@ class OrderCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError("ظرفیت تحویل‌دهی تکمیل است")
 
         # ۴. محاسبه هزینه‌های ثابت
-        rush_fee = temp_order.calculate_rush_fee()
+        # ✅ FIX: Use frontend rush_fee_amount if provided and > 0, otherwise calculate
+        rush_fee_from_frontend = validated_data.get('rush_fee_amount', 0)
+        if rush_fee_from_frontend > 0:
+            rush_fee = rush_fee_from_frontend
+        else:
+            rush_fee = temp_order.calculate_rush_fee()
+            
         percent_fee = temp_order.calculate_percent_fee()
         pickup_cost = pickup_template.base_price + pickup_template.price_add
         delivery_base = delivery_template.base_price + delivery_template.price_add
@@ -185,14 +199,15 @@ class OrderCreateSerializer(serializers.Serializer):
         # ۷. محاسبه قیمت نهایی اولیه (بدون کوپن)
         # این قیمت باید برای min_order_price چک بشه
         percent_amount_before_coupon = (subtotal_after_items * percent_fee) // 100 if percent_fee else 0
-        delivery_cost_final = delivery_base + rush_fee
+        delivery_cost_final = delivery_base  # ✅ FIX: delivery_base بدون rush_fee
 
         final_price_before_coupon = max(
             0,
             subtotal_after_items +
             percent_amount_before_coupon +
             pickup_cost +
-            delivery_cost_final
+            delivery_cost_final +
+            rush_fee  # ✅ FIX: rush_fee جداگانه
         )
 
         # ۸. اعمال کوپن با بررسی min_order_price روی قیمت نهایی
@@ -227,7 +242,8 @@ class OrderCreateSerializer(serializers.Serializer):
             after_items_and_coupon +
             percent_amount +
             pickup_cost +
-            delivery_cost_final
+            delivery_cost_final +  # delivery_base بدون rush_fee
+            rush_fee  # ✅ FIX: rush_fee جداگانه
         )
 
         # ۱۰. برگردوندن نتیجه

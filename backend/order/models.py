@@ -4,7 +4,7 @@ from datetime import time, datetime
 from products.models import *
 from users.models import Address, User
 from datetime import timedelta
-from discounts.models import (         
+from discounts.models import (
     ProductDiscount,
     Coupon,
 )
@@ -272,8 +272,9 @@ class Order(models.Model):
         hours = self.total_hours_between_pickup_and_delivery
         if hours is None:
             raise ValueError("تاریخ تحویل گرفتن و تحویل دادن یکی نیست")
+        # ✅ FIX: raise ValueError instead of returning a string when dates are equal
         if self.pickup_date == self.delivery_date:
-            return "نباید تاریخ تحویل دادن و تحویل گرفتن یکی باشه"
+            raise ValueError("تاریخ تحویل دادن و تحویل گرفتن نباید یکی باشد")
         if hours <= 24:
             return "سفارش فوری 24 ساعته"
         if hours <= 48:
@@ -285,7 +286,10 @@ class Order(models.Model):
         if not settings:
             return 0
         
-        order_type = self.order_range_type()
+        try:
+            order_type = self.order_range_type()
+        except ValueError:
+            return 0
         
         if order_type == "سفارش فوری 24 ساعته":
             if settings.is_24h_enabled:  # چک کردن فعال بودن
@@ -304,7 +308,10 @@ class Order(models.Model):
         if not settings:
             return 0
             
-        order_type = self.order_range_type()
+        try:
+            order_type = self.order_range_type()
+        except ValueError:
+            return 0
         
         if order_type == "سفارش فوری 24 ساعته":
             if settings.is_24h_enabled:

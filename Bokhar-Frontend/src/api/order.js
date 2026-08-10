@@ -9,7 +9,36 @@ export default api;
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
-// تبدیل Jalali به Gregorian و TIME_SLOT_MAP و REVERSE_TIME_MAP مثل قبل ...
+// تبدیل Jalali به Gregorian
+export const toGregorian = (jalaliDate) => {
+  if (!jalaliDate) return null;
+  try {
+    const { DateObject } = require("react-date-object");
+    const persian = require("react-date-object/calendars/persian");
+    const persian_fa = require("react-date-object/locales/persian_fa");
+    const gregorian = require("react-date-object/calendars/gregorian");
+    
+    const date = new DateObject({
+      date: jalaliDate,
+      calendar: persian,
+      locale: persian_fa,
+    });
+    return date.convert(gregorian).format("YYYY-MM-DD");
+  } catch {
+    // Fallback: simple conversion if react-date-object not available
+    return jalaliDate;
+  }
+};
+
+const TIME_SLOT_MAP = {
+  "۸ صبح تا ۱۳": "morning",
+  "۱۶ تا ۲۰": "evening",
+};
+
+const REVERSE_TIME_MAP = {
+  "morning": "۸ صبح تا ۱۳",
+  "evening": "۱۶ تا ۲۰",
+};
 
 function getCookie(name) {
   let cookieValue = null;
@@ -73,7 +102,7 @@ export const createOrder = async ({
     const csrfToken = getCookie('csrftoken');
     const response = await fetch(`${API_URL}/orders/create/`, {
       method: 'POST',
-      credentials: 'include', // ارسال کوکی‌ها
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'X-CSRFToken': csrfToken || ''
@@ -105,7 +134,7 @@ export const getTimeCapacity = async (date, shift) => {
   try {
     const response = await fetch(`${API_URL}/orders/check-capacity/?${params.toString()}`, {
       method: 'GET',
-      credentials: 'include', // ارسال کوکی‌ها
+      credentials: 'include',
     });
 
     if (!response.ok) {

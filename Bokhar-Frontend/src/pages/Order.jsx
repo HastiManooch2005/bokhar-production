@@ -8,7 +8,7 @@ import DateTimeRangePicker from "../components/orders/time/DateTimeRangePicker";
 import MapSelector from "../components/orders/map/MapSelector.jsx";
 import Payment from "../components/orders/Payment";
 import StepProgress from "../components/orders/StepProgress";
-import { getOrderSummary } from "../api/order";
+import { getOrderSummary, toGregorian } from "../api/order";  // ✅ FIX: Import toGregorian
 import { useCart } from "../context/CartContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
@@ -129,10 +129,8 @@ export default function Order() {
     dispatch({ type: "SET_ORDER_DATA", payload: { datetime } });
   }, []);
 
-  // ✅ FIX: Correct payload for Address model
   const saveAddressToBackend = useCallback(async (locationData) => {
     try {
-      // Parse address: "قزوین، بلوار شهید سلیمانی، حکمت سی و شش"
       const addressParts = locationData.address?.split("،") || [];
       const city = addressParts[0]?.trim() || "";
       const addressDetail = addressParts.slice(1).join("،").trim() || locationData.address;
@@ -188,12 +186,14 @@ export default function Order() {
   const applyDiscount = useCallback(async () => {
     try {
       const data = await getOrderSummary({
-        pickup_date: orderData.datetime?.pickup?.date,
+        pickup_date: toGregorian(orderData.datetime?.pickup?.date),  // ✅ FIX
         pickup_shift: orderData.datetime?.pickup?.time,
-        delivery_date: orderData.datetime?.delivery?.date,
+        delivery_date: toGregorian(orderData.datetime?.delivery?.date),  // ✅ FIX
         delivery_shift: orderData.datetime?.delivery?.time,
         coupon_code: orderData.discountCode || "",
         address_id: orderData.location?.id,
+        // ✅ FIX: Send rush_fee_amount from frontend pricing calculation
+        rush_fee_amount: orderData.datetime?.pricing?.amount || 0,
         cart_items: orderData.cartItems?.map(item => ({
           service_item_id: item.productId || item.id,
           quantity: item.qty || item.quantity || 1,
@@ -237,12 +237,15 @@ export default function Order() {
     console.log("CART ITEMS COUNT:", orderData.cartItems?.length || 0);
 
     const payload = {
-      pickup_date: orderData.datetime?.pickup?.date,
+      pickup_date: toGregorian(orderData.datetime?.pickup?.date),  // ✅ FIX
       pickup_shift: orderData.datetime?.pickup?.time,
-      delivery_date: orderData.datetime?.delivery?.date,
+      delivery_date: toGregorian(orderData.datetime?.delivery?.date),  // ✅ FIX
       delivery_shift: orderData.datetime?.delivery?.time,
       coupon_code: orderData.discountCode || "",
       address_id: orderData.location?.id,
+      // ✅ FIX: Send rush_fee_amount from frontend pricing calculation
+      // This ensures the backend uses the same rush fee that the user saw in the time picker
+      rush_fee_amount: orderData.datetime?.pricing?.amount || 0,
       cart_items: orderData.cartItems?.map(item => ({
         service_item_id: item.productId || item.id,
         quantity: item.qty || item.quantity || 1,
