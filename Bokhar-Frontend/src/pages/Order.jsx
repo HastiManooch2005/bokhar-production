@@ -1,4 +1,4 @@
-import { useReducer, useEffect, useCallback, useMemo } from "react";
+import { useReducer, useEffect, useCallback, useMemo, useState } from "react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,14 +8,15 @@ import DateTimeRangePicker from "../components/orders/time/DateTimeRangePicker";
 import MapSelector from "../components/orders/map/MapSelector.jsx";
 import Payment from "../components/orders/Payment";
 import StepProgress from "../components/orders/StepProgress";
+import { getOrderSummary } from "../api/order";
+import { useCart } from "../context/CartContext";
 
-// -------------------- constants (خارج از کامپوننت برای جلوگیری از ساخت مجدد) --------------------
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
-const DISCOUNT_CODES = {
-  OFF10: 0.1,
-  OFF20: 0.2,
-};
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+  withCredentials: true,
+});
 
 const STEP_MAP = { 1: "factor", 2: "location", 3: "time", 4: "payment" };
 const STEP_LABELS = ["فاکتور", "مکان", "زمان", "پرداخت"];
@@ -32,11 +33,8 @@ const initialState = {
         discountCode: "",
         discountAmount: 0,
       },
-  factorTotal: 0,
-  originalFactorTotal: 0,
 };
 
-// -------------------- reducer --------------------
 function reducer(state, action) {
   switch (action.type) {
     case "SET_STEP":
@@ -45,10 +43,6 @@ function reducer(state, action) {
       return { ...state, maxStep: action.payload };
     case "SET_ORDER_DATA":
       return { ...state, orderData: { ...state.orderData, ...action.payload } };
-    case "SET_FACTOR_TOTAL":
-      return { ...state, factorTotal: action.payload };
-    case "SET_ORIGINAL_FACTOR_TOTAL":
-      return { ...state, originalFactorTotal: action.payload };
     case "RESET_ORDER":
       return { ...initialState, step: 1, maxStep: 1 };
     default:
@@ -56,14 +50,19 @@ function reducer(state, action) {
   }
 }
 
-// -------------------- main component --------------------
 export default function Order() {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { step, maxStep, orderData, factorTotal, originalFactorTotal } = state;
+  const { step, maxStep, orderData } = state;
+  const [summary, setSummary] = useState(null);
+  const { cartItems } = useCart();
+  const location = orderData?.location;
 
   const stepType = useCallback((s) => STEP_MAP[s] || null, []);
 
-  // -------------------- effects --------------------
+  useEffect(() => {
+    dispatch({ type: "SET_ORDER_DATA", payload: { cartItems } });
+  }, [cartItems]);
+
   useEffect(() => {
     localStorage.setItem("orderData", JSON.stringify(orderData));
   }, [orderData]);
@@ -77,29 +76,9 @@ export default function Order() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [step]);
 
-  // -------------------- memoized values (مهم برای جلوگیری از حلقه بی‌نهایت) --------------------
-  
   const dateTimeValue = useMemo(() => orderData.datetime, [orderData.datetime]);
-  
   const locationValue = useMemo(() => orderData.location, [orderData.location]);
 
-  const servicePrice = useMemo(() => {
-    return orderData.datetime?.pricing?.amount || 0;
-  }, [orderData.datetime?.pricing?.amount]);
-
-  const serviceType = useMemo(() => {
-    return orderData.datetime?.pricing?.type || null;
-  }, [orderData.datetime?.pricing?.type]);
-
-  const serviceHours = useMemo(() => {
-    return orderData.datetime?.pricing?.hours || 0;
-  }, [orderData.datetime?.pricing?.hours]);
-
-  const finalTotal = useMemo(() => {
-    return factorTotal + servicePrice - (orderData.discountAmount || 0);
-  }, [factorTotal, servicePrice, orderData.discountAmount]);
-
-  // -------------------- navigation handlers (همه با useCallback) --------------------
   const goToStep = useCallback((targetStep) => {
     if (targetStep <= maxStep && targetStep >= 1) {
       dispatch({ type: "SET_STEP", payload: targetStep });
@@ -146,24 +125,54 @@ export default function Order() {
       dispatch({ type: "SET_STEP", payload: clickedStep });
   }, [maxStep]);
 
-  // -------------------- event handlers (مموریزه شده) --------------------
-  
   const handleDateTimeChange = useCallback((datetime) => {
     dispatch({ type: "SET_ORDER_DATA", payload: { datetime } });
   }, []);
 
-  const handleLocationSelect = useCallback((location) => {
-    dispatch({ type: "SET_ORDER_DATA", payload: { location } });
-  }, []);
+  // ✅ FIX: Correct payload for Address model
+  const saveAddressToBackend = useCallback(async (locationData) => {
+    try {
+      // Parse address: "قزوین، بلوار شهید سلیمانی، حکمت سی و شش"
+      const addressParts = locationData.address?.split("،") || [];
+      const city = addressParts[0]?.trim() || "";
+      const addressDetail = addressParts.slice(1).join("،").trim() || locationData.address;
 
-  const handleFactorTotalChange = useCallback((data) => {
-    if (data && typeof data === 'object') {
-      dispatch({ type: "SET_FACTOR_TOTAL", payload: data.total });
-      dispatch({ type: "SET_ORIGINAL_FACTOR_TOTAL", payload: data.originalTotal });
-    } else {
-      dispatch({ type: "SET_FACTOR_TOTAL", payload: data });
+      const payload = {
+        title: locationData.title || "آدرس",
+        province: city,
+        city: city,
+        address_detail: addressDetail,
+        apartment_name: locationData.plaque || "",
+        unit: Number(locationData.unit) || 1,
+      };
+
+      console.log("ADDRESS PAYLOAD:", payload);
+
+      const response = await api.post("/order/address/create/", payload);
+      
+      return {
+        ...locationData,
+        id: response.data.id,
+      };
+    } catch (err) {
+      console.error("Save address error:", err.response?.data || err.message);
+      toast.error(
+        err.response?.data?.detail || 
+        JSON.stringify(err.response?.data) || 
+        "خطا در ذخیره آدرس"
+      );
+      return null;
     }
   }, []);
+
+  const handleLocationSelect = useCallback(async (location) => {
+    console.log("SELECTED LOCATION", location);
+
+    const savedLocation = await saveAddressToBackend(location);
+    if (savedLocation) {
+      dispatch({ type: "SET_ORDER_DATA", payload: { location: savedLocation } });
+    }
+  }, [saveAddressToBackend]);
 
   const goToTimeStep = useCallback(() => {
     const nextStep = 2;
@@ -176,19 +185,31 @@ export default function Order() {
     dispatch({ type: "SET_ORDER_DATA", payload: { discountCode: code } });
   }, []);
 
-  const applyDiscount = useCallback(() => {
-    const rate = DISCOUNT_CODES[orderData.discountCode?.toUpperCase()];
-    if (rate) {
-      dispatch({
-        type: "SET_ORDER_DATA",
-        payload: { discountAmount: rate * factorTotal },
+  const applyDiscount = useCallback(async () => {
+    try {
+      const data = await getOrderSummary({
+        pickup_date: orderData.datetime?.pickup?.date,
+        pickup_shift: orderData.datetime?.pickup?.time,
+        delivery_date: orderData.datetime?.delivery?.date,
+        delivery_shift: orderData.datetime?.delivery?.time,
+        coupon_code: orderData.discountCode || "",
+        address_id: orderData.location?.id,
+        cart_items: orderData.cartItems?.map(item => ({
+          service_item_id: item.productId || item.id,
+          quantity: item.qty || item.quantity || 1,
+          unit_price: item.unitPrice || item.price || 0,
+        })) || [],
       });
+
+      setSummary(data);
       toast.success("تخفیف اعمال شد 🎉");
       return true;
+    } catch (err) {
+      console.error(err);
+      toast.error("کد تخفیف نامعتبر است ❌");
+      return false;
     }
-    toast.error("کد تخفیف نامعتبر است ❌");
-    return false;
-  }, [orderData.discountCode, factorTotal]);
+  }, [orderData]);
 
   const handlePayment = useCallback(async () => {
     try {
@@ -209,11 +230,57 @@ export default function Order() {
     }
   }, [orderData]);
 
-  // -------------------- render --------------------
+  const loadSummary = useCallback(async () => {
+    console.log("========== LOAD SUMMARY ==========");
+    console.log("ORDER DATA:", orderData);
+    console.log("LOCATION DATA:", orderData.location);
+    console.log("CART ITEMS COUNT:", orderData.cartItems?.length || 0);
+
+    const payload = {
+      pickup_date: orderData.datetime?.pickup?.date,
+      pickup_shift: orderData.datetime?.pickup?.time,
+      delivery_date: orderData.datetime?.delivery?.date,
+      delivery_shift: orderData.datetime?.delivery?.time,
+      coupon_code: orderData.discountCode || "",
+      address_id: orderData.location?.id,
+      cart_items: orderData.cartItems?.map(item => ({
+        service_item_id: item.productId || item.id,
+        quantity: item.qty || item.quantity || 1,
+        unit_price: item.unitPrice || item.price || 0,
+      })) || [],
+    };
+
+    console.log("SUMMARY PAYLOAD:", payload);
+
+    try {
+      const data = await getOrderSummary(payload);
+      console.log("SUMMARY RESPONSE:", data);
+      setSummary(data);
+    } catch (err) {
+      console.log("========== SUMMARY ERROR ==========");
+      console.log("STATUS:", err.response?.status);
+      console.log("DATA:", err.response?.data);
+      console.log("NON FIELD:", err.response?.data?.non_field_errors);
+
+      if (err.response?.data?.non_field_errors) {
+        toast.error(err.response.data.non_field_errors[0]);
+      }
+    }
+  }, [orderData]);
+
+  useEffect(() => {
+    if (!location?.address) return;
+    if (!location?.id) {
+      console.warn("Location selected but no address_id yet.");
+      return;
+    }
+    loadSummary();
+  }, [location, orderData.datetime, orderData.discountCode]);
+
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6">
       <Toaster position="top-center" />
-      
+
       <StepProgress
         steps={STEP_LABELS.map((label, idx) => ({ id: idx + 1, label }))}
         step={step}
@@ -231,10 +298,7 @@ export default function Order() {
             transition={{ duration: 0.25 }}
           >
             {stepType(step) === "factor" && (
-              <Factor
-                onTotalChange={handleFactorTotalChange}
-                goToTimeStep={goToTimeStep}
-              />
+              <Factor goToTimeStep={goToTimeStep} />
             )}
 
             {stepType(step) === "location" && (
@@ -260,13 +324,11 @@ export default function Order() {
 
             {stepType(step) === "payment" && (
               <Payment
-                subtotal={factorTotal}
-                originalSubtotal={originalFactorTotal}
-                total={finalTotal}
-                servicePrice={servicePrice}
-                serviceType={serviceType}
-                serviceHours={serviceHours}
-                discountAmount={orderData.discountAmount}
+                subtotal={summary?.items_price || 0}
+                pickupCost={(summary?.pickup_cost || 0) + (summary?.delivery_cost || 0)}
+                rushFee={summary?.rush_fee || 0}
+                discountAmount={summary?.discount || 0}
+                total={summary?.final_price || 0}
                 discountCode={orderData.discountCode}
                 datetime={dateTimeValue}
                 location={locationValue}

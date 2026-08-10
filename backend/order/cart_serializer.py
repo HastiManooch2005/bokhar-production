@@ -1,9 +1,5 @@
 from .serializers import *
 
-
-# serializers.py
-
-
 #سفارشا وقتی که داخل سبد خرید هست نشون بده
 class OrderCartItemSerializer(serializers.Serializer):
     id_unique = serializers.CharField()
@@ -37,6 +33,7 @@ from discounts.engine import *
 from products.models import *
 from .utils import *
 from  .session import *
+from .models import FRONTEND_TIME_MAP  # ✅ FIX: Import mapping
 
 
 class OrderCreateSerializer(serializers.Serializer):
@@ -79,33 +76,42 @@ class OrderCreateSerializer(serializers.Serializer):
             addr_serializer.is_valid(raise_exception=True)
             address = addr_serializer.save()
 
+        # ✅ FIX: Map frontend time strings to backend values
+        pickup_shift_mapped = FRONTEND_TIME_MAP.get(
+            validated_data['pickup_shift'],
+            validated_data['pickup_shift']
+        )
+        delivery_shift_mapped = FRONTEND_TIME_MAP.get(
+            validated_data['delivery_shift'],
+            validated_data['delivery_shift']
+        )
+
         # ۲. قفل کردن قالب‌های ظرفیت
         pickup_template = PickUpTemplate.objects.select_for_update().get(
-            time_shift=validated_data['pickup_shift'],
+            time_shift=pickup_shift_mapped,  # ✅ FIX: Use mapped value
             is_active=True
         )
         delivery_template = DeliveryTemplate.objects.select_for_update().get(
-            time_shift=validated_data['delivery_shift'],
+            time_shift=delivery_shift_mapped,  # ✅ FIX: Use mapped value
             is_active=True
         )
 
         # ۳. بررسی نوع سفارش و ظرفیت
         temp_order = Order(
             pickup_date=validated_data['pickup_date'],
-            pickup_shift=validated_data['pickup_shift'],
+            pickup_shift=pickup_shift_mapped,  # ✅ FIX: Use mapped value
             delivery_date=validated_data['delivery_date'],
-            delivery_shift=validated_data['delivery_shift']
+            delivery_shift=delivery_shift_mapped  # ✅ FIX: Use mapped value
         )
         order_type = temp_order.order_range_type()
 
         available_pickup = get_available_pickup_capacity(
-            validated_data['pickup_date'],
-            validated_data['pickup_shift']
+            pickup_shift_mapped 
         )
         available_delivery = get_available_delivery_capacity(
             order_type,
             validated_data['delivery_date'],
-            validated_data['delivery_shift']
+            delivery_shift_mapped  # ✅ FIX: Use mapped value
         )
 
         if available_pickup <= 0:
@@ -127,7 +133,17 @@ class OrderCreateSerializer(serializers.Serializer):
 
         for item_data in cart_items:
             product = item_data.get('product') or Product.objects.get(id=item_data['product_id'])
-            pricing_tab = item_data.get('pricing_tab') or ProductPricingTab.objects.get(id=item_data['pricing_tab_id'])
+            
+            # ✅ FIX: Safe get pricing_tab_id
+            pricing_tab = item_data.get('pricing_tab')
+            if not pricing_tab:
+                pricing_tab_id = item_data.get('pricing_tab_id')
+                if pricing_tab_id:
+                    pricing_tab = ProductPricingTab.objects.get(id=pricing_tab_id)
+                else:
+                    pricing_tab = product.pricing_tabs.first()
+                    if not pricing_tab:
+                        raise serializers.ValidationError(f"محصول {product.title} تب قیمت ندارد")
 
             material_name = item_data['material']
             size = None
@@ -232,9 +248,9 @@ class OrderCreateSerializer(serializers.Serializer):
             "final_price": final_price,
             "description": validated_data.get("description", ""),
             "pickup_date": validated_data["pickup_date"],
-            "pickup_shift": validated_data["pickup_shift"],
+            "pickup_shift": pickup_shift_mapped,  # ✅ FIX: Return mapped value
             "delivery_date": validated_data["delivery_date"],
-            "delivery_shift": validated_data["delivery_shift"],
+            "delivery_shift": delivery_shift_mapped,  # ✅ FIX: Return mapped value
         }
 
 class AddToCartSerializer(serializers.Serializer):

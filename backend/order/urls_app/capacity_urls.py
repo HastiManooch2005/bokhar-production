@@ -1,7 +1,7 @@
 from django.urls import path
 from ..capacity_views import *
 from rest_framework.permissions import IsAdminUser
-
+from ..summary_views import OrderSummaryAPIView
 
 urlpatterns = [
     # Rush Fee Settings (Singleton - فقط یک رکورد)
@@ -42,4 +42,10 @@ urlpatterns = [
     path('delivery-times/<int:pk>/',
          DeliveryTimeDetailView.as_view(),
          name='delivery-time-detail'),
+
+     path(
+          "order-summary/",
+          OrderSummaryAPIView.as_view(),
+          name="order-summary"
+),
 ]

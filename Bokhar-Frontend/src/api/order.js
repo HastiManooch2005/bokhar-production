@@ -1,4 +1,13 @@
-const API_BASE = process.env.REACT_APP_API_URL;
+import axios from "axios";
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+  withCredentials: true,
+});
+
+export default api;
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 // تبدیل Jalali به Gregorian و TIME_SLOT_MAP و REVERSE_TIME_MAP مثل قبل ...
 
@@ -16,6 +25,15 @@ function getCookie(name) {
   }
   return cookieValue;
 }
+
+export const getOrderSummary = async (payload) => {
+  const response = await api.post(
+    "/order/order-summary/",
+    payload
+  );
+
+  return response.data;
+};
 
 export const createOrder = async ({
   cartItems,
@@ -53,7 +71,7 @@ export const createOrder = async ({
 
   try {
     const csrfToken = getCookie('csrftoken');
-    const response = await fetch(`${API_BASE}/orders/create/`, {
+    const response = await fetch(`${API_URL}/orders/create/`, {
       method: 'POST',
       credentials: 'include', // ارسال کوکی‌ها
       headers: {
@@ -85,7 +103,7 @@ export const getTimeCapacity = async (date, shift) => {
   });
 
   try {
-    const response = await fetch(`${API_BASE}/orders/check-capacity/?${params.toString()}`, {
+    const response = await fetch(`${API_URL}/orders/check-capacity/?${params.toString()}`, {
       method: 'GET',
       credentials: 'include', // ارسال کوکی‌ها
     });

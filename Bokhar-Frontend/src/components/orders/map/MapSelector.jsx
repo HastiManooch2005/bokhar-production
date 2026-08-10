@@ -255,7 +255,14 @@ export default function MapSelector({
       setUnit(unit);
       setTitle(title);
       setDescription(description);
-
+console.log("MAP SUBMIT:", {
+  coords,
+  address,
+  plaque,
+  unit,
+  title,
+  description,
+});
       onLocationSelect({
         coords,
         address,

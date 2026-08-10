@@ -19,7 +19,12 @@ class CartAPIView(APIView):
 
     def get(self, request):
         cart = OrderSession(request)
-        return Response({"cart": list(cart)})
+        items = list(cart)
+
+        return Response({
+            "items": items,
+            "total_price": cart.total_price(),
+        })
 
 
 class DeleteCartAPIView(APIView):

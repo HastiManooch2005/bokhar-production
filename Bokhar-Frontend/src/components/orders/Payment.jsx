@@ -11,11 +11,9 @@ import {
 
 export default function Payment({
   subtotal,
-  originalSubtotal,
+  pickupCost,
+  rushFee,
   total,
-  servicePrice,
-  serviceType,
-  serviceHours,
   discountAmount,
   discountCode,
   setDiscountCode,
@@ -29,14 +27,6 @@ export default function Payment({
   const [loading, setLoading] = useState(false);
   const [discountStatus, setDiscountStatus] = useState(null);
 
-  const effectiveOriginalSubtotal = originalSubtotal || subtotal;
-  const itemDiscountSavings = effectiveOriginalSubtotal - subtotal;
-  
-  const totalSavings = itemDiscountSavings + (discountAmount || 0);
-  const hasAnyDiscount = totalSavings > 0;
-  
-  const originalGrandTotal = effectiveOriginalSubtotal + (servicePrice || 0);
-
   const onApplyDiscount = async () => {
     const ok = await applyDiscount();
     setDiscountStatus(ok ? "success" : "error");
@@ -48,20 +38,6 @@ export default function Payment({
     setLoading(true);
     await handlePayment();
     setLoading(false);
-  };
-
-  const getServiceLabel = () => {
-    if (serviceType === 'express') return 'سرویس فوری (تا ۲۴ ساعت)';
-    if (serviceType === 'standard') return 'سرویس استاندارد (تا ۴۸ ساعت)';
-    if (serviceType === 'economy') return 'سرویس اقتصادی (۷۲+ ساعت)';
-    return 'هزینه سرویس';
-  };
-
-  const getServiceColor = () => {
-    if (serviceType === 'express') return 'text-red-600 dark:text-red-400';
-    if (serviceType === 'standard') return 'text-amber-600 dark:text-amber-400';
-    if (serviceType === 'economy') return 'text-emerald-600 dark:text-emerald-400';
-    return 'text-gray-600 dark:text-gray-400';
   };
 
   return (
@@ -98,39 +74,24 @@ export default function Payment({
 
         {/* Summary */}
         <div className="space-y-3 text-sm">
-          {itemDiscountSavings > 0 ? (
-            <div className="flex justify-between items-start">
-              <span className="text-gray-600 dark:text-gray-300 pt-1">جمع خرید</span>
-              <div className="flex flex-col items-end">
-                <span className="text-xs line-through text-gray-400 dark:text-gray-500">
-                  {effectiveOriginalSubtotal.toLocaleString()} تومان
-                </span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                  {subtotal.toLocaleString()} تومان
-                </span>
-              </div>
-            </div>
-          ) : (
-            <Row label="جمع خرید" value={`${subtotal.toLocaleString()} تومان`} />
-          )}
+          <Row label="قیمت لباس‌ها" value={`${subtotal.toLocaleString()} تومان`} />
 
           <Row
             label="هزینه پیک"
-            value="رایگان"
+            value={`${pickupCost.toLocaleString()} تومان`}
             valueClass="text-gray-500 dark:text-gray-300"
           />
 
-          {servicePrice !== undefined && (
+          {rushFee > 0 && (
             <Row
-              label={getServiceLabel()}
-              value={servicePrice === 0 ? "رایگان" : `${servicePrice.toLocaleString()} تومان`}
-              valueClass={getServiceColor()}
+              label="هزینه سرویس فوری"
+              value={`${rushFee.toLocaleString()} تومان`}
             />
           )}
 
           {discountAmount > 0 && (
             <Row
-              label="تخفیف (کد)"
+              label="تخفیف"
               value={`-${discountAmount.toLocaleString()} تومان`}
               valueClass="text-emerald-600 dark:text-emerald-400"
             />
@@ -139,28 +100,13 @@ export default function Payment({
           <div className="h-px bg-sky-200 dark:bg-gray-700 my-2" />
 
           <div className="flex justify-between items-start pt-2">
-            <div className="flex flex-col gap-1">
-              <span className="text-gray-700 dark:text-gray-200 font-bold text-lg">
-                مبلغ نهایی
-              </span>
-              {hasAnyDiscount && (
-                <span className="text-xs md:text-sm text-emerald-600 dark:text-emerald-400 font-medium">
-                  سود شما از این خرید: {totalSavings.toLocaleString()} تومان
-                </span>
-              )}
-            </div>
-            
-            <div className="flex flex-col items-end gap-1">
-              {hasAnyDiscount && (
-                <span className="text-base md:text-lg line-through text-gray-400 dark:text-gray-500">
-                  {originalGrandTotal.toLocaleString()} تومان
-                </span>
-              )}
-              <span className="text-2xl font-bold text-sky-700 dark:text-gray-200">
-                {total.toLocaleString()} 
-                <span className="text-sm font-normal text-sky-600 dark:text-gray-400 mr-1">تومان</span>
-              </span>
-            </div>
+            <span className="text-gray-700 dark:text-gray-200 font-bold text-lg">
+              مبلغ نهایی
+            </span>
+            <span className="text-2xl font-bold text-sky-700 dark:text-gray-200">
+              {total.toLocaleString()}
+              <span className="text-sm font-normal text-sky-600 dark:text-gray-400 mr-1">تومان</span>
+            </span>
           </div>
         </div>
 
