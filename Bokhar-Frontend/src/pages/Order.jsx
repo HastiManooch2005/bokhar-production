@@ -352,6 +352,7 @@ export default function Order() {
       delivery_shift: deliveryShiftMapped,
       coupon_code: orderData.discountCode || "",
       address_id: orderData.location?.id,
+      amount: (summary?.final_price || 0) * 10,
       cart_items: orderData.cartItems?.map(item => ({
         service_item_id: item.productId || item.id || item.product_id,
         quantity: item.qty || item.quantity || 1,

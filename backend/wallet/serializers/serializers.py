@@ -9,6 +9,8 @@ from ..models.models import RefundRequest, WalletTransaction, WithdrawalRequest
 # =========================================================
 
 class PaymentCreateSerializer(serializers.Serializer):
+    amount = serializers.IntegerField(required=False, min_value=1000)
+
     """
     فقط داده‌های سفارش لازمه — terminal حذف شده.
     داده‌های سفارش (آدرس، آیتم‌ها و ...) از OrderCreateSerializer پردازش میشه.

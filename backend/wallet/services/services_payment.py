@@ -176,7 +176,8 @@ def _to_gateway_amount(amount: Decimal) -> int:
     then cast to int. This ensures consistent rounding behavior
     across all gateway interactions.
     """
-    return int(amount.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    return int((amount * 10).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
 
 
 class PaymentService:
