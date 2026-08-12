@@ -8,8 +8,9 @@ import DateTimeRangePicker from "../components/orders/time/DateTimeRangePicker";
 import MapSelector from "../components/orders/map/MapSelector.jsx";
 import Payment from "../components/orders/Payment";
 import StepProgress from "../components/orders/StepProgress";
-import { getOrderSummary, toGregorian } from "../api/order";  // ✅ FIX: Import toGregorian
+import { getOrderSummary, toGregorian, TIME_SLOT_MAP } from "../api/order";  // ✅ TIME_SLOT_MAP اضافه شد
 import { useCart } from "../context/CartContext";
+import { addToCart, clearCart } from "../api/cartService";  // ✅ برای sync
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
@@ -54,7 +55,7 @@ export default function Order() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { step, maxStep, orderData } = state;
   const [summary, setSummary] = useState(null);
-  const { cartItems } = useCart();
+  const { cartItems, isGuest } = useCart();  // ✅ isGuest اضافه شد
   const location = orderData?.location;
 
   const stepType = useCallback((s) => STEP_MAP[s] || null, []);
@@ -129,6 +130,7 @@ export default function Order() {
     dispatch({ type: "SET_ORDER_DATA", payload: { datetime } });
   }, []);
 
+  // ✅ اصلاح: saveAddressToBackend — فیلدها مطابق AddressSerializer
   const saveAddressToBackend = useCallback(async (locationData) => {
     try {
       const addressParts = locationData.address?.split("،") || [];
@@ -137,11 +139,11 @@ export default function Order() {
 
       const payload = {
         title: locationData.title || "آدرس",
-        province: city,
         city: city,
-        address_detail: addressDetail,
+        address: addressDetail,  // ✅ تغییر: address_detail → address
         apartment_name: locationData.plaque || "",
         unit: Number(locationData.unit) || 1,
+        // ❌ حذف: province (در AddressSerializer وجود نداره)
       };
 
       console.log("ADDRESS PAYLOAD:", payload);
@@ -185,19 +187,21 @@ export default function Order() {
 
   const applyDiscount = useCallback(async () => {
     try {
+      const pickupShiftMapped = TIME_SLOT_MAP[orderData.datetime?.pickup?.time];
+      const deliveryShiftMapped = TIME_SLOT_MAP[orderData.datetime?.delivery?.time];
+
       const data = await getOrderSummary({
-        pickup_date: toGregorian(orderData.datetime?.pickup?.date),  // ✅ FIX
-        pickup_shift: orderData.datetime?.pickup?.time,
-        delivery_date: toGregorian(orderData.datetime?.delivery?.date),  // ✅ FIX
-        delivery_shift: orderData.datetime?.delivery?.time,
+        pickup_date: toGregorian(orderData.datetime?.pickup?.date),
+        pickup_shift: pickupShiftMapped,  // ✅ تغییر: mapped value
+        delivery_date: toGregorian(orderData.datetime?.delivery?.date),
+        delivery_shift: deliveryShiftMapped,  // ✅ تغییر: mapped value
         coupon_code: orderData.discountCode || "",
         address_id: orderData.location?.id,
-        // ✅ FIX: Send rush_fee_amount from frontend pricing calculation
-        rush_fee_amount: orderData.datetime?.pricing?.amount || 0,
-        cart_items: orderData.cartItems?.map(item => ({
-          service_item_id: item.productId || item.id,
+        cart_items: orderData.cartItems?.map(item => ({  // ✅ اضافه: cart_items
+          service_item_id: item.productId || item.id || item.product_id,
           quantity: item.qty || item.quantity || 1,
-          unit_price: item.unitPrice || item.price || 0,
+          material: item.material || "نخ",
+          size: item.size || null,
         })) || [],
       });
 
@@ -211,45 +215,148 @@ export default function Order() {
     }
   }, [orderData]);
 
+  // ✅ اصلاح کامل: handlePayment
   const handlePayment = useCallback(async () => {
     try {
+      // ۱. Validate Address
+      let addressId = orderData.location?.id;
+      
+      if (!addressId && orderData.location) {
+        const saved = await saveAddressToBackend(orderData.location);
+        if (saved) {
+          addressId = saved.id;
+          dispatch({ type: "SET_ORDER_DATA", payload: { location: saved } });
+        }
+      }
+
+      if (!addressId) {
+        toast.error("لطفاً ابتدا آدرس را انتخاب و ذخیره کنید");
+        return;
+      }
+
+      // ۲. Check Auth
+      if (isGuest) {
+        toast.error("لطفاً ابتدا وارد حساب کاربری شوید");
+        return;
+      }
+
+      // ۳. Sync Cart with Backend Session (backward-compatible)
+      try {
+        await clearCart();  // پاک کردن session قدیمی
+        for (const item of orderData.cartItems) {
+          await addToCart(
+            item.productId || item.product_id,
+            item.qty || item.quantity || 1,
+            {
+              service: item.service || "-",
+              material: item.material || "-",
+              size: item.size,
+              price: item.unitPrice || item.price || 0,
+              product_name: item.name || item.product_name || "",
+            }
+          );
+        }
+      } catch (syncErr) {
+        console.error("Cart sync warning:", syncErr);
+        // ادامه می‌دیم — Backend از payload می‌خونه
+      }
+
+      // ۴. Map Time Slots
+      const pickupShiftMapped = TIME_SLOT_MAP[orderData.datetime?.pickup?.time];
+      const deliveryShiftMapped = TIME_SLOT_MAP[orderData.datetime?.delivery?.time];
+
+      if (!pickupShiftMapped || !deliveryShiftMapped) {
+        toast.error("شیفت زمانی نامعتبر است");
+        return;
+      }
+
+      // ۵. Build Secure Payload
+      const payload = {
+        address_id: addressId,
+        
+        pickup_date: toGregorian(orderData.datetime?.pickup?.date),
+        pickup_shift: pickupShiftMapped,
+        
+        delivery_date: toGregorian(orderData.datetime?.delivery?.date),
+        delivery_shift: deliveryShiftMapped,
+        
+        coupon_code: orderData.discountCode || "",
+        description: "",
+        
+        // ✅ cart_items بدون قیمت — فقط شناسه‌ها
+        cart_items: orderData.cartItems?.map(item => ({
+          service_item_id: item.productId || item.id || item.product_id,
+          quantity: item.qty || item.quantity || 1,
+          pricing_tab_id: item.pricing_tab_id || null,
+          material: item.material || "نخ",
+          size: item.size || null,
+        })) || [],
+      };
+
+      console.log("PAYMENT PAYLOAD:", JSON.stringify(payload, null, 2));
+
+      // ۶. Send Payment Request
       const response = await axios.post(
         `${API_URL}/payments/initiate/`,
-        orderData,
+        payload,
         { withCredentials: true }
       );
+
       const { payment_url } = response.data;
       if (payment_url) {
         window.location.href = payment_url;
       } else {
-        toast.error("خطا در دریافت لینک پرداخت.");
+        toast.error("لینک پرداخت دریافت نشد.");
       }
     } catch (err) {
-      console.error(err);
-      toast.error("خطا در شروع پرداخت. لطفاً دوباره تلاش کنید.");
+      console.error("PAYMENT ERROR:", err);
+      console.log("STATUS:", err.response?.status);
+      console.log("DATA:", JSON.stringify(err.response?.data, null, 2));
+      
+      const errorData = err.response?.data;
+      let errorMsg = "خطا در شروع پرداخت";
+      
+      if (errorData?.non_field_errors) {
+        errorMsg = errorData.non_field_errors[0];
+      } else if (errorData?.detail) {
+        errorMsg = errorData.detail;
+      } else if (typeof errorData === 'object' && Object.keys(errorData).length > 0) {
+        const firstError = Object.entries(errorData)[0];
+        errorMsg = `${firstError[0]}: ${Array.isArray(firstError[1]) ? firstError[1][0] : firstError[1]}`;
+      }
+      
+      toast.error(errorMsg);
     }
-  }, [orderData]);
+  }, [orderData, saveAddressToBackend, dispatch, isGuest]);
 
+  // ✅ اصلاح: loadSummary
   const loadSummary = useCallback(async () => {
     console.log("========== LOAD SUMMARY ==========");
     console.log("ORDER DATA:", orderData);
     console.log("LOCATION DATA:", orderData.location);
     console.log("CART ITEMS COUNT:", orderData.cartItems?.length || 0);
 
+    if (!location?.address) return;
+    if (!location?.id) {
+      console.warn("Location selected but no address_id yet.");
+      return;
+    }
+
+    const pickupShiftMapped = TIME_SLOT_MAP[orderData.datetime?.pickup?.time];
+    const deliveryShiftMapped = TIME_SLOT_MAP[orderData.datetime?.delivery?.time];
+
     const payload = {
-      pickup_date: toGregorian(orderData.datetime?.pickup?.date),  // ✅ FIX
-      pickup_shift: orderData.datetime?.pickup?.time,
-      delivery_date: toGregorian(orderData.datetime?.delivery?.date),  // ✅ FIX
-      delivery_shift: orderData.datetime?.delivery?.time,
+      pickup_date: toGregorian(orderData.datetime?.pickup?.date),
+      pickup_shift: pickupShiftMapped,
+      delivery_date: toGregorian(orderData.datetime?.delivery?.date),
+      delivery_shift: deliveryShiftMapped,
       coupon_code: orderData.discountCode || "",
       address_id: orderData.location?.id,
-      // ✅ FIX: Send rush_fee_amount from frontend pricing calculation
-      // This ensures the backend uses the same rush fee that the user saw in the time picker
-      rush_fee_amount: orderData.datetime?.pricing?.amount || 0,
       cart_items: orderData.cartItems?.map(item => ({
-        service_item_id: item.productId || item.id,
+        service_item_id: item.productId || item.id || item.product_id,
         quantity: item.qty || item.quantity || 1,
-        unit_price: item.unitPrice || item.price || 0,
+        material: item.material || "نخ",
+        size: item.size || null,
       })) || [],
     };
 
