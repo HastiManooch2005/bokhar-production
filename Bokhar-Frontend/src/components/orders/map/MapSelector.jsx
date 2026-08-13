@@ -264,6 +264,7 @@ export default function MapSelector({
 
   return (
     <div
+      dir="rtl"
       className="
         fixed
         inset-0
@@ -301,24 +302,25 @@ export default function MapSelector({
         onClick={handleCurrentLocation}
         className="
           absolute
-          left-0
-          bottom-[180px]
-          md:bottom-[150px] md:left-4
+          start-4
+          bottom-70
+          md:bottom-60 md:start-8
           z-[1000]
+          p-0.5 md:p-1
           flex
           items-center
           justify-center
-          w-14
-          h-14
+          md:w-12 w-10
+          md:h-12 h-10
           active:scale-95
           transition
-          bg-white 
-          
+          bg-white/70
+          rounded-full
         "
       >
         <LocateFixed
-          size={22}
-          className="text-sky-500 dark:text-[#8AA1C4]"
+          size={42}
+          className="text-sky-500 dark:text-[#262B40]"
         />
       </button>
 
@@ -360,11 +362,11 @@ export default function MapSelector({
             />
 
             <div className="min-w-0 flex-1">
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-right text-gray-500 dark:text-gray-400">
                 آدرس انتخاب شده
               </p>
 
-              <p className="text-sm truncate text-gray-800 dark:text-gray-200">
+              <p className="text-sm text-right truncate text-gray-800 dark:text-gray-200">
                 {loadingAddress
                   ? "در حال دریافت آدرس..."
                   : address}
@@ -423,7 +425,7 @@ export default function MapSelector({
                   "
                 >
                   <Icon size={16} className="text-sky-500 dark:text-[#8AA1C4]" />
-                  <span className="text-xs font-bold whitespace-nowrap text-gray-800 dark:text-gray-200">
+                  <span className="text-xs font-bold text-right whitespace-nowrap text-gray-800 dark:text-gray-200">
                     {item.title}
                   </span>
                 </button>

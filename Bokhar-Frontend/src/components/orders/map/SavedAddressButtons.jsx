@@ -63,13 +63,13 @@ export default function SavedAddressButtons({
         <button
           onClick={onCurrentLocation}
           className="
-        w-9 h-9 rounded-full transition-colors flex items-center justify-center shadow-md
+        w-22 h-22 rounded-full transition-colors flex items-center justify-center shadow-md
         bg-white/80 text-sky-600 hover:bg-white hover:text-sky-600 text-shadow-2xl
         dark:bg-[#262B40]/80 dark:text-[#8AA1C4] dark:hover:bg-[#262B40] dark:hover:text-[#8AA1C4]
       "
           style={{ touchAction: "manipulation" }}
         >
-          <Locate size={18} />
+          <Locate size={22} />
         </button>
       )}
 
