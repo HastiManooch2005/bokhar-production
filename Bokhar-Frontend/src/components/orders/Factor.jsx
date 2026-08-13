@@ -54,12 +54,13 @@ export default function Factor({ onTotalChange, goToTimeStep }) {
     
     if (itemsToSync.length > 0) {
       try {
-        await syncGuestCartWithServer(itemsToSync);
-        addToast("سبد خرید با حساب کاربری ادغام شد", "success");
-      } catch (err) {
-        console.error("Sync error:", err);
-        addToast("خطا در ادغام سبد خرید", "error");
-      }
+  const result = await updateCartQuantity(item.id_unique, newQty);
+  if (!result.success) throw new Error(result.error || "خطا در به‌روزرسانی");
+  await refreshCart(true);   
+} catch (error) {
+  addToast(error.message || "خطا در افزایش تعداد", "error");
+  refreshCart(true);        
+}
     }
 
     // ✅ حتماً سبد را از سرور دوباره بگیر
@@ -112,15 +113,14 @@ export default function Factor({ onTotalChange, goToTimeStep }) {
         : i
     );
     updateCartLocal(optimisticUpdate);
-
-    try {
-      const result = await updateCartQuantity(item.id_unique, newQty);
-      if (!result.success) throw new Error(result.error || "خطا در به‌روزرسانی");
-      await refreshCart();
-    } catch (error) {
-      addToast(error.message || "خطا در افزایش تعداد", "error");
-      refreshCart();
-    }
+try {
+  const result = await updateCartQuantity(item.id_unique, newQty);
+  if (!result.success) throw new Error(result.error || "خطا در به‌روزرسانی");
+  await refreshCart(true);   // ← true اضافه کن
+} catch (error) {
+  addToast(error.message || "خطا در افزایش تعداد", "error");
+  refreshCart(true);          // ← true اضافه کن
+}
   };
 
   /* ------------------------------------------------------------------
@@ -153,13 +153,13 @@ export default function Factor({ onTotalChange, goToTimeStep }) {
     updateCartLocal(optimisticUpdate);
 
     try {
-      const result = await updateCartQuantity(item.id_unique, newQty);
-      if (!result.success) throw new Error(result.error || "خطا در به‌روزرسانی");
-      await refreshCart();
-    } catch (error) {
-      addToast(error.message || "خطا در کاهش تعداد", "error");
-      refreshCart();
-    }
+  const result = await updateCartQuantity(item.id_unique, newQty);
+  if (!result.success) throw new Error(result.error || "خطا در به‌روزرسانی");
+  await refreshCart(true);   // ← true اضافه کن
+} catch (error) {
+  addToast(error.message || "خطا در کاهش تعداد", "error");
+  refreshCart(true);          // ← true اضافه کن
+}
   };
 
   /* ------------------------------------------------------------------
@@ -188,18 +188,18 @@ export default function Factor({ onTotalChange, goToTimeStep }) {
       cancelText: "انصراف",
       variant: "danger",
       onConfirm: async () => {
-        try {
-          const result = await removeCartItem(itemKey);
-          if (!result.success) throw new Error(result.error || "خطا در حذف");
-          
-          const updated = cartItems.filter(i => i.id_unique !== itemKey);
-          updateCartLocal(updated);
-          addToast(`«${name}» حذف شد`, "success");
-          await refreshCart();
-        } catch (error) {
-          addToast(error.message || "خطا در حذف آیتم", "error");
-          refreshCart();
-        }
+       try {
+    const result = await removeCartItem(itemKey);
+    if (!result.success) throw new Error(result.error || "خطا در حذف");
+    
+    const updated = cartItems.filter(i => i.id_unique !== itemKey);
+    updateCartLocal(updated);
+    addToast(`«${name}» حذف شد`, "success");
+    await refreshCart(true);   
+  } catch (error) {
+    addToast(error.message || "خطا در حذف آیتم", "error");
+    refreshCart(true);         
+  }
       },
     });
   };
