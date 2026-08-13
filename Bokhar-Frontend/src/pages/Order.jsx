@@ -10,8 +10,8 @@ import Payment from "../components/orders/Payment";
 import StepProgress from "../components/orders/StepProgress";
 import { getOrderSummary, toGregorian, TIME_SLOT_MAP } from "../api/order";
 import { useCart } from "../context/CartContext";
-import { useAuth } from "../context/AuthContext"; // ← اضافه شد
-import AuthModal from "../components/auth/AuthModal"; // ← اضافه شد
+import { useAuth } from "../context/AuthContext"; 
+import AuthModal from "../components/auth/AuthModal"; 
 import { addToCart, clearCart } from "../api/cartService";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
@@ -20,6 +20,19 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      const originalMessage = error.response?.data?.detail || "";
+      if (originalMessage.includes("Authentication")) {
+        error.response.data.detail = "نشست شما منقضی شده، لطفاً دوباره وارد شوید";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 const STEP_MAP = { 1: "factor", 2: "location", 3: "time", 4: "payment" };
 const STEP_LABELS = ["فاکتور", "مکان", "زمان", "پرداخت"];
@@ -274,110 +287,112 @@ export default function Order() {
     }
   }, [orderData]);
 
-  const handlePayment = useCallback(async () => {
-    try {
-      let addressId = orderData.location?.id;
-      
-      if (!addressId && orderData.location) {
-        const saved = await saveAddressToBackend(orderData.location);
-        if (saved) {
-          addressId = saved.id;
-          dispatch({ type: "SET_ORDER_DATA", payload: { location: saved } });
-        }
+const handlePayment = useCallback(async () => {
+  try {
+    let addressId = orderData.location?.id;
+
+    if (!addressId && orderData.location) {
+      const saved = await saveAddressToBackend(orderData.location);
+      if (saved) {
+        addressId = saved.id;
+        dispatch({ type: "SET_ORDER_DATA", payload: { location: saved } });
       }
-
-      if (!addressId) {
-        toast.error("لطفاً ابتدا آدرس را انتخاب و ذخیره کنید");
-        return;
-      }
-
-      if (isGuest) {
-        toast.error("لطفاً ابتدا وارد حساب کاربری شوید");
-        return;
-      }
-
-      try {
-        await clearCart();
-        for (const item of orderData.cartItems) {
-          await addToCart(
-            item.productId || item.product_id,
-            item.qty || item.quantity || 1,
-            {
-              service: item.service || "-",
-              material: item.material || "-",
-              size: item.size,
-              price: item.unitPrice || item.price || 0,
-              product_name: item.name || item.product_name || "",
-            }
-          );
-        }
-      } catch (syncErr) {
-        console.error("Cart sync warning:", syncErr);
-      }
-
-      const pickupShiftMapped = TIME_SLOT_MAP[orderData.datetime?.delivery?.time];
-      const deliveryShiftMapped = TIME_SLOT_MAP[orderData.datetime?.pickup?.time];
-
-      if (!pickupShiftMapped || !deliveryShiftMapped) {
-        toast.error("شیفت زمانی نامعتبر است");
-        return;
-      }
-
-      const payload = {
-        address_id: addressId,
-        
-        pickup_date: toGregorian(orderData.datetime?.delivery?.date),
-        pickup_shift: pickupShiftMapped,
-        
-        delivery_date: toGregorian(orderData.datetime?.pickup?.date),
-        delivery_shift: deliveryShiftMapped,
-        
-        coupon_code: orderData.discountCode || "",
-        description: "",
-        
-        cart_items: orderData.cartItems?.map(item => ({
-          service_item_id: item.productId || item.id || item.product_id,
-          quantity: item.qty || item.quantity || 1,
-          pricing_tab_id: item.pricing_tab_id || null,
-          material: item.material || "نخ",
-          size: item.size || null,
-        })) || [],
-      };
-
-      console.log("PAYMENT PAYLOAD:", JSON.stringify(payload, null, 2));
-
-      const response = await axios.post(
-        `${API_URL}/payments/initiate/`,
-        payload,
-        { withCredentials: true }
-      );
-
-      const { payment_url } = response.data;
-      if (payment_url) {
-        window.location.href = payment_url;
-      } else {
-        toast.error("لینک پرداخت دریافت نشد.");
-      }
-    } catch (err) {
-      console.error("PAYMENT ERROR:", err);
-      console.log("STATUS:", err.response?.status);
-      console.log("DATA:", JSON.stringify(err.response?.data, null, 2));
-      
-      const errorData = err.response?.data;
-      let errorMsg = "خطا در شروع پرداخت";
-      
-      if (errorData?.non_field_errors) {
-        errorMsg = errorData.non_field_errors[0];
-      } else if (errorData?.detail) {
-        errorMsg = errorData.detail;
-      } else if (typeof errorData === 'object' && Object.keys(errorData).length > 0) {
-        const firstError = Object.entries(errorData)[0];
-        errorMsg = `${firstError[0]}: ${Array.isArray(firstError[1]) ? firstError[1][0] : firstError[1]}`;
-      }
-      
-      toast.error(errorMsg);
     }
-  }, [orderData, saveAddressToBackend, dispatch, isGuest]);
+
+    if (!addressId) {
+      toast.error("لطفاً ابتدا آدرس را انتخاب و ذخیره کنید");
+      return;
+    }
+
+    if (isGuest) {
+      toast.error("لطفاً ابتدا وارد حساب کاربری شوید");
+      return;
+    }
+
+    try {
+      await clearCart();
+      for (const item of orderData.cartItems) {
+        await addToCart(
+          item.productId || item.product_id,
+          item.qty || item.quantity || 1,
+          {
+            service: item.service || "-",
+            material: item.material || "-",
+            size: item.size,
+            price: item.unitPrice || item.price || 0,
+            product_name: item.name || item.product_name || "",
+          }
+        );
+      }
+    } catch (syncErr) {
+      console.error("Cart sync warning:", syncErr);
+    }
+
+    const pickupShiftMapped = TIME_SLOT_MAP[orderData.datetime?.delivery?.time];
+    const deliveryShiftMapped = TIME_SLOT_MAP[orderData.datetime?.pickup?.time];
+
+    if (!pickupShiftMapped || !deliveryShiftMapped) {
+      toast.error("شیفت زمانی نامعتبر است");
+      return;
+    }
+
+    const payload = {
+      address_id: addressId,
+      pickup_date: toGregorian(orderData.datetime?.delivery?.date),
+      pickup_shift: pickupShiftMapped,
+      delivery_date: toGregorian(orderData.datetime?.pickup?.date),
+      delivery_shift: deliveryShiftMapped,
+      coupon_code: orderData.discountCode || "",
+      description: "",
+      cart_items: orderData.cartItems?.map(item => ({
+        service_item_id: item.productId || item.id || item.product_id,
+        quantity: item.qty || item.quantity || 1,
+        pricing_tab_id: item.pricing_tab_id || null,
+        material: item.material || "نخ",
+        size: item.size || null,
+      })) || [],
+    };
+
+    console.log("PAYMENT PAYLOAD:", JSON.stringify(payload, null, 2));
+
+    // ✅ استفاده از api instance به جای axios خام
+    const response = await api.post("/payments/initiate/", payload);
+
+    const { payment_url } = response.data;
+    if (payment_url) {
+      window.location.href = payment_url;
+    } else {
+      toast.error("لینک پرداخت دریافت نشد.");
+    }
+  } catch (err) {
+    console.error("PAYMENT ERROR:", err);
+    console.log("STATUS:", err.response?.status);
+    console.log("DATA:", JSON.stringify(err.response?.data, null, 2));
+
+    const status = err.response?.status;
+    const errorData = err.response?.data;
+    let errorMsg = "خطا در شروع پرداخت";
+
+    // ✅ هندل کردن 401
+    if (status === 401) {
+      errorMsg = "نشست شما منقضی شده، لطفاً دوباره وارد شوید";
+      setIsAuthModalOpen(true);
+      setPendingStep(4); // برگرد به مرحله پرداخت بعد از لاگین
+      return;
+    }
+
+    if (errorData?.non_field_errors) {
+      errorMsg = errorData.non_field_errors[0];
+    } else if (errorData?.detail) {
+      errorMsg = errorData.detail;
+    } else if (typeof errorData === 'object' && Object.keys(errorData).length > 0) {
+      const firstError = Object.entries(errorData)[0];
+      errorMsg = `${firstError[0]}: ${Array.isArray(firstError[1]) ? firstError[1][0] : firstError[1]}`;
+    }
+
+    toast.error(errorMsg);
+  }
+}, [orderData, saveAddressToBackend, dispatch, isGuest, setIsAuthModalOpen, setPendingStep]);
 
   const loadSummary = useCallback(async () => {
     console.log("========== LOAD SUMMARY ==========");
