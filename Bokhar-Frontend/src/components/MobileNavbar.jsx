@@ -4,10 +4,11 @@ import AuthModal from "./auth/AuthModal";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import Skeleton from "./Skeleton";
 
 export default function MobileNavbar() {
   const [openModal, setOpenModal] = useState(false);
-  const [showLogo, setShowLogo] = useState(true); 
+  const [showLogo, setShowLogo] = useState(true);
   const { totalItems } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
@@ -15,7 +16,7 @@ export default function MobileNavbar() {
 
   useEffect(() => {
     setShowLogo(true);
-    
+
     const initTimer = setTimeout(() => {
       if (window.scrollY <= 50) {
         setShowLogo(false);
@@ -25,16 +26,58 @@ export default function MobileNavbar() {
     const handleScroll = () => {
       setShowLogo(window.scrollY > 80);
     };
-    
-    window.addEventListener('scroll', handleScroll);
-    
+
+    window.addEventListener("scroll", handleScroll);
+
     return () => {
       clearTimeout(initTimer);
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
-  if (loading) return null;
+  // ─── اسکلتون لودینگ موبایل ───
+  if (loading) {
+    return (
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50
+                   bg-sky-50/85 dark:bg-[#262B40] backdrop-blur-xl
+                   border-t border-gray-200/50 dark:border-gray-700/50
+                   rounded-t-3xl shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)]
+                   dark:shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.3)]
+                   pb-[env(safe-area-inset-bottom)] transition-all duration-300"
+      >
+        <div
+          dir="rtl"
+          className="flex justify-around items-center h-16 px-2 max-w-lg mx-auto"
+        >
+          {/* اسکلتون خانه */}
+          <div className="flex flex-col items-center justify-center gap-1.5 w-16 h-14">
+            <Skeleton className="h-6 w-6 rounded-lg" />
+            <Skeleton className="h-2.5 w-8 rounded" />
+          </div>
+
+          {/* اسکلتون پیام‌ها */}
+          <div className="flex flex-col items-center justify-center gap-1.5 w-16 h-14">
+            <Skeleton className="h-6 w-6 rounded-lg" />
+            <Skeleton className="h-2.5 w-10 rounded" />
+          </div>
+
+          {/* اسکلتون سبد خرید */}
+          <div className="flex flex-col items-center justify-center gap-1.5 w-16 h-14 relative">
+            <Skeleton className="h-6 w-6 rounded-lg" />
+            <Skeleton className="h-4 w-4 rounded-full absolute -top-0.5 right-2" />
+            <Skeleton className="h-2.5 w-6 rounded" />
+          </div>
+
+          {/* اسکلتون پروفایل */}
+          <div className="flex flex-col items-center justify-center gap-1.5 w-16 h-14">
+            <Skeleton className="h-6 w-6 rounded-full" />
+            <Skeleton className="h-2.5 w-14 rounded" />
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   const handleProfileClick = () => {
     if (user?.isAuthenticated) {
@@ -49,14 +92,17 @@ export default function MobileNavbar() {
   return (
     <>
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 
-                   bg-sky-50/85 dark:bg-[#262B40] backdrop-blur-xl 
-                   border-t border-gray-200/50 dark:border-gray-700/50 
-                   rounded-t-3xl shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] 
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50
+                   bg-sky-50/85 dark:bg-[#262B40] backdrop-blur-xl
+                   border-t border-gray-200/50 dark:border-gray-700/50
+                   rounded-t-3xl shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)]
                    dark:shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.3)]
                    pb-[env(safe-area-inset-bottom)] transition-all duration-300"
       >
-        <div dir="rtl" className="flex justify-around items-center h-16 px-2 max-w-lg mx-auto">
+        <div
+          dir="rtl"
+          className="flex justify-around items-center h-16 px-2 max-w-lg mx-auto"
+        >
           {/* خانه - با انیمیشن لوگو/آیکون */}
           <button
             onClick={() => {
@@ -67,25 +113,32 @@ export default function MobileNavbar() {
               }
             }}
             className={`
-              relative flex flex-col items-center justify-center gap-1 
+              relative flex flex-col items-center justify-center gap-1
               w-16 h-14 rounded-2xl transition-all duration-300 ease-out
-              ${isHomeActive 
-                ? "text-sky-500 dark:text-gray-400 scale-105 bg-white/70 dark:bg-[#8AA1C4] shadow-sm" 
-                : "text-gray-500 dark:text-gray-400 "
+              ${
+                isHomeActive
+                  ? "text-sky-500 dark:text-gray-400 scale-105 bg-white/70 dark:bg-[#8AA1C4] shadow-sm"
+                  : "text-gray-500 dark:text-gray-400 "
               }
             `}
             aria-label="خانه"
           >
-            <div className={`relative w-6 h-6 flex items-center justify-center ${isHomeActive ? "drop-shadow-sm" : ""}`}>
+            <div
+              className={`relative w-6 h-6 flex items-center justify-center ${
+                isHomeActive ? "drop-shadow-sm" : ""
+              }`}
+            >
               {/* تصویر Logo */}
               <div
                 className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ease-in-out ${
-                  showLogo ? "opacity-100 scale-100" : "opacity-0 scale-50"
+                  showLogo
+                    ? "opacity-100 scale-100"
+                    : "opacity-0 scale-50"
                 }`}
               >
-                <img 
-                  src="/Logo.png" 
-                  alt="Logo" 
+                <img
+                  src="/Logo.png"
+                  alt="Logo"
                   className="h-6 w-auto object-contain"
                 />
               </div>
@@ -93,13 +146,19 @@ export default function MobileNavbar() {
               {/* آیکون Home */}
               <div
                 className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ease-in-out ${
-                  !showLogo ? "opacity-100 scale-100" : "opacity-0 scale-50"
+                  !showLogo
+                    ? "opacity-100 scale-100"
+                    : "opacity-0 scale-50"
                 }`}
               >
-                <Home 
-                  size={22} 
+                <Home
+                  size={22}
                   strokeWidth={2}
-                  className={isHomeActive ? "text-sky-500 dark:text-white" : "text-current"}
+                  className={
+                    isHomeActive
+                      ? "text-sky-500 dark:text-white"
+                      : "text-current"
+                  }
                 />
               </div>
             </div>
@@ -157,16 +216,21 @@ function NavItem({ icon, label, onClick, active }) {
     <button
       onClick={onClick}
       className={`
-        relative flex flex-col items-center justify-center gap-1 
+        relative flex flex-col items-center justify-center gap-1
         w-16 h-14 rounded-2xl transition-all duration-300 ease-out
-        ${active 
-          ? "text-sky-500 dark:text-gray-100 scale-105 bg-white/70 dark:bg-[#8AA1C4] shadow-sm" 
-          : "text-gray-500 dark:text-gray-400"
+        ${
+          active
+            ? "text-sky-500 dark:text-gray-100 scale-105 bg-white/70 dark:bg-[#8AA1C4] shadow-sm"
+            : "text-gray-500 dark:text-gray-400"
         }
       `}
       aria-label={label}
     >
-      <div className={`${active ? "drop-shadow-sm" : ""} transition-transform duration-300`}>
+      <div
+        className={`${
+          active ? "drop-shadow-sm" : ""
+        } transition-transform duration-300`}
+      >
         {icon}
       </div>
       <span className="text-[10px] font-medium tracking-tight">
