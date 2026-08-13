@@ -29,7 +29,7 @@ export async function ensureCSRFToken() {
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null); // null = هنوز معلوم نیست
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const isRefreshing = useRef(false);
@@ -37,29 +37,30 @@ export function AuthProvider({ children }) {
 
   // ================= refresh token =================
   const tryRefreshToken = useCallback(async () => {
-  if (isRefreshing.current) return false;
+    if (isRefreshing.current) return false;
 
-  isRefreshing.current = true;
+    isRefreshing.current = true;
 
-  try {
-    const csrfToken = await ensureCSRFToken();
+    try {
+      const csrfToken = await ensureCSRFToken();
 
-    const res = await fetch(`${API_BASE}/refresh/`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "X-CSRFToken": csrfToken,
-      },
-    });
+      const res = await fetch(`${API_BASE}/refresh/`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "X-CSRFToken": csrfToken,
+        },
+      });
 
-    return res.ok;
-  } catch (err) {
-    console.error("Refresh error:", err);
-    return false;
-  } finally {
-    isRefreshing.current = false;
-  }
-}, []);
+      return res.ok;
+    } catch (err) {
+      console.error("Refresh error:", err);
+      return false;
+    } finally {
+      isRefreshing.current = false;
+    }
+  }, []);
+
   // ================= verify auth =================
   const verifyAuth = useCallback(async () => {
     const currentVerify = Date.now();
@@ -84,41 +85,38 @@ export function AuthProvider({ children }) {
       }
 
       if (res.status === 401) {
+        const refreshed = await tryRefreshToken();
 
-    const refreshed = await tryRefreshToken();
-
-    if (refreshed) {
-
-        const retry = await fetch(`${API_BASE}/verify/`, {
+        if (refreshed) {
+          const retry = await fetch(`${API_BASE}/verify/`, {
             credentials: "include",
-        });
+          });
 
-        if (retry.ok) {
+          if (retry.ok) {
             const result = await retry.json();
 
             if (lastVerify.current !== currentVerify) return;
 
             setUser({
-                isAuthenticated: true,
-                ...result,
+              isAuthenticated: true,
+              ...result,
             });
 
             return;
+          }
         }
-    }
 
-    if (lastVerify.current === currentVerify) {
-        setUser({ isAuthenticated: false });
-    }
+        if (lastVerify.current === currentVerify) {
+          setUser({ isAuthenticated: false });
+        }
 
-    return;
-}
+        return;
+      }
 
       throw new Error("Verify failed");
     } catch (err) {
       console.error("verifyAuth error:", err);
       if (lastVerify.current === currentVerify) {
-        // اینجا به جای false، وضعیت "نامشخص" نگه می‌داریم
         setUser((prev) => prev ?? { isAuthenticated: null });
       }
     } finally {
@@ -132,6 +130,10 @@ export function AuthProvider({ children }) {
     const result = await res.json();
     if (!res.ok) throw result;
     setUser({ isAuthenticated: true, ...result });
+    localStorage.setItem("auth_event", JSON.stringify({
+      type: "login",
+      timestamp: Date.now(),
+    }));
     return result;
   };
 
@@ -172,6 +174,10 @@ export function AuthProvider({ children }) {
       console.error("Logout error:", err.message);
     } finally {
       setUser({ isAuthenticated: false });
+      localStorage.setItem("auth_event", JSON.stringify({
+        type: "logout",
+        timestamp: Date.now(),
+      }));
     }
   }, []);
 
@@ -181,28 +187,53 @@ export function AuthProvider({ children }) {
   }, [verifyAuth]);
 
   useEffect(() => {
-  if (!user?.isAuthenticated) return;
+    if (!user?.isAuthenticated) return;
 
-  const interval = setInterval(() => {
-    tryRefreshToken();
-  }, 10 * 60 * 1000);
+    const interval = setInterval(() => {
+      tryRefreshToken();
+    }, 10 * 60 * 1000);
 
-  return () => clearInterval(interval);
-}, [user?.isAuthenticated, tryRefreshToken]);
-const refreshUser = useCallback(async () => {
-  try {
-    const res = await fetch(`${API_BASE}/verify/`, {
-      credentials: "include",
-    });
-    if (res.ok) {
-      const result = await res.json();
-      setUser(prev => ({ ...prev, ...result }));
+    return () => clearInterval(interval);
+  }, [user?.isAuthenticated, tryRefreshToken]);
+
+  // ================= cross-tab sync =================
+  useEffect(() => {
+    const handleStorage = (e) => {
+      if (e.key !== "auth_event") return;
+
+      try {
+        const event = JSON.parse(e.newValue);
+        if (!event) return;
+
+        if (event.type === "logout" && user?.isAuthenticated) {
+          setUser({ isAuthenticated: false });
+        }
+
+        if (event.type === "login" && !user?.isAuthenticated) {
+          verifyAuth();
+        }
+      } catch {
+        // ignore parse error
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [user?.isAuthenticated, verifyAuth]);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/verify/`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const result = await res.json();
+        setUser(prev => ({ ...prev, ...result }));
+      }
+    } catch (e) {
+      console.error("refresh user error:", e);
     }
-  } catch (e) {
-    console.error("refresh user error:", e);
-  }
-}, []);
-
+  }, []);
 
   return (
     <AuthContext.Provider
@@ -210,7 +241,6 @@ const refreshUser = useCallback(async () => {
         user,
         setUser,
         loading,
-        // فقط وقتی واقعاً true است، لاگین حساب می‌کنیم
         isAuthenticated: user?.isAuthenticated === true,
         loginWithPassword,
         loginWithOTP,
