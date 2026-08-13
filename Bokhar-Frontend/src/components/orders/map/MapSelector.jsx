@@ -15,7 +15,6 @@ import SearchLocation from "./SearchLocation";
 import AddressModal from "./AddressModal";
 
 import { useAuth } from "../../../context/AuthContext";
-import AuthModal from "../../auth/AuthModal";
 
 // ---------------- VALIDATION ----------------
 
@@ -63,10 +62,6 @@ export default function MapSelector({
   // ---------------- AUTH ----------------
 
   const { isAuthenticated, loading: authLoading } = useAuth();
-
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-
-  const pendingCoords = useRef(null);
 
   // ---------------- SAVED ADDRESSES ----------------
 
@@ -129,13 +124,6 @@ export default function MapSelector({
         },
       );
 
-      if (res.status === 401) {
-        pendingCoords.current = targetCoords;
-        setIsAuthModalOpen(true);
-        setLoadingAddress(false);
-        return;
-      }
-
       if (!res.ok) {
         throw new Error("Reverse geocode failed");
       }
@@ -170,23 +158,6 @@ export default function MapSelector({
       clearTimeout(timeout);
     };
   }, [coords, runReverseGeocode]);
-
-  // ---------------- AUTH SUCCESS ----------------
-
-  const handleAuthSuccess = useCallback(() => {
-    setIsAuthModalOpen(false);
-
-    if (pendingCoords.current) {
-      const targetCoords = pendingCoords.current;
-      if (isValidCoords(targetCoords)) {
-        safeSetCoords(targetCoords);
-        runReverseGeocode(targetCoords);
-      } else {
-        console.error("handleAuthSuccess: pendingCoords is invalid:", targetCoords);
-      }
-      pendingCoords.current = null;
-    }
-  }, [safeSetCoords, runReverseGeocode]);
 
   // ---------------- CURRENT LOCATION ----------------
 
@@ -223,16 +194,6 @@ export default function MapSelector({
   // ---------------- SELECT SAVED ----------------
 
   const handleSelectSaved = useCallback((item) => {
-    if (!isAuthenticated) {
-      if (isValidCoords(item.coords)) {
-        pendingCoords.current = item.coords;
-      } else {
-        console.error("handleSelectSaved: item.coords is invalid:", item.coords);
-      }
-      setIsAuthModalOpen(true);
-      return;
-    }
-
     if (!isValidCoords(item.coords)) {
       console.error("handleSelectSaved: item.coords is invalid:", item.coords);
       return;
@@ -243,9 +204,8 @@ export default function MapSelector({
     setPlaque(item.plaque);
     setUnit(item.unit);
     setTitle(item.title);
-    // با انتخاب آدرس ذخیره شده، مستقیماً مودال باز می‌شود (چون دکمه تایید حذف شده)
     setOpen(true);
-  }, [isAuthenticated, safeSetCoords]);
+  }, [safeSetCoords]);
 
   // ---------------- SUBMIT ----------------
 
@@ -255,14 +215,14 @@ export default function MapSelector({
       setUnit(unit);
       setTitle(title);
       setDescription(description);
-console.log("MAP SUBMIT:", {
-  coords,
-  address,
-  plaque,
-  unit,
-  title,
-  description,
-});
+      console.log("MAP SUBMIT:", {
+        coords,
+        address,
+        plaque,
+        unit,
+        title,
+        description,
+      });
       onLocationSelect({
         coords,
         address,
@@ -322,31 +282,17 @@ console.log("MAP SUBMIT:", {
         <MapView
           position={coords}
           onPositionChange={safeSetCoords}
-onMarkerClick={() => {
-  if (!isAuthenticated) {
-    if (isValidCoords(coords)) {
-      pendingCoords.current = coords;
-    } else {
-      console.error(
-        "onMarkerClick: coords is invalid:",
-        coords
-      );
-    }
-
-    setIsAuthModalOpen(true);
-    return;
-  }
-
-  if (!isValidCoords(coords)) {
-    console.error(
-      "onMarkerClick: invalid coords:",
-      coords
-    );
-    toast.error("موقعیت مکانی نامعتبر است");
-    return;
-  }
-  setOpen(true);
-}}
+          onMarkerClick={() => {
+            if (!isValidCoords(coords)) {
+              console.error(
+                "onMarkerClick: invalid coords:",
+                coords
+              );
+              toast.error("موقعیت مکانی نامعتبر است");
+              return;
+            }
+            setOpen(true);
+          }}
         />
       </div>
 
@@ -434,8 +380,6 @@ onMarkerClick={() => {
                 if (isValidCoords(newCoords)) {
                   safeSetCoords(newCoords);
                   setAddress(loc.address);
-                  // اگر می‌خواهید پس از جستجو هم مودال مستقیماً باز شود، خط زیر را فعال کنید:
-                  // setOpen(true);
                 } else {
                   console.error("SearchLocation onSelect: invalid coords:", newCoords);
                 }
@@ -483,8 +427,6 @@ onMarkerClick={() => {
               );
             })}
           </div>
-
-          {/* دکمه تایید مبدا حذف شد - انتخاب فقط از طریق کلیک روی مارکر یا آدرس ذخیره شده */}
         </div>
       </div>
 
@@ -498,12 +440,6 @@ onMarkerClick={() => {
         title={title}
         description={description}
         address={address}
-      />
-
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onSuccess={handleAuthSuccess}
       />
     </div>
   );

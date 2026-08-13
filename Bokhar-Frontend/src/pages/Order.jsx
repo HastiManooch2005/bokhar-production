@@ -10,6 +10,8 @@ import Payment from "../components/orders/Payment";
 import StepProgress from "../components/orders/StepProgress";
 import { getOrderSummary, toGregorian, TIME_SLOT_MAP } from "../api/order";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext"; // ← اضافه شد
+import AuthModal from "../components/auth/AuthModal"; // ← اضافه شد
 import { addToCart, clearCart } from "../api/cartService";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
@@ -56,9 +58,33 @@ export default function Order() {
   const { step, maxStep, orderData } = state;
   const [summary, setSummary] = useState(null);
   const { cartItems, isGuest } = useCart();
+  const { isAuthenticated, verifyAuth, loading: authLoading } = useAuth(); // ← اضافه شد
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false); // ← اضافه شد
+  const [pendingStep, setPendingStep] = useState(null); // ← برای نگهداری استپی که کاربر می‌خواست بره
   const location = orderData?.location;
 
   const stepType = useCallback((s) => STEP_MAP[s] || null, []);
+
+  // ✅ اضافه شده: چک کردن احراز هویت قبل از رفتن به مراحل ۲، ۳، ۴
+  const requireAuthForStep = useCallback(async (targetStep) => {
+    // مرحله ۱ نیاز به چک نداره (چون خودش مودال داره)
+    if (targetStep === 1) return true;
+    
+    // اگه لاگینه، اوکیه
+    if (isAuthenticated) return true;
+    
+    // در غیر این صورت وریفای کن
+    await verifyAuth();
+    
+    // دوباره چک کن
+    if (isAuthenticated) return true;
+    
+    // لاگین نیست — برگرد به مرحله ۱ و مودال باز کن
+    dispatch({ type: "SET_STEP", payload: 1 });
+    setPendingStep(targetStep);
+    setIsAuthModalOpen(true);
+    return false;
+  }, [isAuthenticated, verifyAuth]);
 
   useEffect(() => {
     dispatch({ type: "SET_ORDER_DATA", payload: { cartItems } });
@@ -80,13 +106,18 @@ export default function Order() {
   const dateTimeValue = useMemo(() => orderData.datetime, [orderData.datetime]);
   const locationValue = useMemo(() => orderData.location, [orderData.location]);
 
-  const goToStep = useCallback((targetStep) => {
+  // ✅ اصلاح شده: goToStep حالا auth رو هم چک می‌کنه
+  const goToStep = useCallback(async (targetStep) => {
+    const authorized = await requireAuthForStep(targetStep);
+    if (!authorized) return;
+    
     if (targetStep <= maxStep && targetStep >= 1) {
       dispatch({ type: "SET_STEP", payload: targetStep });
     }
-  }, [maxStep]);
+  }, [maxStep, requireAuthForStep]);
 
-  const handleNext = useCallback(() => {
+  // ✅ اصلاح شده: handleNext حالا auth رو هم چک می‌کنه
+  const handleNext = useCallback(async () => {
     const currentType = stepType(step);
 
     if (currentType === "location") {
@@ -108,12 +139,17 @@ export default function Order() {
     const stepsCount = Object.keys(STEP_MAP).length;
     if (step < stepsCount) {
       const nextStep = step + 1;
+      
+      // ✅ چک کردن لاگین قبل از رفتن به مرحله بعد
+      const authorized = await requireAuthForStep(nextStep);
+      if (!authorized) return;
+      
       dispatch({ type: "SET_STEP", payload: nextStep });
       if (nextStep > maxStep) {
         dispatch({ type: "SET_MAX_STEP", payload: nextStep });
       }
     }
-  }, [step, maxStep, orderData, stepType]);
+  }, [step, maxStep, orderData, stepType, requireAuthForStep]);
 
   const handleBack = useCallback(() => {
     if (step > 1) {
@@ -121,10 +157,15 @@ export default function Order() {
     }
   }, [step]);
 
-  const handleStepClick = useCallback((clickedStep) => {
-    if (clickedStep <= maxStep)
+  // ✅ اصلاح شده: handleStepClick حالا auth رو هم چک می‌کنه
+  const handleStepClick = useCallback(async (clickedStep) => {
+    if (clickedStep <= maxStep) {
+      const authorized = await requireAuthForStep(clickedStep);
+      if (!authorized) return;
+      
       dispatch({ type: "SET_STEP", payload: clickedStep });
-  }, [maxStep]);
+    }
+  }, [maxStep, requireAuthForStep]);
 
   const handleDateTimeChange = useCallback((datetime) => {
     dispatch({ type: "SET_ORDER_DATA", payload: { datetime } });
@@ -172,18 +213,37 @@ export default function Order() {
     }
   }, [saveAddressToBackend]);
 
-  const goToTimeStep = useCallback(() => {
+  // ✅ اصلاح شده: goToTimeStep حالا auth رو هم چک می‌کنه
+  const goToTimeStep = useCallback(async () => {
+    // ✅ چک کردن لاگین قبل از رفتن به مرحله ۲
+    const authorized = await requireAuthForStep(2);
+    if (!authorized) return;
+    
     const nextStep = 2;
     dispatch({ type: "SET_STEP", payload: nextStep });
     if (nextStep > maxStep)
       dispatch({ type: "SET_MAX_STEP", payload: nextStep });
-  }, [maxStep]);
+  }, [maxStep, requireAuthForStep]);
+
+  // ✅ هندل کردن لاگین موفق — برگرد به استپ pending
+  const handleAuthSuccess = useCallback(() => {
+    setIsAuthModalOpen(false);
+    // اگه استپی pending داشتیم، برو اونجا
+    if (pendingStep && pendingStep > 1) {
+      dispatch({ type: "SET_STEP", payload: pendingStep });
+      if (pendingStep > maxStep) {
+        dispatch({ type: "SET_MAX_STEP", payload: pendingStep });
+      }
+      setPendingStep(null);
+    }
+  }, [pendingStep, maxStep]);
 
   const setDiscountCode = useCallback((code) => {
     dispatch({ type: "SET_ORDER_DATA", payload: { discountCode: code } });
   }, []);
 
-  // ✅ FIX: جابجایی pickup ↔ delivery — UI "تحویل دادن" = backend pickup
+  // ... بقیه کد بدون تغییر ...
+
   const applyDiscount = useCallback(async () => {
     try {
       const pickupShiftMapped = TIME_SLOT_MAP[orderData.datetime?.delivery?.time];
@@ -255,7 +315,6 @@ export default function Order() {
         console.error("Cart sync warning:", syncErr);
       }
 
-      // ✅ FIX: جابجایی pickup ↔ delivery — UI "تحویل دادن" = backend pickup
       const pickupShiftMapped = TIME_SLOT_MAP[orderData.datetime?.delivery?.time];
       const deliveryShiftMapped = TIME_SLOT_MAP[orderData.datetime?.pickup?.time];
 
@@ -320,7 +379,6 @@ export default function Order() {
     }
   }, [orderData, saveAddressToBackend, dispatch, isGuest]);
 
-  // ✅ FIX: جابجایی pickup ↔ delivery — UI "تحویل دادن" = backend pickup
   const loadSummary = useCallback(async () => {
     console.log("========== LOAD SUMMARY ==========");
     console.log("ORDER DATA:", orderData);
@@ -444,6 +502,16 @@ export default function Order() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* ✅ اضافه شده: مودال لاگین سراسری برای Order */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setPendingStep(null);
+        }}
+        onSuccess={handleAuthSuccess}
+      />
     </div>
   );
 }

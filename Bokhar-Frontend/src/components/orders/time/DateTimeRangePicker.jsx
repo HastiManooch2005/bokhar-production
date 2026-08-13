@@ -68,7 +68,7 @@ export default function DateTimeRangePicker({
         }
         
       } catch (error) {
-        setLoadError("خطا در بارگذاری تنظیمات. لطفاً صفحه را رفرش کنید.");
+        setLoadError(" خطا در بارگذاری. لطفاً صفحه را رفرش کنید. در صورت خروج از حساب کاربری مجددا ورود/ثبت‌نام کنید");
         setDisabledDates([]);
       } finally {
         setIsLoadingSettings(false);
