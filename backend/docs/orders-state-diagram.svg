@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="360" viewBox="0 0 1000 360">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#333" />
+    </marker>
+    <style>
+      .box { fill:#f7f9fb; stroke:#2b2b2b; stroke-width:1.6; rx:6; ry:6 }
+      .label { font: 600 14px/1.1 'Segoe UI', Roboto, Arial; fill:#111 }
+      .note { font: 12px/1.1 'Segoe UI', Roboto, Arial; fill:#333 }
+      .arrow { stroke:#333; stroke-width:2; fill:none; marker-end:url(#arrow) }
+    </style>
+  </defs>
+
+  <!-- Nodes -->
+  <rect class="box" x="60"  y="40"  width="160" height="48" />
+  <text x="140" y="72" class="label" text-anchor="middle">PAID</text>
+
+  <rect class="box" x="270" y="40"  width="160" height="48" />
+  <text x="350" y="72" class="label" text-anchor="middle">PICKED_UP</text>
+
+  <rect class="box" x="480" y="40"  width="160" height="48" />
+  <text x="560" y="72" class="label" text-anchor="middle">WASHING</text>
+
+  <rect class="box" x="690" y="40"  width="160" height="48" />
+  <text x="770" y="72" class="label" text-anchor="middle">DELIVERED</text>
+
+  <!-- Secondary nodes -->
+  <rect class="box" x="260" y="150" width="160" height="48" />
+  <text x="340" y="182" class="label" text-anchor="middle">RETURNED</text>
+
+  <rect class="box" x="640" y="150" width="160" height="48" />
+  <text x="720" y="182" class="label" text-anchor="middle">CANCELED</text>
+
+  <!-- Arrows main flow -->
+  <path class="arrow" d="M220,64 L270,64" />
+  <path class="arrow" d="M430,64 L480,64" />
+  <path class="arrow" d="M640,64 L690,64" />
+
+  <!-- PAID -> RETURNED -->
+  <path class="arrow" d="M140,88 L340,150" />
+
+  <!-- ANY -> CANCELED (depicted from WASHING) -->
+  <path class="arrow" d="M560,88 L720,150" />
+
+  <!-- Notes and invalid transitions -->
+  <text x="60" y="230" class="note">Notes:</text>
+  <text x="80" y="250" class="note">• PaymentSession lifecycle: INITIATED → PENDING → PAID</text>
+  <text x="80" y="270" class="note">• Refund (RETURNED) may credit wallet or enqueue bank refund</text>
+  <text x="80" y="290" class="note">• Cancellation (CANCELED) allowed only per business rules (e.g., before pickup)</text>
+
+  <g transform="translate(520,220)">
+    <rect x="0" y="0" width="320" height="100" rx="8" ry="8" fill="#fff8e1" stroke="#b58b14"/>
+    <text x="10" y="20" class="note">Invalid direct transitions (enforced by backend):</text>
+    <text x="10" y="40" class="note">• PAID --x--> WASHING (cannot skip PICKED_UP)</text>
+    <text x="10" y="60" class="note">• PICKED_UP --x--> DELIVERED (cannot skip WASHING)</text>
+    <text x="10" y="80" class="note">Backend admin views filter by expected from-status.</text>
+  </g>
+
+  <!-- Legend -->
+  <text x="60" y="330" class="note">Generated diagram: order state machine for Bokhar</text>
+
+</svg>

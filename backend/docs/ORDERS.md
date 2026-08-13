@@ -153,3 +153,39 @@ Next actions:
 - Produce a Mermaid diagram and include in docs.
 - Reconcile frontend createOrder vs backend flow (see FRONTEND_COMPATIBILITY.md).
 
+---
+
+## 8. State diagram (Mermaid)
+
+Use the following Mermaid diagram to visualize allowed transitions. This can be embedded in Markdown renderers that support Mermaid or converted to an image.
+
+![Order state diagram](orders-state-diagram.svg)
+
+```mermaid
+stateDiagram-v2
+    [*] --> PAID: Order created (payment verified)
+    PAID --> PICKED_UP: Seller picks up
+    PICKED_UP --> WASHING: Start washing
+    WASHING --> DELIVERED: Delivery completed
+
+    PAID --> RETURNED: Refund/Return processed
+    ANY --> CANCELED: Cancellation (constraints apply)
+
+    note right of PAID: PaymentSession: INITIATED -> PENDING -> PAID
+    note right of RETURNED: Refund may credit wallet or enqueue bank refund
+
+    %% Invalid direct transitions (documented rules)
+    PAID --x--> WASHING: "Cannot skip PICKED_UP"
+    PICKED_UP --x--> DELIVERED: "Cannot skip WASHING"
+```
+
+
+Notes on the diagram:
+- "ANY -> CANCELED" is allowed only when business rules permit (before pickup or within allowed time window).
+- Use server-side checks when executing transitions — backend enforces from-status filters in admin endpoints.
+
+---
+
+Include this Mermaid block in the repository docs viewer or convert it to SVG/PNG for inclusion in external documentation.
+
+
