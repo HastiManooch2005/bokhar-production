@@ -312,11 +312,13 @@ export default function MapSelector({
           h-14
           active:scale-95
           transition
+          bg-white 
+          
         "
       >
         <LocateFixed
           size={22}
-          className="text-sky-500"
+          className="text-sky-500 dark:text-[#8AA1C4]"
         />
       </button>
 
@@ -347,21 +349,22 @@ export default function MapSelector({
               gap-2
               rounded-xl
               bg-sky-50
+              dark:bg-[#262B40]
               px-3
               py-2
             "
           >
             <MapPin
               size={16}
-              className="text-sky-500 mt-1 shrink-0"
+              className="text-sky-500 dark:text-[#8AA1C4] mt-1 shrink-0"
             />
 
             <div className="min-w-0 flex-1">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 آدرس انتخاب شده
               </p>
 
-              <p className="text-sm truncate">
+              <p className="text-sm truncate text-gray-800 dark:text-gray-200">
                 {loadingAddress
                   ? "در حال دریافت آدرس..."
                   : address}
@@ -369,7 +372,7 @@ export default function MapSelector({
             </div>
           </div>
 
-          {/* SEARCH - به داخل باکس سفید منتقل شد */}
+          {/* SEARCH */}
           <div className="pointer-events-auto mb-4">
             <SearchLocation
               onSelect={(loc) => {
@@ -387,7 +390,7 @@ export default function MapSelector({
             />
           </div>
 
-          {/* SAVED ADDRESSES - فقط داخل باکس سفید */}
+          {/* SAVED ADDRESSES */}
           <div
             className="
               flex
@@ -419,8 +422,8 @@ export default function MapSelector({
                     dark:border-gray-600
                   "
                 >
-                  <Icon size={16} className="text-sky-500" />
-                  <span className="text-xs font-bold whitespace-nowrap">
+                  <Icon size={16} className="text-sky-500 dark:text-[#8AA1C4]" />
+                  <span className="text-xs font-bold whitespace-nowrap text-gray-800 dark:text-gray-200">
                     {item.title}
                   </span>
                 </button>
