@@ -1,16 +1,13 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import CategoryTabs from "../components/CategoryTabs";
 import Card from "../components/Card";
 import Search from "../components/Search";
 import clientApi from "../api/clientApi";
 
-// تابع چک کردن تخفیف (کپی از DiscountBadgeClient)
 function checkHasDiscount(product, pricing) {
   if (!product) return false;
-  
   const now = new Date();
 
-  // تخفیف دسته
   if (product.category?.discount) {
     const d = product.category.discount;
     const start = d.start_at ? new Date(d.start_at) : null;
@@ -23,9 +20,7 @@ function checkHasDiscount(product, pricing) {
     }
   }
 
-  // تخفیف روی مواد
   if (!pricing) return false;
-
   return Object.values(pricing).some(tab =>
     tab?.materialPrices?.some(m => m.has_discount)
   );
@@ -38,22 +33,53 @@ export default function Landing() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCard, setSelectedCard] = useState(null);
   
-  // ذخیره pricing همه محصولات
   const [productsPricing, setProductsPricing] = useState({});
   const [pricingLoaded, setPricingLoaded] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(true); // ✅ اضافه شد
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
-  // ✅ دریافت دسته‌ها - فقط یکی باشه
+  // ========== کش لوکال استوریج برای دیتای اصلی ==========
   useEffect(() => {
+    const cachedCats = localStorage.getItem('categories_cache');
+    const cachedProds = localStorage.getItem('products_cache');
+    
+    if (cachedCats) {
+      try {
+        const { data, time } = JSON.parse(cachedCats);
+        if (Date.now() - time < 30 * 60 * 1000) {
+          setCategories(data);
+          setActiveCategory(data[0] || null);
+          setIsLoadingCategories(false);
+        }
+      } catch(e) {}
+    }
+    
+    if (cachedProds) {
+      try {
+        const { data, time } = JSON.parse(cachedProds);
+        if (Date.now() - time < 30 * 60 * 1000) {
+          setAllProducts(data);
+          setIsLoadingProducts(false);
+        }
+      } catch(e) {}
+    }
+  }, []);
+
+  // دریافت دسته‌ها
+  useEffect(() => {
+    if (categories.length > 0) return; // اگه از کش اومده، دوباره نگیر
+    
     const fetchCategories = async () => {
       setIsLoadingCategories(true);
       try {
-        const data = await clientApi.getCategories(); // ✅ درست
+        const data = await clientApi.getCategories();
         setCategories(data);
-        if (data.length > 0) {
+        if (data.length > 0 && !activeCategory) {
           setActiveCategory(data[0]);
         }
+        localStorage.setItem('categories_cache', JSON.stringify({
+          data, time: Date.now()
+        }));
       } catch (error) {
         console.error("Error fetching categories:", error);
       } finally {
@@ -62,57 +88,80 @@ export default function Landing() {
     };
 
     fetchCategories();
-  }, []);
+  }, [categories.length, activeCategory]);
 
-  // ❌ این useEffect رو کلاً حذف کن (duplicate بود):
-  // useEffect(() => {
-  //   async function loadCategories() {
-  //     const data = await api.getCategories(); // ← undefined api
-  //     ...
-  //   }
-  //   loadCategories();
-  // }, []);
-
-  // ✅ دریافت محصولات - اصلاح شد
+  // دریافت محصولات
   useEffect(() => {
+    if (allProducts.length > 0) return; // اگه از کش اومده، دوباره نگیر
+
     async function loadAllData() {
-      setIsLoadingProducts(true); // ✅ اضافه شد
+      setIsLoadingProducts(true);
       try {
-        // اول محصولات رو بگیر
-        const products = await clientApi.getProducts(); // ✅ api → clientApi
+        const products = await clientApi.getProducts();
         setAllProducts(products);
-
-        // بعد pricing همه رو موازی بگیر
-        const pricingPromises = products.map(async (product) => {
-          try {
-            const res = await clientApi.getProduct(product.id); // ✅ api → clientApi
-            return { id: product.id, pricing: res.pricing };
-          } catch (err) {
-            console.error(`Error loading pricing for ${product.id}:`, err);
-            return { id: product.id, pricing: null };
-          }
-        });
-
-        const pricingResults = await Promise.all(pricingPromises);
-        
-        const pricingMap = {};
-        pricingResults.forEach(({ id, pricing }) => {
-          pricingMap[id] = pricing;
-        });
-        
-        setProductsPricing(pricingMap);
-        setPricingLoaded(true);
+        localStorage.setItem('products_cache', JSON.stringify({
+          data: products, time: Date.now()
+        }));
       } catch (err) {
         console.error("Error loading data:", err);
       } finally {
-        setIsLoadingProducts(false); // ✅ اضافه شد
+        setIsLoadingProducts(false);
       }
     }
 
     loadAllData();
-  }, []);
+  }, [allProducts.length]);
 
-  // محاسبه دسته‌بندی‌های ۱۰۰٪ تخفیف‌دار (با دیتای واقعی pricing)
+  // ========== LAZY LOADING: فقط pricing دسته فعال ==========
+  const pricingLoadedRef = useRef(new Set());
+
+  useEffect(() => {
+    if (!activeCategory || !allProducts.length) return;
+
+    const categoryProducts = allProducts.filter(
+      (p) => p.category.id === activeCategory.id
+    );
+    
+    const missing = categoryProducts.filter(
+      (p) => !pricingLoadedRef.current.has(p.id)
+    );
+
+    if (missing.length === 0) {
+      setPricingLoaded(true);
+      return;
+    }
+
+    setPricingLoaded(false);
+
+    const loadPricing = async () => {
+      const promises = missing.map(async (product) => {
+        try {
+          const res = await clientApi.getProduct(product.id);
+          pricingLoadedRef.current.add(product.id);
+          return { id: product.id, pricing: res.pricing };
+        } catch (err) {
+          console.error(`Error loading pricing for ${product.id}:`, err);
+          return { id: product.id, pricing: null };
+        }
+      });
+
+      const results = await Promise.all(promises);
+      
+      setProductsPricing(prev => {
+        const next = { ...prev };
+        results.forEach(({ id, pricing }) => {
+          next[id] = pricing;
+        });
+        return next;
+      });
+      
+      setPricingLoaded(true);
+    };
+
+    loadPricing();
+  }, [activeCategory, allProducts]);
+
+  // دسته‌بندی‌های ۱۰۰٪ تخفیف‌دار
   const fullyDiscountedCategories = useMemo(() => {
     if (!pricingLoaded || allProducts.length === 0) return [];
 
@@ -121,7 +170,6 @@ export default function Landing() {
         const catProducts = allProducts.filter((p) => p.category.id === cat.id);
         if (catProducts.length === 0) return false;
 
-        // چک کن همه محصولات این دسته تخفیف دارن
         return catProducts.every((product) => {
           const pricing = productsPricing[product.id];
           return checkHasDiscount(product, pricing);
@@ -136,7 +184,7 @@ export default function Landing() {
     return allProducts.filter((p) => p.category.id === activeCategory.id);
   }, [activeCategory, allProducts]);
 
-  // سرچ محصولات
+  // سرچ
   const filteredBySearch = useMemo(() => {
     if (!searchQuery.trim()) return [];
 
@@ -154,15 +202,20 @@ export default function Landing() {
     );
   }, [searchQuery, allProducts]);
 
-  const handleSelectSuggestion = (product) => {
+  const handleSelectSuggestion = useCallback((product) => {
     setSearchQuery(product.title);
     setSelectedCard(product);
     setActiveCategory(product.category);
-  };
+  }, []);
+
+  const handleCategoryChange = useCallback((cat) => {
+    setActiveCategory(cat);
+    setSelectedCard(null);
+    setSearchQuery("");
+  }, []);
 
   return (
     <div dir="rtl" className="min-h-dvh w-full text-gray-900 dark:text-gray-100 md:pt-15.5">
-      {/* هدر */}
       <section className="p-8 text-center">
         <h1 className="text-3xl font-bold">خشکشویی افشار</h1>
         <p className="mt-4 text-lg text-gray-600 dark:text-gray-200">
@@ -170,7 +223,6 @@ export default function Landing() {
         </p>
       </section>
 
-      {/* سرچ */}
       <div className="px-4 mt-4 flex justify-center">
         <div className="w-full md:w-2/3 lg:w-1/2">
           <span className="flex mr-2 my-1">چی میخوای پیدا کنی؟</span>
@@ -196,23 +248,16 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* تب دسته‌ها */}
       <div className="mt-4 px-4 py-3 overflow-x-auto">
         <CategoryTabs
           categories={categories}
           active={activeCategory}
-          onCategoryChange={(c) => {
-            setActiveCategory(c);
-            setSelectedCard(null);
-            setSearchQuery("");
-          }}
+          onCategoryChange={handleCategoryChange}
           fullyDiscountedCategories={fullyDiscountedCategories}
           isLoading={isLoadingCategories}  
         />
       </div>
 
-
-      {/* کارت‌ها - با pricing از قبل لود شده */}
       <section className="p-8">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-6 mb-16">
           {selectedCard ? (

@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import ServiceModal from "./services_modal/ServiceModal";
 import api from "../api/clientApi";
 import DiscountBadgeClient, { getDiscountStatus } from "./DiscountBadgeClient";
 import Skeleton from "./Skeleton"; 
 
-export default function Card({
+const Card = memo(function Card({
   id,
   image,
   title,
@@ -64,7 +64,7 @@ export default function Card({
     };
 
     fetchPricing();
-  }, [id, preloadedPricing, category]);
+  }, [id, preloadedPricing]);
 
   const openModal = () => setOpen(true);
 
@@ -77,7 +77,6 @@ export default function Card({
         flex flex-col justify-between min-h-[220px] sm:min-h-[280px]"
       >
         <Skeleton className="w-full aspect-[3/4] sm:aspect-square rounded-xl" />
-
         <Skeleton className="h-4 w-2/3 mt-2 sm:mt-3 rounded" />
       </div>
     );
@@ -97,6 +96,7 @@ export default function Card({
         <img
           src={image}
           alt={title}
+          loading="lazy"
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
       </div>
@@ -126,4 +126,14 @@ export default function Card({
       />
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // فقط وقتی ری‌رندر بشه که واقعاً تغییر کرده
+  return (
+    prevProps.id === nextProps.id &&
+    prevProps.preloadedPricing === nextProps.preloadedPricing &&
+    prevProps.image === nextProps.image &&
+    prevProps.title === nextProps.title
+  );
+});
+
+export default Card;
