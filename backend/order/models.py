@@ -15,14 +15,8 @@ def get_deleted_users():
     return user
 
 class TimeRange(models.TextChoices):
-    MORNING  = "morning",  "صبح (۸–۱۳)"   # ۸ صبح تا ۱۳
-    EVENING  = "evening",  "عصر (۱۶–۲۰)"  # ۱۶ تا ۲۰
-
-# میانه هر شیفت برای محاسبه ساعت
-TIME_MID = {
-    TimeRange.MORNING : time(10, 30),   # میانه ۸–۱۳
-    TimeRange.EVENING : time(18,  0),   # میانه ۱۶–۲۰
-}
+    MORNING  = "morning",  "صبح (۸–۱۳)"
+    EVENING  = "evening",  "عصر (۱۶–۲۰)"
 
 TIME_START = {
     TimeRange.MORNING : time( 8,  0),
@@ -34,15 +28,12 @@ TIME_END = {
     TimeRange.EVENING : time(20,  0),
 }
 
-# نگاشت رشته فارسی فرانت → مقدار بک‌اند
 FRONTEND_TIME_MAP = {
     "۸ صبح تا ۱۳" : TimeRange.MORNING,
     "۱۶ تا ۲۰"    : TimeRange.EVENING,
 }
 
-#برای اینکه قیمت های 24و 48 ساعته حساب کنه
 class RushFeeSetting(models.Model):
-    # فیلدهای جدید مطابق فرانت‌اند
     fee_24h = models.PositiveIntegerField(default=50000, verbose_name="هزینه ۲۴ ساعته")
     fee_48h = models.PositiveIntegerField(default=25000, verbose_name="هزینه ۴۸ ساعته")
     
@@ -63,7 +54,6 @@ class RushFeeSetting(models.Model):
 
 
 class PickUpTemplate(models.Model):
-    """مشتری لباس را تحویل می‌دهد (لاندری می‌گیرد)"""
     time_shift   = models.CharField(
         max_length=20,
         choices=TimeRange.choices,
@@ -75,9 +65,7 @@ class PickUpTemplate(models.Model):
     is_active    = models.BooleanField(default=True)
 
     class Meta:
-        verbose_name        = "شیفت تحویل‌گیری"
-        # هر روز فقط یک رکورد per shift
-        unique_together     = []          # اگر نیاز دارید اضافه کنید
+        verbose_name = "شیفت تحویل‌گیری"
 
     def is_available(self):
         return self.is_active
@@ -87,7 +75,6 @@ class PickUpTemplate(models.Model):
 
 
 class DeliveryTemplate(models.Model):
-    """لاندری لباس را به مشتری بازمی‌گرداند"""
     time_shift = models.CharField(
         max_length=20,
         choices=TimeRange.choices,
@@ -97,28 +84,24 @@ class DeliveryTemplate(models.Model):
     urgent_24_capacity  = models.PositiveIntegerField(default=5)
     urgent_48_capacity  = models.PositiveIntegerField(default=10)
     
-    # ← این فیلد رو اضافه کن
     disabled_dates = models.JSONField(
         default=list,
         blank=True,
         help_text="لیست تاریخ‌های غیرفعال (YYYY-MM-DD)"
     )
     
-    base_price          = models.PositiveIntegerField(default=0)
+    base_price = models.PositiveIntegerField(default=0)
     price_add = models.PositiveIntegerField(default=0)
-    is_active           = models.BooleanField(default=True)
-
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = "شیفت تحویل‌دهی"
-
 
     def __str__(self):
         return f"تحویل‌دهی | {self.get_time_shift_display()}"
 
 
 class OrderStatus(models.TextChoices):
-
     PAID = "paid", "پرداخت شده"
     PICKED_UP = "picked_up", "دریافت از مشتری"
     WASHING = "washing", "در حال شستشو"
@@ -142,8 +125,6 @@ class Order(models.Model):
         related_name="orders"
     )
 
-
-
     pickup_date = models.DateField()
     pickup_shift = models.CharField(
         max_length=20,
@@ -162,23 +143,21 @@ class Order(models.Model):
         db_index=True,
     )
 
-
     pickup_cost = models.PositiveIntegerField(default=0)
     delivery_cost = models.PositiveIntegerField(default=0)
-    percent_fee = models.PositiveIntegerField(default=0)   # مقدار درصدی که اعمال شده (فقط عدد صحیح)
+    percent_fee = models.PositiveIntegerField(default=0)
     rush_fee = models.PositiveIntegerField(default=0)
 
-    #  فیلدهای مالی برای تخفبف
-    subtotal_raw = models.PositiveIntegerField(default=0)            # جمع قیمت‌های اصلی همه‌ی آیتم‌های سفارش، قبل از اینکه حتی یک ریال تخفیف محصولی یا کد تخفیف بهشون بخوره.
-    total_item_discounts = models.PositiveIntegerField(default=0)    # مجموع تخفیف‌هایی که مستقیماً به خودِ محصول/دسته/تب قیمت/متریال خورده
-    subtotal_after_items = models.PositiveIntegerField(default=0)    # قیمت سبد خرید بعد از کم کردن تخفیف‌های محصولی، ولی قبل از اعمال کوپن/تخفیف سراسری و هزینه‌های جانبی
-    order_discount_amount = models.PositiveIntegerField(default=0)   # تخفیف کوپن/سراسری
-    final_price = models.PositiveIntegerField(default=0)             # قیمت نهایی پرداختی
+    subtotal_raw = models.PositiveIntegerField(default=0)
+    total_item_discounts = models.PositiveIntegerField(default=0)
+    subtotal_after_items = models.PositiveIntegerField(default=0)
+    order_discount_amount = models.PositiveIntegerField(default=0)
+    final_price = models.PositiveIntegerField(default=0)
 
     paid_at = models.DateTimeField(null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     create_time = models.DateTimeField(auto_now_add=True)
-    order_type = models.CharField(max_length=20,null=True,blank = True)    # "سفارش عادی", "سفارش فوری 24 ساعته", ...
+    order_type = models.CharField(max_length=20, null=True, blank=True)
 
     class Meta:
         indexes = [
@@ -186,8 +165,6 @@ class Order(models.Model):
             models.Index(fields=["pickup_date", "pickup_shift"]),
             models.Index(fields=["delivery_date", "delivery_shift"]),
         ]
-
-    # -متدهای مربوط به بازه‌های زمانی -
 
     @property
     def delivery_deadline(self):
@@ -210,7 +187,6 @@ class Order(models.Model):
 
     @property
     def late_by(self):
-
         if self.status not in {OrderStatus.PAID, OrderStatus.WASHING, OrderStatus.PICKED_UP}:
             return timedelta(0)
 
@@ -227,7 +203,7 @@ class Order(models.Model):
     @property
     def late_minutes(self):
         td = self.late_by
-        return td.total_seconds() // 60  # کف تقسیم
+        return td.total_seconds() // 60
 
     @property
     def late_display(self):
@@ -271,10 +247,13 @@ class Order(models.Model):
     def order_range_type(self):
         hours = self.total_hours_between_pickup_and_delivery
         if hours is None:
-            raise ValueError("تاریخ تحویل گرفتن و تحویل دادن یکی نیست")
-        # ✅ FIX: raise ValueError instead of returning a string when dates are equal
-        if self.pickup_date == self.delivery_date:
-            raise ValueError("تاریخ تحویل دادن و تحویل گرفتن نباید یکی باشد")
+            raise ValueError("تاریخ یا شیفت نامعتبر است")
+        
+        # ✅ حذف check همون‌روز — الان مجازه
+        # فقط چک می‌کنیم تحویل قبل از تحویل‌دادن نباشه
+        if hours <= 0:
+            raise ValueError("زمان تحویل گرفتن باید بعد از تحویل دادن باشد")
+        
         if hours <= 24:
             return "سفارش فوری 24 ساعته"
         if hours <= 48:
@@ -282,7 +261,7 @@ class Order(models.Model):
         return "سفارش عادی"
 
     def calculate_rush_fee(self):
-        settings = RushFeeSetting.objects.first()  # یا فیلتر بر اساس فعال بودن
+        settings = RushFeeSetting.objects.first()
         if not settings:
             return 0
         
@@ -292,12 +271,12 @@ class Order(models.Model):
             return 0
         
         if order_type == "سفارش فوری 24 ساعته":
-            if settings.is_24h_enabled:  # چک کردن فعال بودن
+            if settings.is_24h_enabled:
                 return settings.fee_24h
             return 0
             
         if order_type == "48ساعته":
-            if settings.is_48h_enabled:  # چک کردن فعال بودن
+            if settings.is_48h_enabled:
                 return settings.fee_48h
             return 0
             
@@ -325,10 +304,8 @@ class Order(models.Model):
             
         return 0
 
-
     def save(self, *args, **kwargs):
         if not self.pk:
-            # فقط اگر قبلاً ست نشده بودن، محاسبه کن
             if not self.rush_fee:
                 self.rush_fee = self.calculate_rush_fee()
             if not self.percent_fee:
@@ -354,10 +331,9 @@ class OrderItem(models.Model):
     material = models.CharField(max_length=50)
     quantity = models.PositiveIntegerField(default=1)
 
-    original_price = models.PositiveIntegerField()   # قیمت از تب قیمت / محصول قبل از تخفیف محصول
-    item_discount = models.PositiveIntegerField(default=0)   # تخفیف ProductDiscount
-    # قیمت نهایی که در محاسبات می‌رود = original_price - item_discount
-    price = models.PositiveIntegerField()   # همون final item price
+    original_price = models.PositiveIntegerField()
+    item_discount = models.PositiveIntegerField(default=0)
+    price = models.PositiveIntegerField()
     applied_product_discount = models.ForeignKey(
         ProductDiscount,
         on_delete=models.SET_NULL,
@@ -369,11 +345,10 @@ class OrderItem(models.Model):
         return f"{self.product.title} ({self.quantity})"
 
 class OrderStatusLog(models.Model):
-
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
-    from_status = models.CharField(null=True,blank=True,max_length=20)
+    from_status = models.CharField(null=True, blank=True, max_length=20)
     to_status = models.CharField(max_length=20)
 
     class Meta:

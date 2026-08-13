@@ -40,15 +40,12 @@ export default function Payment({
     setLoading(false);
   };
 
-  // ✅ FIX: Use frontend pricing as fallback if backend returns 0
-  // This ensures the rush fee is always displayed even if backend summary hasn't updated yet
-  const effectiveRushFee = rushFee || datetime?.pricing?.amount || 0;
-  
-  // ✅ FIX: Use effectiveRushFee for service info display
-  // If backend provided rushFee, use that. Otherwise use frontend's pricing calculation
-  const serviceInfo = datetime?.pricing;
-  const serviceAmount = effectiveRushFee;
-  const serviceType = serviceInfo?.type || (effectiveRushFee > 0 ? (effectiveRushFee > 50000 ? 'express' : 'standard') : 'economy');
+  // ✅ منبع اصلی: اولویت با type ای که DateTimeRangePicker محاسبه کرده
+  const serviceType = datetime?.pricing?.type || "economy";
+  const serviceAmount = rushFee ?? datetime?.pricing?.amount ?? 0;
+
+  // ✅ چک می‌کنیم آیا کاربر زمان انتخاب کرده یا نه
+  const hasSelectedTime = datetime?.delivery?.date && datetime?.pickup?.date;
 
   return (
     <motion.div
@@ -84,7 +81,7 @@ export default function Payment({
 
         {/* Summary */}
         <div className="space-y-3 text-sm">
-          <Row label="قیمت لباس‌ها" value={`${subtotal.toLocaleString()} تومان`} />
+          <Row label="هزینه خدمات لباس‌ها" value={`${subtotal.toLocaleString()} تومان`} />
 
           <Row
             label="هزینه پیک"
@@ -92,24 +89,28 @@ export default function Payment({
             valueClass="text-gray-500 dark:text-gray-300"
           />
 
-          {/* ✅ FIX: Use effectiveRushFee (backend + frontend fallback) for service display */}
-          {serviceAmount > 0 && (
+          {/* ✅ همیشه نمایش هزینه سرویس وقتی زمان انتخاب شده */}
+          {hasSelectedTime && (
             <Row
               label={
-                serviceType === 'express' ? 'سرویس فوری (۲۴ ساعته)' : 
-                serviceType === 'standard' ? 'سرویس استاندارد (۴۸ ساعته)' : 
-                'سرویس اقتصادی'
+                serviceType === "express"
+                  ? "سرویس فوری (۲۴ ساعته)"
+                  : serviceType === "standard"
+                  ? "سرویس استاندارد (۴۸ ساعته)"
+                  : "سرویس اقتصادی"
               }
-              value={`${serviceAmount.toLocaleString()} تومان`}
-              valueClass="text-amber-600 dark:text-amber-400"
-            />
-          )}
-
-          {/* ✅ FIX: Show rush fee separately using effectiveRushFee */}
-          {effectiveRushFee > 0 && (
-            <Row
-              label="هزینه سرویس فوری"
-              value={`${effectiveRushFee.toLocaleString()} تومان`}
+              value={
+                serviceAmount > 0
+                  ? `${serviceAmount.toLocaleString()} تومان`
+                  : "رایگان"
+              }
+              valueClass={
+                serviceType === "express"
+                  ? "text-green-600 dark:text-green-400"
+                  : serviceType === "standard"
+                  ? "text-orange-500 dark:text-orange-400"
+                  : "text-purple-600 dark:text-purple-400"
+              }
             />
           )}
 
@@ -127,10 +128,19 @@ export default function Payment({
             <span className="text-gray-700 dark:text-gray-200 font-bold text-lg">
               مبلغ نهایی
             </span>
-            <span className="text-2xl font-bold text-sky-700 dark:text-gray-200">
-              {total.toLocaleString()}
-              <span className="text-sm font-normal text-sky-600 dark:text-gray-400 mr-1">تومان</span>
-            </span>
+
+            <div className="text-left">
+              <div className="text-2xl font-bold text-sky-700 dark:text-gray-200">
+                {total.toLocaleString()}
+                <span className="text-sm font-normal text-sky-600 dark:text-gray-400 mr-1">
+                  تومان
+                </span>
+              </div>
+
+              <div className="text-lg text-gray-800 dark:text-gray-400 mt-1">
+                {(total * 10).toLocaleString()} ریال
+              </div>
+            </div>
           </div>
         </div>
 
@@ -158,21 +168,26 @@ export default function Payment({
             </div>
           </div>
 
-          {/* ✅ FIX: Use effectiveRushFee and serviceType for service info display */}
-          {serviceInfo && (
+          {/* ✅ نوع سرویس — همیشه نمایش وقتی زمان انتخاب شده */}
+          {hasSelectedTime && (
             <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
               <span className="font-semibold text-gray-700 dark:text-gray-200">
                 نوع سرویس:
               </span>
-              <span className={`text-sm font-medium ${
-                serviceType === 'express' ? 'text-red-600 dark:text-red-400' :
-                serviceType === 'standard' ? 'text-amber-600 dark:text-amber-400' :
-                'text-emerald-600 dark:text-emerald-400'
-              }`}>
-                {serviceType === 'express' ? 'فوری (۲۴ ساعته)' : 
-                 serviceType === 'standard' ? 'استاندارد (۴۸ ساعته)' : 
-                 'اقتصادی (رایگان)'}
-                {serviceInfo.hours && ` — ${Math.round(serviceInfo.hours)} ساعت`}
+              <span
+                className={`text-sm font-medium ${
+                  serviceType === "express"
+                    ? "text-green-600 dark:text-green-400"
+                    : serviceType === "standard"
+                    ? "text-orange-500 dark:text-orange-400"
+                    : "text-purple-600 dark:text-purple-400"
+                }`}
+              >
+                {serviceType === "express"
+                  ? "فوری (۲۴ ساعته)"
+                  : serviceType === "standard"
+                  ? "استاندارد (۴۸ ساعته)"
+                  : "اقتصادی (رایگان)"}
               </span>
             </div>
           )}

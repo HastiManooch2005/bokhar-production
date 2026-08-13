@@ -16,7 +16,6 @@ export default function DateTimeRangePicker({
   const [pickupDate, setPickupDate] = useState(null);
   const [pickupTime, setPickupTime] = useState(null);
   
-  // ✅ استیت‌های API
   const [rushSettings, setRushSettings] = useState({
     fee_24h: 100000,
     fee_48h: 50000,
@@ -31,7 +30,6 @@ export default function DateTimeRangePicker({
   const hasNotifiedRef = useRef(false);
   const prevValueRef = useRef(null);
 
-  /* ---------- لود تنظیمات از API ---------- */
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -43,9 +41,6 @@ export default function DateTimeRangePicker({
           capacityApi.getDeliveryTemplates()
         ]);
 
-        console.log("📦 API Response - Rush:", rushRes.data);
-        console.log("📦 API Response - Templates:", templateRes.data);
-
         if (rushRes.data) {
           setRushSettings({
             fee_24h: rushRes.data.fee_24h || 100000,
@@ -56,33 +51,24 @@ export default function DateTimeRangePicker({
           });
         }
 
-        // ✅ فیکس اصلی: استخراج درست disabled_dates از آرایه JSONField
         if (templateRes.data && Array.isArray(templateRes.data)) {
-          // جمع‌آوری همه تاریخ‌های غیرفعال از همه تمپلیت‌های فعال
           const allDisabledDates = templateRes.data
-            .filter(t => t.is_active !== false) // فقط تمپلیت‌های فعال
+            .filter(t => t.is_active !== false)
             .flatMap(t => {
-              // اطمینان از اینکه disabled_dates آرایه است و خالی نیست
               if (Array.isArray(t.disabled_dates) && t.disabled_dates.length > 0) {
                 return t.disabled_dates;
               }
               return [];
             });
           
-          // حذف تاریخ‌های تکراری
           const uniqueDates = [...new Set(allDisabledDates)];
-          
-          console.log("📅 Disabled dates extracted:", uniqueDates);
           setDisabledDates(uniqueDates);
         } else {
-          console.warn("⚠️ No templates found or invalid format");
           setDisabledDates([]);
         }
         
       } catch (error) {
-        console.error("❌ Error loading capacity settings:", error);
         setLoadError("خطا در بارگذاری تنظیمات. لطفاً صفحه را رفرش کنید.");
-        // مقدار پیش‌فرض در صورت خطا
         setDisabledDates([]);
       } finally {
         setIsLoadingSettings(false);
@@ -92,7 +78,6 @@ export default function DateTimeRangePicker({
     loadSettings();
   }, []);
 
-  /* ---------- init value ---------- */
   useEffect(() => {
     if (!value || value === prevValueRef.current) return;
     prevValueRef.current = value;
@@ -127,7 +112,7 @@ export default function DateTimeRangePicker({
         setPickupTime(prev => prev !== value.pickup.time ? value.pickup.time : prev);
       }
     } catch (e) {
-      console.warn("❌ خطا در مقداردهی اولیه:", e);
+      console.warn("خطا در مقداردهی اولیه:", e);
     }
   }, [value]);
 
@@ -139,14 +124,15 @@ export default function DateTimeRangePicker({
     const pickupObj = new DateObject(pickupDate);
     const dayDiff = pickupObj.toJulianDay() - deliveryObj.toJulianDay();
     
-    const getMidHour = (slot) => {
-      if (slot === "۸صبح  تا ۱۳" || slot === "۸ صبح تا ۱۳") return 10.5;
-      if (slot === "۱۶ تا ۲۰") return 18;
+    // ✅ هماهنگ با بکند: شروع شیفت به جای میانه
+    const getStartHour = (slot) => {
+      if (slot === "۸صبح  تا ۱۳" || slot === "۸ صبح تا ۱۳") return 8;
+      if (slot === "۱۶ تا ۲۰") return 16;
       return 12;
     };
     
-    const deliveryHour = getMidHour(deliveryTime);
-    const pickupHour = getMidHour(pickupTime);
+    const deliveryHour = getStartHour(deliveryTime);
+    const pickupHour = getStartHour(pickupTime);
     
     let totalHours = (dayDiff * 24) + (pickupHour - deliveryHour);
     return Math.max(0, totalHours);
@@ -200,7 +186,6 @@ export default function DateTimeRangePicker({
 
   const pickupMinDate = deliveryDate ? new DateObject(deliveryDate) : null;
 
-  /* ---------- محاسبه اسلات‌های غیرفعال ---------- */
   const disabledPickupSlots = useMemo(() => {
     if (!deliveryDate || !pickupDate || !deliveryTime) return [];
     
@@ -254,7 +239,6 @@ export default function DateTimeRangePicker({
     }
   }, [deliveryDate, deliveryTime, pickupDate, pickupTime, triggerOnChange, onComplete]);
 
-  /* ---------- handlers ---------- */
   const handleDeliveryDateChange = (date) => {
     setDeliveryDate(date);
     
@@ -374,12 +358,8 @@ export default function DateTimeRangePicker({
         {rushSettings.free_after_hours}+ ساعت: رایگان
       </p>
       
-{/* ✅ تغییر اصلی: items-stretch برای یکسان کردن ارتفاع */}
 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
-  {/* Delivery Section */}
-  {/* ✅ حذف h-fit و اضافه کردن h-full flex flex-col */}
   <div className="bg-white/50 dark:bg-[#262B40]/50 rounded-2xl p-4 md:p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-full">
-    {/* ✅ min-h-[48px] برای ثابت نگه داشتن ارتفاع header */}
     <div className="flex items-center gap-2 mb-4 min-h-[48px]">
       <span className="text-2xl">📦</span>
       <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">
@@ -393,7 +373,6 @@ export default function DateTimeRangePicker({
         </span>
       )}
     </div>
-    {/* ✅ flex-1 برای پر کردن فضای باقیمانده */}
     <div className="flex-1">
       <TimeSelector
         selectedDate={deliveryDate}
@@ -406,7 +385,6 @@ export default function DateTimeRangePicker({
     </div>
   </div>
 
-  {/* Pickup Section */}
   <div className="bg-white/50 dark:bg-[#262B40]/50 rounded-2xl p-4 md:p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-full">
     <div className="flex items-center gap-2 mb-4 min-h-[48px]">
       <span className="text-2xl">🕒</span>
@@ -437,7 +415,6 @@ export default function DateTimeRangePicker({
 </div>
 
 
-      {/* Pricing Summary */}
       {isComplete && priceInfo && (
         <div className={`mt-8 p-6 rounded-2xl border-2 ${priceInfo.borderColor} bg-gradient-to-r ${priceInfo.color} animate-fadeInUp`}>
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
@@ -481,7 +458,6 @@ export default function DateTimeRangePicker({
         </div>
       )}
 
-      {/* Action Button */}
       <div className="mt-8 flex justify-center">
         <button
           disabled={!isComplete}

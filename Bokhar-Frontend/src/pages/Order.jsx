@@ -8,9 +8,9 @@ import DateTimeRangePicker from "../components/orders/time/DateTimeRangePicker";
 import MapSelector from "../components/orders/map/MapSelector.jsx";
 import Payment from "../components/orders/Payment";
 import StepProgress from "../components/orders/StepProgress";
-import { getOrderSummary, toGregorian, TIME_SLOT_MAP } from "../api/order";  // ✅ TIME_SLOT_MAP اضافه شد
+import { getOrderSummary, toGregorian, TIME_SLOT_MAP } from "../api/order";
 import { useCart } from "../context/CartContext";
-import { addToCart, clearCart } from "../api/cartService";  // ✅ برای sync
+import { addToCart, clearCart } from "../api/cartService";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
@@ -55,7 +55,7 @@ export default function Order() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { step, maxStep, orderData } = state;
   const [summary, setSummary] = useState(null);
-  const { cartItems, isGuest } = useCart();  // ✅ isGuest اضافه شد
+  const { cartItems, isGuest } = useCart();
   const location = orderData?.location;
 
   const stepType = useCallback((s) => STEP_MAP[s] || null, []);
@@ -130,7 +130,6 @@ export default function Order() {
     dispatch({ type: "SET_ORDER_DATA", payload: { datetime } });
   }, []);
 
-  // ✅ اصلاح: saveAddressToBackend — فیلدها مطابق AddressSerializer
   const saveAddressToBackend = useCallback(async (locationData) => {
     try {
       const addressParts = locationData.address?.split("،") || [];
@@ -140,10 +139,9 @@ export default function Order() {
       const payload = {
         title: locationData.title || "آدرس",
         city: city,
-        address: addressDetail,  // ✅ تغییر: address_detail → address
+        address: addressDetail,
         apartment_name: locationData.plaque || "",
         unit: Number(locationData.unit) || 1,
-        // ❌ حذف: province (در AddressSerializer وجود نداره)
       };
 
       console.log("ADDRESS PAYLOAD:", payload);
@@ -185,19 +183,20 @@ export default function Order() {
     dispatch({ type: "SET_ORDER_DATA", payload: { discountCode: code } });
   }, []);
 
+  // ✅ FIX: جابجایی pickup ↔ delivery — UI "تحویل دادن" = backend pickup
   const applyDiscount = useCallback(async () => {
     try {
-      const pickupShiftMapped = TIME_SLOT_MAP[orderData.datetime?.pickup?.time];
-      const deliveryShiftMapped = TIME_SLOT_MAP[orderData.datetime?.delivery?.time];
+      const pickupShiftMapped = TIME_SLOT_MAP[orderData.datetime?.delivery?.time];
+      const deliveryShiftMapped = TIME_SLOT_MAP[orderData.datetime?.pickup?.time];
 
       const data = await getOrderSummary({
-        pickup_date: toGregorian(orderData.datetime?.pickup?.date),
-        pickup_shift: pickupShiftMapped,  // ✅ تغییر: mapped value
-        delivery_date: toGregorian(orderData.datetime?.delivery?.date),
-        delivery_shift: deliveryShiftMapped,  // ✅ تغییر: mapped value
+        pickup_date: toGregorian(orderData.datetime?.delivery?.date),
+        pickup_shift: pickupShiftMapped,
+        delivery_date: toGregorian(orderData.datetime?.pickup?.date),
+        delivery_shift: deliveryShiftMapped,
         coupon_code: orderData.discountCode || "",
         address_id: orderData.location?.id,
-        cart_items: orderData.cartItems?.map(item => ({  // ✅ اضافه: cart_items
+        cart_items: orderData.cartItems?.map(item => ({
           service_item_id: item.productId || item.id || item.product_id,
           quantity: item.qty || item.quantity || 1,
           material: item.material || "نخ",
@@ -215,10 +214,8 @@ export default function Order() {
     }
   }, [orderData]);
 
-  // ✅ اصلاح کامل: handlePayment
   const handlePayment = useCallback(async () => {
     try {
-      // ۱. Validate Address
       let addressId = orderData.location?.id;
       
       if (!addressId && orderData.location) {
@@ -234,15 +231,13 @@ export default function Order() {
         return;
       }
 
-      // ۲. Check Auth
       if (isGuest) {
         toast.error("لطفاً ابتدا وارد حساب کاربری شوید");
         return;
       }
 
-      // ۳. Sync Cart with Backend Session (backward-compatible)
       try {
-        await clearCart();  // پاک کردن session قدیمی
+        await clearCart();
         for (const item of orderData.cartItems) {
           await addToCart(
             item.productId || item.product_id,
@@ -258,32 +253,29 @@ export default function Order() {
         }
       } catch (syncErr) {
         console.error("Cart sync warning:", syncErr);
-        // ادامه می‌دیم — Backend از payload می‌خونه
       }
 
-      // ۴. Map Time Slots
-      const pickupShiftMapped = TIME_SLOT_MAP[orderData.datetime?.pickup?.time];
-      const deliveryShiftMapped = TIME_SLOT_MAP[orderData.datetime?.delivery?.time];
+      // ✅ FIX: جابجایی pickup ↔ delivery — UI "تحویل دادن" = backend pickup
+      const pickupShiftMapped = TIME_SLOT_MAP[orderData.datetime?.delivery?.time];
+      const deliveryShiftMapped = TIME_SLOT_MAP[orderData.datetime?.pickup?.time];
 
       if (!pickupShiftMapped || !deliveryShiftMapped) {
         toast.error("شیفت زمانی نامعتبر است");
         return;
       }
 
-      // ۵. Build Secure Payload
       const payload = {
         address_id: addressId,
         
-        pickup_date: toGregorian(orderData.datetime?.pickup?.date),
+        pickup_date: toGregorian(orderData.datetime?.delivery?.date),
         pickup_shift: pickupShiftMapped,
         
-        delivery_date: toGregorian(orderData.datetime?.delivery?.date),
+        delivery_date: toGregorian(orderData.datetime?.pickup?.date),
         delivery_shift: deliveryShiftMapped,
         
         coupon_code: orderData.discountCode || "",
         description: "",
         
-        // ✅ cart_items بدون قیمت — فقط شناسه‌ها
         cart_items: orderData.cartItems?.map(item => ({
           service_item_id: item.productId || item.id || item.product_id,
           quantity: item.qty || item.quantity || 1,
@@ -295,7 +287,6 @@ export default function Order() {
 
       console.log("PAYMENT PAYLOAD:", JSON.stringify(payload, null, 2));
 
-      // ۶. Send Payment Request
       const response = await axios.post(
         `${API_URL}/payments/initiate/`,
         payload,
@@ -329,7 +320,7 @@ export default function Order() {
     }
   }, [orderData, saveAddressToBackend, dispatch, isGuest]);
 
-  // ✅ اصلاح: loadSummary
+  // ✅ FIX: جابجایی pickup ↔ delivery — UI "تحویل دادن" = backend pickup
   const loadSummary = useCallback(async () => {
     console.log("========== LOAD SUMMARY ==========");
     console.log("ORDER DATA:", orderData);
@@ -342,13 +333,13 @@ export default function Order() {
       return;
     }
 
-    const pickupShiftMapped = TIME_SLOT_MAP[orderData.datetime?.pickup?.time];
-    const deliveryShiftMapped = TIME_SLOT_MAP[orderData.datetime?.delivery?.time];
+    const pickupShiftMapped = TIME_SLOT_MAP[orderData.datetime?.delivery?.time];
+    const deliveryShiftMapped = TIME_SLOT_MAP[orderData.datetime?.pickup?.time];
 
     const payload = {
-      pickup_date: toGregorian(orderData.datetime?.pickup?.date),
+      pickup_date: toGregorian(orderData.datetime?.delivery?.date),
       pickup_shift: pickupShiftMapped,
-      delivery_date: toGregorian(orderData.datetime?.delivery?.date),
+      delivery_date: toGregorian(orderData.datetime?.pickup?.date),
       delivery_shift: deliveryShiftMapped,
       coupon_code: orderData.discountCode || "",
       address_id: orderData.location?.id,
