@@ -15,9 +15,26 @@ export function ToastProvider({ children }) {
     }, duration);
   }, []);
 
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
   return (
-    <ToastContext.Provider value={{ addToast, toasts }}>
+    <ToastContext.Provider value={{ addToast, removeToast, toasts }}>
       {children}
+      {/* Toast Container - رندر global */}
+      <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] space-y-2 pointer-events-none">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            onClick={() => removeToast(t.id)}
+            className={`px-6 py-3 rounded-2xl shadow-xl animate-slide-down pointer-events-auto cursor-pointer
+              ${t.type === "error" ? "bg-red-500" : "bg-green-600"} text-white font-medium`}
+          >
+            {t.message}
+          </div>
+        ))}
+      </div>
     </ToastContext.Provider>
   );
 }

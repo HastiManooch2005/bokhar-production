@@ -79,13 +79,18 @@ export default function MobileNavbar() {
     );
   }
 
-  const handleProfileClick = () => {
-    if (user?.isAuthenticated) {
-      navigate("/customer-dashboard");
+const handleProfileClick = () => {
+  if (user?.isAuthenticated) {
+    const isAdminOrSeller = Boolean(user?.is_admin) || user?.role === "seller";
+    if (isAdminOrSeller) {
+      navigate("/admin-dashboard");
     } else {
-      setOpenModal(true);
+      navigate("/customer-dashboard");
     }
-  };
+  } else {
+    setOpenModal(true);
+  }
+};
 
   const isHomeActive = location.pathname === "/" || location.pathname === "/shop";
 
@@ -193,16 +198,21 @@ export default function MobileNavbar() {
           />
 
           {/* پروفایل */}
-          <NavItem
-            icon={<User size={22} strokeWidth={2} />}
-            label={
-              user?.isAuthenticated
-                ? user.fullname || "پروفایل"
-                : "ورود / ثبت نام"
-            }
-            onClick={handleProfileClick}
-            active={location.pathname === "/customer-dashboard"}
-          />
+<NavItem
+  icon={<User size={22} strokeWidth={2} />}
+  label={
+    user?.isAuthenticated
+      ? (Boolean(user?.is_admin) || user?.role === "seller")
+        ? "مدیریت"
+        : user.fullname || "پروفایل"
+      : "ورود / ثبت نام"
+  }
+  onClick={handleProfileClick}
+  active={
+    location.pathname === "/customer-dashboard" ||
+    location.pathname.startsWith("/admin-dashboard")
+  }
+/>
         </div>
       </nav>
 

@@ -160,24 +160,30 @@ const { totalItems, loading: cartLoading,cartItems } = useCart();
           </div>
 
           {/* پروفایل یا ورود */}
-          {user?.isAuthenticated ? (
-            <div
-              onClick={() => navigate("/customer-dashboard")}
-              className="flex items-center gap-2 px-4 cursor-pointer hover:text-sky-300  dark:hover:text-white transition"
-            >
-              <User size={22} />
-              <span className="hidden lg:block">
-                {user.fullname || "پروفایل"}
-              </span>
-            </div>
-          ) : (
-            <div
-              onClick={() => setOpenModal(true)}
-              className="text-gray-800 dark:text-gray-100 hover:text-sky-300 dark:hover:text-white cursor-pointer transition"
-            >
-              ورود / ثبت نام
-            </div>
-          )}
+{user?.isAuthenticated ? (
+  <div
+    onClick={() => {
+      if (user?.is_admin || user?.role === "seller") {
+        navigate("/admin-dashboard");
+      } else {
+        navigate("/customer-dashboard");
+      }
+    }}
+    className="flex items-center gap-2 px-4 cursor-pointer hover:text-sky-300 dark:hover:text-white transition"
+  >
+    <User size={22} />
+    <span className="hidden lg:block">
+      {user.fullname || "پروفایل"}
+    </span>
+  </div>
+) : (
+  <div
+    onClick={() => setOpenModal(true)}
+    className="text-gray-800 dark:text-gray-100 hover:text-sky-300 dark:hover:text-white cursor-pointer transition"
+  >
+    ورود / ثبت نام
+  </div>
+)}
         </div>
       </nav>
 

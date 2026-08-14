@@ -40,14 +40,13 @@ import AdminDiscount from "./components/admin/discount/AdminDiscount";
 import { OrdersProvider } from "./context/OrdersContext";
 
 // Toast + Admin Guard
-import { ToastProvider, useToast } from "./context/ToastContext";
+import { ToastProvider } from "./context/ToastContext";
 import RequireAdminSeller from "./components/RequireAdminSeller";
 
 function AppContent() {
   const [openModal, setOpenModal] = useState(false);
   const location = useLocation();
 
-  // مسیر واقعی از location.hash استخراج می‌شود
   const [currentPath, setCurrentPath] = useState("");
 
   useEffect(() => {
@@ -56,7 +55,6 @@ function AppContent() {
     setCurrentPath(hashPath || "/");
   }, [location]);
 
-  // صفحه اصلی، پنل ادمین و چت تیکت نوبار ندارند
   const normalizedPath = currentPath.replace(/^#/, "");
   const hideNavbar =
     normalizedPath === "/" ||
@@ -71,9 +69,6 @@ function AppContent() {
                 dark:bg-gradient-to-br dark:from-[#262B40] dark:via-none dark:to-[#0B248A]
                     min-h-screen"
     >
-      {/* Toast Container */}
-      <ToastContainer />
-
       {/* Navbarها فقط اگر در مسیر مخفی نباشیم */}
       {!hideNavbar && (
         <>
@@ -103,7 +98,6 @@ function AppContent() {
         <Route path="/customer-dashboard/support" element={<Support />} />
         <Route path="/customer-dashboard/support/:id" element={<CustomerTicket />} />
 
-        {/* Admin Routes - Protected */}
         <Route
           path="/admin-dashboard"
           element={
@@ -185,24 +179,6 @@ function AppContent() {
         <Route path="/aboutDryCleaning" element={<AboutDryCleaning />} />
         <Route path="/aboutUs" element={<AboutUs />} />
       </Routes>
-    </div>
-  );
-}
-
-// کامپوننت Toast Container برای نمایش toast ها
-function ToastContainer() {
-  const { toasts } = useToast();
-  return (
-    <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] space-y-2 pointer-events-none">
-      {toasts.map((t) => (
-        <div
-          key={t.id}
-          className={`px-6 py-3 rounded-2xl shadow-xl animate-slide-down pointer-events-auto
-            ${t.type === "error" ? "bg-red-500" : "bg-green-600"} text-white font-medium`}
-        >
-          {t.message}
-        </div>
-      ))}
     </div>
   );
 }

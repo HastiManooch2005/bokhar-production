@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
@@ -7,14 +7,34 @@ export default function RequireAdminSeller({ children }) {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const hasRedirected = useRef(false);
+  const prevUserRef = useRef(null);
+
+  // وقتی identity کاربر عوض شد (لاگین/لاگ‌اوت/تغییر role)، reset کن
+  useEffect(() => {
+    const userId = user?.id || user?.phone;
+    const prevId = prevUserRef.current?.id || prevUserRef.current?.phone;
+    const userRole = user?.role;
+    const prevRole = prevUserRef.current?.role;
+    const isAdmin = user?.is_admin;
+    const prevIsAdmin = prevUserRef.current?.is_admin;
+
+    // اگه کاربر عوض شده (از null به object یا برعکس، یا role عوض شده)
+    if (userId !== prevId || userRole !== prevRole || isAdmin !== prevIsAdmin) {
+      hasRedirected.current = false;
+      prevUserRef.current = user ? { ...user } : null;
+    }
+  }, [user]);
 
   useEffect(() => {
     if (loading) return;
+    if (hasRedirected.current) return;
 
-    const isAllowed = user?.is_admin || user?.role === "seller";
+    const isAllowed = Boolean(user?.is_admin) || user?.role === "seller";
 
     if (!isAllowed) {
-      addToast("برای دسترسی به داشبورد مغازه باید ورود/ثبت نام کنید", "error");
+      hasRedirected.current = true;
+      addToast("برای دسترسی به این بخش باید لاگین کنید", "error");
       navigate("/shop", { replace: true });
     }
   }, [user, loading, navigate, addToast]);
@@ -27,7 +47,6 @@ export default function RequireAdminSeller({ children }) {
     );
   }
 
-  const isAllowed = user?.is_admin || user?.role === "seller";
-  
+  const isAllowed = Boolean(user?.is_admin) || user?.role === "seller";
   return isAllowed ? children : null;
 }
