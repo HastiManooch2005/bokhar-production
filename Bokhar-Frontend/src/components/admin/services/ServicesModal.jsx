@@ -69,7 +69,7 @@ function MaterialPriceInput({ mat, value, onToggle, onChange, onDelete }) {
         type="button"
         onClick={onToggle}
         className={`px-3 py-2 rounded-xl transition min-w-[60px] flex items-center justify-center gap-2 ${
-          active ? "bg-[#8AA1C4] text-white" : "bg-gray-100 dark:bg-[#262B40] text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-[#2d3350]"
+          active ? "bg-sky-600 dark:bg-[#8AA1C4] text-white" : "bg-gray-100 dark:bg-[#262B40] text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-[#2d3350]"
         }`}
       >
         {mat}
@@ -573,12 +573,12 @@ export default function ServicesModal({
               <button
                 type="button"
                 onClick={() => setIsAddingTab(true)}
-                className="py-2 px-3 text-sm border rounded-t-xl bg-purple-100 dark:bg-[#262B40] text-purple-700 dark:text-[#8AA1C4] border-transparent hover:bg-purple-200 dark:hover:bg-[#2d3350] transition"
+                className="py-2 px-3 text-sm border rounded-t-xl bg-sky-100 dark:bg-[#262B40] text-sky-700 dark:text-[#8AA1C4] border-transparent hover:bg-sky-200 dark:hover:bg-[#2d3350] transition"
               >
                 +
               </button>
             ) : (
-              <div className="flex-1 flex items-center gap-1 px-2 py-1 border border-purple-300 dark:border-gray-600 rounded-t-xl bg-purple-50 dark:bg-[#262B40] border-b-white dark:border-b-[#262B40]">
+              <div className="flex-1 flex items-center gap-1 px-2 py-1 border border-sky-300 dark:border-gray-600 rounded-t-xl bg-sky-50 dark:bg-[#262B40] border-b-white dark:border-b-[#262B40]">
                 <input
                   value={newTabName}
                   onChange={(e) => setNewTabName(e.target.value)}
@@ -701,7 +701,7 @@ export default function ServicesModal({
               type="button"
               onClick={handleSave}
               disabled={!isValid || isLoading}
-              className="px-6 py-2 rounded-xl bg-purple-600 dark:bg-[#8AA1C4] text-white disabled:opacity-50 hover:bg-purple-700 dark:hover:bg-[#7a93b8] transition"
+              className="px-6 py-2 rounded-xl bg-sky-600 dark:bg-[#8AA1C4] text-white disabled:opacity-50 hover:bg-sky-700 dark:hover:bg-[#7a93b8] transition"
             >
               {isLoading ? "در حال ذخیره..." : "ذخیره"}
             </button>
