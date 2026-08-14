@@ -1,30 +1,162 @@
-import { Wallet, ArrowLeft } from "lucide-react";
+import { Wallet, ArrowLeft, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import axios from "axios";
+import toast from "react-hot-toast";
 
-const quickAmounts = [50000, 100000, 200000];
+// ─── API Setup ───
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
-// تابع کمکی برای تبدیل اعداد فارسی به انگلیسی
+const api = axios.create({
+  baseURL: API_URL,
+  withCredentials: true,
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      const msg = error.response?.data?.detail || "";
+      if (msg.includes("Authentication")) {
+        error.response.data.detail = "نشست شما منقضی شده، لطفاً دوباره وارد شوید";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+// ─── Helpers ───
+const toRial = (toman) => toman * 10;
+
+const quickAmounts = [300000, 500000, 1000000];
+
 function toEnglishNumber(str) {
   return str.replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
 }
 
+// ─── API Functions ───
+const chargeWallet = (amountInRials) =>
+  api.post("/payments/wallet/charge/", { amount: amountInRials });
+
+const verifyWalletCharge = (authority, status) =>
+  api.get("/payments/wallet/charge/verify/", {
+    params: { Authority: authority, Status: status },
+    headers: { Accept: "application/json" },
+  });
+
+const fetchWalletBalance = () =>
+  api.get("/wallet/balance/");
+
+// ─── Component ───
 export default function WalletPage() {
   const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [balance, setBalance] = useState(null);
+  const [balanceLoading, setBalanceLoading] = useState(true);
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme) return savedTheme;
-    return document.documentElement.classList.contains("dark")
-      ? "dark"
-      : "light";
+    return document.documentElement.classList.contains("dark") ? "dark" : "light";
   });
+
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Fetch balance on mount
+  useEffect(() => {
+    const getBalance = async () => {
+      try {
+        const response = await fetchWalletBalance();
+        setBalance(response.data.balance);
+      } catch (error) {
+        console.error("Failed to fetch balance:", error);
+        toast.error("خطا در دریافت موجودی");
+      } finally {
+        setBalanceLoading(false);
+      }
+    };
+    getBalance();
+  }, []);
+
+  // Handle callback from ZarinPal after wallet charge
+  useEffect(() => {
+    const authority = searchParams.get("Authority");
+    const status = searchParams.get("Status");
+
+    if (authority && status) {
+      verifyChargeCallback(authority, status);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  const navigate = useNavigate();
+  const verifyChargeCallback = async (authority, status) => {
+    if (verifying) return;
+    setVerifying(true);
+
+    try {
+      const response = await verifyWalletCharge(authority, status);
+
+      if (response.data.success) {
+        toast.success("کیف پول با موفقیت شارژ شد!");
+        // Refresh balance after successful charge
+        const balanceRes = await fetchWalletBalance();
+        setBalance(balanceRes.data.balance);
+      } else {
+        toast.error(response.data.message || "شارژ ناموفق بود");
+      }
+    } catch (error) {
+      console.error("Wallet charge verification error:", error);
+      const msg = error.response?.data?.detail || error.response?.data?.message || "خطا در تأیید پرداخت";
+      toast.error(msg);
+    } finally {
+      setVerifying(false);
+      navigate("/wallet", { replace: true });
+    }
+  };
+
+  const handleCharge = async () => {
+    if (!amount || Number(amount) <= 0) {
+      toast.error("لطفاً مبلغ معتبر وارد کنید");
+      return;
+    }
+
+    const amountInRial = toRial(Number(amount));
+
+    if (amountInRial < 100000) {
+      toast.error("حداقل مبلغ شارژ ۱۰٬۰۰۰ تومان است");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await chargeWallet(amountInRial);
+      const { payment_url, authority, payment_uuid } = response.data;
+
+      sessionStorage.setItem("pending_wallet_charge_uuid", payment_uuid);
+      window.location.href = payment_url;
+    } catch (error) {
+      console.error("Wallet charge error:", error);
+      const msg =
+        error.response?.data?.amount?.[0] ||
+        error.response?.data?.detail ||
+        error.response?.data?.non_field_errors?.[0] ||
+        "خطا در اتصال به درگاه پرداخت";
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatBalance = (rial) => {
+    if (rial === null || rial === undefined) return "---";
+    const toman = Math.floor(rial / 10);
+    return toman.toLocaleString() + " تومان";
+  };
 
   return (
     <div dir="rtl" className="min-h-screen p-4 md:p-8">
@@ -51,7 +183,6 @@ export default function WalletPage() {
             </p>
           </div>
 
-          {/* Back Button - استایل مشابه دکمه ویرایش در داشبورد */}
           <button
             onClick={() => navigate("/customer-dashboard")}
             className="ms-auto w-10 h-10 rounded-full shadow-sm hover:shadow-md cursor-pointer
@@ -62,7 +193,7 @@ export default function WalletPage() {
           </button>
         </div>
 
-        {/* Balance - استایل مشابه کارت کیف پول در داشبورد */}
+        {/* Balance - Dynamic */}
         <div
           className="
           bg-white dark:bg-[#262B40]/60 
@@ -77,7 +208,11 @@ export default function WalletPage() {
             </div>
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-gray-200 mt-2 mr-1">
-            125,000 تومان
+            {balanceLoading ? (
+              <span className="text-gray-400 dark:text-gray-500 text-lg">در حال دریافت...</span>
+            ) : (
+              formatBalance(balance)
+            )}
           </p>
         </div>
 
@@ -131,23 +266,32 @@ export default function WalletPage() {
           />
         </div>
 
-        {/* Pay - استایل مشابه دکمه افزایش موجودی در داشبورد */}
+        {/* Pay Button */}
         <button
-          disabled={!amount}
-          onClick={() => {
-            // منطق پرداخت اینجا قرار می‌گیرد
-            console.log("پرداخت:", amount);
-          }}
+          disabled={!amount || loading || verifying}
+          onClick={handleCharge}
           className={`
-            w-full rounded-xl p-3 transition font-medium
+            w-full rounded-xl p-3 transition font-medium flex items-center justify-center gap-2
             ${
-              amount
+              amount && !loading && !verifying
                 ? "bg-sky-600 hover:bg-sky-700 text-white dark:bg-[#8AA1C4] dark:hover:bg-[#7a93b8] cursor-pointer"
                 : "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-[#262B40] dark:text-gray-500"
             }
           `}
         >
-          پرداخت و افزایش موجودی
+          {verifying ? (
+            <>
+              <Loader2 className="animate-spin" size={18} />
+              در حال تأیید پرداخت...
+            </>
+          ) : loading ? (
+            <>
+              <Loader2 className="animate-spin" size={18} />
+              در حال اتصال به درگاه...
+            </>
+          ) : (
+            "پرداخت و افزایش موجودی"
+          )}
         </button>
       </div>
     </div>
