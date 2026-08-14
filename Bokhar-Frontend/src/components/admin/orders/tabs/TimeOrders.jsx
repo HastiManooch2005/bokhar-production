@@ -40,6 +40,9 @@ export default function TimeOrders({
     }
   });
 
+  // ⭐ دبونس برای ذخیره خودکار هزینه‌ها
+  const saveTimeoutRef = useRef(null);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -173,7 +176,8 @@ export default function TimeOrders({
     }
   }, [notifyParent]);
 
-  const syncSettingsToBackend = useCallback(async (newSettings) => {
+  // ⭐ تابع ذخیره کامل تنظیمات (ظرفیت + هزینه)
+  const syncAllSettingsToBackend = useCallback(async (newSettings) => {
     const currentTemplates = templatesRef.current;
     
     if (currentTemplates.length === 0) {
@@ -188,16 +192,23 @@ export default function TimeOrders({
       const payload = {
         urgent_24_capacity: newSettings.urgent24h.limit,
         urgent_48_capacity: newSettings.urgent48h.limit,
+        // ⭐ اضافه کردن مقادیر هزینه
+        fee_24h: newSettings.urgent24h.priceType === 'fixed' ? newSettings.urgent24h.fixedValue : 0,
+        fee_48h: newSettings.urgent48h.priceType === 'fixed' ? newSettings.urgent48h.fixedValue : 0,
+        percent_24h: newSettings.urgent24h.priceType === 'percentage' ? newSettings.urgent24h.priceValue : 0,
+        percent_48h: newSettings.urgent48h.priceType === 'percentage' ? newSettings.urgent48h.priceValue : 0,
+        is_24h_enabled: newSettings.urgent24h.enabled,
+        is_48h_enabled: newSettings.urgent48h.enabled,
       };
       
-      console.log("🟢 Sending settings to API:", payload);
+      console.log("🟢 Sending ALL settings to API:", payload);
       
       await capacityApi.updateDeliveryTemplate(template.id, payload);
       notifyParent(newSettings, null);
       
     } catch (error) {
       console.error("❌ Error saving settings:", error);
-      alert("خطا در ذخیره تنظیمات ظرفیت");
+      alert("خطا در ذخیره تنظیمات");
     } finally {
       setSaving(false);
     }
@@ -248,19 +259,38 @@ export default function TimeOrders({
     });
   }, [syncDatesToBackend]);
 
+  // ⭐ آپدیت لوکال سریع + ذخیره با دبونس
   const updateSettings = useCallback((type, field, value) => {
     const updated = {
       ...deliverySettings,
       [type]: { ...deliverySettings[type], [field]: value }
     };
     setDeliverySettings(updated);
-    syncSettingsToBackend(updated);
-  }, [deliverySettings, syncSettingsToBackend]);
+    
+    // ⭐ پاک کردن تایمر قبلی
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // ⭐ ذخیره بعد از ۸۰۰ میلی‌ثانیه (وقتی کاربر تایپ کردن رو تموم کرد)
+    saveTimeoutRef.current = setTimeout(() => {
+      syncAllSettingsToBackend(updated);
+    }, 800);
+  }, [deliverySettings, syncAllSettingsToBackend]);
 
   const getProgress = (current, limit) => {
     if (limit === 0) return 0;
     return Math.min(100, Math.round((current / limit) * 100));
   };
+
+  // ⭐ کلین‌آپ تایمر هنگام آن‌مونت
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -472,13 +502,14 @@ export default function TimeOrders({
                             min="0"
                             value={setting.priceType === 'percentage' ? setting.priceValue : setting.fixedValue}
                             onChange={(e) => {
-                              const val = parseInt(e.target.value) || 0;
+                              const val = e.target.value === '' ? '' : parseInt(e.target.value) || 0;
                               if (setting.priceType === 'percentage') {
-                                updateSettings(type, 'priceValue', Math.min(100, Math.max(0, val)));
+                                updateSettings(type, 'priceValue', val === '' ? '' : Math.min(100, Math.max(0, val)));
                               } else {
                                 updateSettings(type, 'fixedValue', val);
                               }
                             }}
+                            // ⭐ دیسیبل فقط موقع ذخیره واقعی، نه موقع تایپ
                             disabled={saving}
                             placeholder={setting.priceType === 'percentage' ? "مثلاً: 20" : "مثلاً: 100000"}
                             className="flex-1 px-2.5 py-2 sm:px-3 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#262B40] text-gray-800 dark:text-gray-200 text-xs sm:text-sm disabled:opacity-50 min-w-0"
