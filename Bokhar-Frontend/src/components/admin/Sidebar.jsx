@@ -16,6 +16,7 @@ import {
   FiShoppingCart,
 } from "react-icons/fi";
 import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Sidebar({
   activeMenu,
@@ -25,7 +26,7 @@ export default function Sidebar({
 }) {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
-
+  const { logout } = useAuth();
   /* =======================
      Lock body scroll (Mobile Safe)
   ======================== */
@@ -157,10 +158,17 @@ export default function Sidebar({
             </div>
 
             {/* Logout */}
-            <button className="flex items-center gap-2 mb-3 text-red-600 hover:bg-white/70 dark:hover:bg-[#2d3350] p-2 rounded-xl transition cursor-pointer">
-              <FiLogOut />
-              خروج
-            </button>
+<button
+  onClick={async () => {
+    await logout();
+    navigate("/");
+    setIsSidebarOpen(false);
+  }}
+  className="flex items-center gap-2 mb-3 text-red-600 hover:bg-white/70 dark:hover:bg-[#2d3350] p-2 rounded-xl transition cursor-pointer"
+>
+  <FiLogOut />
+  خروج
+</button>
           </div>
         </div>
       </aside>
