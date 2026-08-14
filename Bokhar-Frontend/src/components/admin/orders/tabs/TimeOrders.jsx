@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { Calendar, X, Clock, AlertCircle, CheckCircle2, Loader2, RefreshCw } from "lucide-react";
+import { Calendar, X, Clock, AlertCircle, CheckCircle2, Loader2, RefreshCw, Save } from "lucide-react";
 import DatePicker from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
@@ -40,8 +40,7 @@ export default function TimeOrders({
     }
   });
 
-  // ⭐ دبونس برای ذخیره خودکار هزینه‌ها
-  const saveTimeoutRef = useRef(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,6 +57,7 @@ export default function TimeOrders({
         const templatesData = Array.isArray(templateRes.data) ? templateRes.data : [];
         
         console.log("✅ Templates loaded:", templatesData);
+        console.log("✅ Fee data loaded:", feeData);
         setTemplates(templatesData);
 
         if (templatesData.length === 0) {
@@ -72,16 +72,16 @@ export default function TimeOrders({
           urgent24h: {
             enabled: feeData.is_24h_enabled !== false,
             priceType: feeData.percent_24h > 0 ? "percentage" : "fixed",
-            priceValue: feeData.percent_24h || 0,
-            fixedValue: feeData.fee_24h || 100000,
-            limit: template.urgent_24_capacity || 10,
+            priceValue: feeData.percent_24h ?? 0,
+            fixedValue: feeData.fee_24h ?? 100000,
+            limit: template.urgent_24_capacity ?? 10,
           },
           urgent48h: {
             enabled: feeData.is_48h_enabled !== false,
             priceType: feeData.percent_48h > 0 ? "percentage" : "fixed",
-            priceValue: feeData.percent_48h || 0,
-            fixedValue: feeData.fee_48h || 50000,
-            limit: template.urgent_48_capacity || 20,
+            priceValue: feeData.percent_48h ?? 0,
+            fixedValue: feeData.fee_48h ?? 50000,
+            limit: template.urgent_48_capacity ?? 20,
           }
         });
 
@@ -132,10 +132,6 @@ export default function TimeOrders({
   const syncDatesToBackend = useCallback(async (datesToSave) => {
     const currentTemplates = templatesRef.current;
     
-    console.log("🟡 syncDatesToBackend called");
-    console.log("🟡 Templates available:", currentTemplates.length);
-    console.log("🟡 Dates to save (should be Gregorian):", datesToSave);
-    
     if (currentTemplates.length === 0) {
       console.error("🔴 No templates available in ref!");
       alert("خطا: تمپلیتی یافت نشد. لطفاً صفحه را رفرش کنید.");
@@ -156,11 +152,9 @@ export default function TimeOrders({
         return String(date);
       });
 
-      const payload = {
-        disabled_dates: formattedDates,
-      };
+      const payload = { disabled_dates: formattedDates };
       
-      console.log("🟢 Sending to API:", payload);
+      console.log("🟢 Sending disabled dates to API:", payload);
       
       const response = await capacityApi.updateDeliveryTemplate(template.id, payload);
       console.log("🟢 API Response:", response.data);
@@ -176,8 +170,8 @@ export default function TimeOrders({
     }
   }, [notifyParent]);
 
-  // ⭐ تابع ذخیره کامل تنظیمات (ظرفیت + هزینه)
-  const syncAllSettingsToBackend = useCallback(async (newSettings) => {
+  // ⭐ ذخیره ظرفیت + disabled_dates → DeliveryTemplate
+  const syncTemplateSettings = useCallback(async (newSettings) => {
     const currentTemplates = templatesRef.current;
     
     if (currentTemplates.length === 0) {
@@ -186,13 +180,27 @@ export default function TimeOrders({
     }
 
     try {
-      setSaving(true);
       const template = currentTemplates[0];
       
       const payload = {
         urgent_24_capacity: newSettings.urgent24h.limit,
         urgent_48_capacity: newSettings.urgent48h.limit,
-        // ⭐ اضافه کردن مقادیر هزینه
+      };
+      
+      console.log("🟢 Sending template settings to API:", payload);
+      
+      await capacityApi.updateDeliveryTemplate(template.id, payload);
+      
+    } catch (error) {
+      console.error("❌ Error saving template settings:", error);
+      throw error;
+    }
+  }, []);
+
+  // ⭐ ذخیره هزینه‌ها → RushFeeSetting
+  const syncFeeSettings = useCallback(async (newSettings) => {
+    try {
+      const payload = {
         fee_24h: newSettings.urgent24h.priceType === 'fixed' ? newSettings.urgent24h.fixedValue : 0,
         fee_48h: newSettings.urgent48h.priceType === 'fixed' ? newSettings.urgent48h.fixedValue : 0,
         percent_24h: newSettings.urgent24h.priceType === 'percentage' ? newSettings.urgent24h.priceValue : 0,
@@ -201,10 +209,30 @@ export default function TimeOrders({
         is_48h_enabled: newSettings.urgent48h.enabled,
       };
       
-      console.log("🟢 Sending ALL settings to API:", payload);
+      console.log("🟢 Sending fee settings to API:", payload);
       
-      await capacityApi.updateDeliveryTemplate(template.id, payload);
-      notifyParent(newSettings, null);
+      await capacityApi.updateRushFeeSettings(payload);
+      
+    } catch (error) {
+      console.error("❌ Error saving fee settings:", error);
+      throw error;
+    }
+  }, []);
+
+  // ⭐ دکمه سابمیت: هر دو API رو صدا می‌زنه
+  const handleSubmit = useCallback(async () => {
+    try {
+      setSaving(true);
+      
+      await Promise.all([
+        syncTemplateSettings(deliverySettings),
+        syncFeeSettings(deliverySettings)
+      ]);
+      
+      notifyParent(deliverySettings, null);
+      setHasUnsavedChanges(false);
+      
+      console.log("✅ All settings saved successfully");
       
     } catch (error) {
       console.error("❌ Error saving settings:", error);
@@ -212,7 +240,7 @@ export default function TimeOrders({
     } finally {
       setSaving(false);
     }
-  }, [notifyParent]);
+  }, [deliverySettings, syncTemplateSettings, syncFeeSettings, notifyParent]);
 
   const addDisabledDate = useCallback((date) => {
     if (!date || !date.isValid) {
@@ -259,38 +287,21 @@ export default function TimeOrders({
     });
   }, [syncDatesToBackend]);
 
-  // ⭐ آپدیت لوکال سریع + ذخیره با دبونس
   const updateSettings = useCallback((type, field, value) => {
-    const updated = {
-      ...deliverySettings,
-      [type]: { ...deliverySettings[type], [field]: value }
-    };
-    setDeliverySettings(updated);
-    
-    // ⭐ پاک کردن تایمر قبلی
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    
-    // ⭐ ذخیره بعد از ۸۰۰ میلی‌ثانیه (وقتی کاربر تایپ کردن رو تموم کرد)
-    saveTimeoutRef.current = setTimeout(() => {
-      syncAllSettingsToBackend(updated);
-    }, 800);
-  }, [deliverySettings, syncAllSettingsToBackend]);
+    setDeliverySettings(prev => {
+      const updated = {
+        ...prev,
+        [type]: { ...prev[type], [field]: value }
+      };
+      return updated;
+    });
+    setHasUnsavedChanges(true);
+  }, []);
 
   const getProgress = (current, limit) => {
     if (limit === 0) return 0;
     return Math.min(100, Math.round((current / limit) * 100));
   };
-
-  // ⭐ کلین‌آپ تایمر هنگام آن‌مونت
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, []);
 
   if (loading) {
     return (
@@ -509,7 +520,6 @@ export default function TimeOrders({
                                 updateSettings(type, 'fixedValue', val);
                               }
                             }}
-                            // ⭐ دیسیبل فقط موقع ذخیره واقعی، نه موقع تایپ
                             disabled={saving}
                             placeholder={setting.priceType === 'percentage' ? "مثلاً: 20" : "مثلاً: 100000"}
                             className="flex-1 px-2.5 py-2 sm:px-3 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#262B40] text-gray-800 dark:text-gray-200 text-xs sm:text-sm disabled:opacity-50 min-w-0"
@@ -561,6 +571,41 @@ export default function TimeOrders({
               );
             })}
           </div>
+
+          <div className="mt-4 sm:mt-6 flex justify-end">
+            <button
+              onClick={handleSubmit}
+              disabled={saving || !hasUnsavedChanges}
+              className={`
+                flex items-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl font-bold text-sm sm:text-base
+                transition-all duration-200
+                ${hasUnsavedChanges 
+                  ? 'bg-blue-600 dark:bg-[#8AA1C4] text-white hover:bg-blue-700 dark:hover:bg-[#7A94B8] shadow-lg hover:shadow-xl transform hover:-translate-y-0.5' 
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                }
+                disabled:opacity-60 disabled:transform-none disabled:shadow-none
+              `}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                  <span>در حال ذخیره...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>ذخیره تنظیمات</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {hasUnsavedChanges && (
+            <div className="mt-2 sm:mt-3 flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 sm:p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+              <AlertCircle size={14} className="shrink-0 sm:w-4 sm:h-4" />
+              <span>تغییرات ذخیره نشده‌اند. لطفاً دکمه ذخیره را بزنید.</span>
+            </div>
+          )}
         </div>
       </section>
     </div>
