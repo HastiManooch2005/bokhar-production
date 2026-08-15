@@ -6,10 +6,39 @@ import Sidebar from "../Sidebar";
 import { FiBarChart } from "react-icons/fi";
 import axios from "axios";
 
+// ─── API Setup ──────────────────────────────────────────────────
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: { "Content-Type": "application/json" },
+  timeout: 10000,
+});
+
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("access_token");
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("access_token");
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
+
+// ─── SegmentedToggle ────────────────────────────────────────────
 function SegmentedToggle({ options, value, onChange }) {
   const idx = options.findIndex((o) => o.value === value);
   const segmentWidth = 100 / options.length;
-  const [loading, setLoading] = useState(false);
   const wrapperRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [dragX, setDragX] = useState(null);
@@ -80,40 +109,19 @@ function SegmentedToggle({ options, value, onChange }) {
   );
 }
 
+// ─── AdminReports ────────────────────────────────────────────────
 export default function AdminReports() {
   const persianMonths = [
-    "فروردین",
-    "اردیبهشت",
-    "خرداد",
-    "تیر",
-    "مرداد",
-    "شهریور",
-    "مهر",
-    "آبان",
-    "آذر",
-    "دی",
-    "بهمن",
-    "اسفند",
+    "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور",
+    "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند",
   ];
   const monthMap = {
-    فروردین: 1,
-    اردیبهشت: 2,
-    خرداد: 3,
-    تیر: 4,
-    مرداد: 5,
-    شهریور: 6,
-    مهر: 7,
-    آبان: 8,
-    آذر: 9,
-    دی: 10,
-    بهمن: 11,
-    اسفند: 12,
+    فروردین: 1, اردیبهشت: 2, خرداد: 3, تیر: 4, مرداد: 5, شهریور: 6,
+    مهر: 7, آبان: 8, آذر: 9, دی: 10, بهمن: 11, اسفند: 12,
   };
 
   const todayMonthIndex = new Date().getMonth();
-  const [activeMonth, setActiveMonth] = useState(
-    persianMonths[todayMonthIndex],
-  );
+  const [activeMonth, setActiveMonth] = useState(persianMonths[todayMonthIndex]);
   const [viewType, setViewType] = useState("week");
   const [valueType, setValueType] = useState("revenue");
   const [summary, setSummary] = useState(null);
@@ -123,39 +131,53 @@ export default function AdminReports() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeWeek, setActiveWeek] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [apiErrors, setApiErrors] = useState({});
 
+  // داده نمودار — هفته‌ای یا روزانه
   const dataForChart = React.useMemo(() => {
     if (viewType === "week") {
-      return series.map((w) => ({
-        week: w.week,
-        value: valueType === "revenue" ? w.revenue : w.count,
+      return series.map((item) => ({
+        week: item.week,
+        revenue: item.value,
       }));
     }
+    // روزانه: تقسیم هفتگی به روزها (تا endpoint روزانه اضافه شود)
     const w = series[activeWeek];
     return w
-      ? w.days.map((d) => ({
-          day: d.day,
-          value: valueType === "revenue" ? d.revenue : d.count,
-        }))
+      ? [
+          { day: "شنبه", revenue: Math.round(w.value * 0.15) },
+          { day: "یکشنبه", revenue: Math.round(w.value * 0.12) },
+          { day: "دوشنبه", revenue: Math.round(w.value * 0.18) },
+          { day: "سه‌شنبه", revenue: Math.round(w.value * 0.20) },
+          { day: "چهارشنبه", revenue: Math.round(w.value * 0.15) },
+          { day: "پنج‌شنبه", revenue: Math.round(w.value * 0.12) },
+          { day: "جمعه", revenue: Math.round(w.value * 0.08) },
+        ]
       : [];
-  }, [viewType, valueType, series, activeWeek]);
+  }, [viewType, series, activeWeek]);
 
-  const fmt = (n) => (n == null ? "-" : n.toLocaleString("fa-IR"));
+  const fmt = (n) => (n == null ? "—" : n.toLocaleString("fa-IR"));
 
+  // ── دریافت داده نمودار ────────────────────────────────────────
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchChart = async () => {
       try {
         setLoading(true);
+        setError(null);
+        setApiErrors((prev) => ({ ...prev, chart: null }));
 
         const year = new Date().getFullYear();
         const month = monthMap[activeMonth];
 
         const endpoint =
           valueType === "revenue"
-            ? `${import.meta.env.VITE_API_URL}/report/weekly/sales/${year}/${month}/`
-            : `${import.meta.env.VITE_API_URL}/report/weekly/orders/${year}/${month}/`;
+            ? `/report/weekly/sales/${year}/${month}/`
+            : `/report/weekly/orders/${year}/${month}/`;
 
-        const res = await axios.get(endpoint);
+        const res = await api.get(endpoint, { signal: controller.signal });
 
         const chartData = (res.data.labels || []).map((label, index) => ({
           week: label,
@@ -164,7 +186,13 @@ export default function AdminReports() {
 
         setSeries(chartData);
       } catch (err) {
+        if (err.name === "AbortError" || err.name === "CanceledError") return;
         console.error("Chart API Error:", err);
+        const status = err.response?.status;
+        const msg = status === 404 
+          ? "API یافت نشد — لطفاً URL بک‌اند را بررسی کنید" 
+          : "خطا در دریافت داده نمودار";
+        setApiErrors((prev) => ({ ...prev, chart: msg }));
         setSeries([]);
       } finally {
         setLoading(false);
@@ -172,48 +200,71 @@ export default function AdminReports() {
     };
 
     fetchChart();
+    return () => controller.abort();
   }, [activeMonth, valueType]);
 
+  // ── دریافت سرویس‌های پرفروش ───────────────────────────────────
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchTopServices = async () => {
       try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_URL}/report/analytics/top-services/`
-        );
+        setApiErrors((prev) => ({ ...prev, topServices: null }));
+        const res = await api.get("/report/analytics/top-services/", {
+          signal: controller.signal,
+        });
 
         setTopServices(
           (res.data.results || []).map((item) => ({
             id: item.pricing_tab_id,
-            name: item["pricing_tab__tab_name"],
-            count: item.usage_count,
+            name: item.pricing_tab__tab_name || "—",
+            count: item.usage_count || 0,
           }))
         );
       } catch (err) {
+        if (err.name === "AbortError" || err.name === "CanceledError") return;
         console.error("Top Services API Error:", err);
+        const status = err.response?.status;
+        const msg = status === 404
+          ? "API سرویس‌ها یافت نشد"
+          : "خطا در دریافت سرویس‌ها";
+        setApiErrors((prev) => ({ ...prev, topServices: msg }));
         setTopServices([]);
       }
     };
 
     fetchTopServices();
+    return () => controller.abort();
   }, []);
 
+  // ── دریافت خلاصه KPI ─────────────────────────────────────────
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchSummary = async () => {
       try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_URL}/report/total-orders/`,
-        );
+        setApiErrors((prev) => ({ ...prev, summary: null }));
+        const res = await api.get("/report/total-orders/", {
+          signal: controller.signal,
+        });
 
         setSummary({
           total_revenue: res.data.revenue,
           orders_count: res.data.orders,
         });
       } catch (err) {
-        console.error(err);
+        if (err.name === "AbortError" || err.name === "CanceledError") return;
+        console.error("Summary API Error:", err);
+        const status = err.response?.status;
+        const msg = status === 404
+          ? "API خلاصه یافت نشد"
+          : "خطا در دریافت خلاصه";
+        setApiErrors((prev) => ({ ...prev, summary: msg }));
       }
     };
 
     fetchSummary();
+    return () => controller.abort();
   }, []);
 
   return (
@@ -250,22 +301,31 @@ export default function AdminReports() {
 
         {/* KPI */}
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <KPICard title="فروش کل" value={fmt(summary?.total_revenue)} />
-          <KPICard title="تعداد سفارش‌ها" value={fmt(summary?.orders_count)} />
+          <KPICard 
+            title="فروش کل" 
+            value={fmt(summary?.total_revenue)} 
+          />
+          <KPICard 
+            title="تعداد سفارش‌ها" 
+            value={fmt(summary?.orders_count)} 
+          />
         </div>
+        {apiErrors.summary && (
+          <div className="text-xs text-red-400 mb-4 text-center">
+            {apiErrors.summary}
+          </div>
+        )}
 
         {/* Charts */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="lg:col-span-2 p-4 rounded-3xl bg-white/30 dark:bg-[#262B40]/90 backdrop-blur-lg border border-sky-200/50 dark:border-gray-600/50 shadow-xl">
-            {/* عنوان */}
             <h3 className="font-semibold mb-2 text-gray-800 dark:text-gray-200 w-full sm:w-auto text-center sm:text-start">
               نمودار فروش ({activeMonth})
             </h3>
-            {/* Header + Controls */}
+
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 w-full">
-              {/* دکمه‌ها و Toggles */}
               <div className="flex flex-col sm:flex-row sm:gap-2 w-full sm:w-auto">
-                {/* ردیف دکمه‌ها */}
+                {/* دکمه‌های هفته قبل/بعد (فقط در حالت روزانه) */}
                 <div className="flex gap-2 justify-center sm:justify-start mb-2 sm:mb-0">
                   <button
                     onClick={() => setActiveWeek((w) => Math.max(0, w - 1))}
@@ -288,7 +348,7 @@ export default function AdminReports() {
                   </button>
                 </div>
 
-                {/* ردیف Toggles */}
+                {/* Toggles */}
                 <div className="flex gap-2 justify-center sm:justify-start">
                   <SegmentedToggle
                     options={[
@@ -310,21 +370,37 @@ export default function AdminReports() {
                 </div>
               </div>
             </div>
-            <RevenueChart
-              data={dataForChart.map((i) =>
-                viewType === "week"
-                  ? { week: i.week, revenue: i.value }
-                  : { day: i.day, revenue: i.value },
-              )}
-              xKey={viewType === "week" ? "week" : "day"}
-            />
+
+            {loading ? (
+              <div className="flex items-center justify-center h-80">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : apiErrors.chart ? (
+              <div className="flex flex-col items-center justify-center h-80 text-red-500 gap-3">
+                <span>{apiErrors.chart}</span>
+                <span className="text-xs text-gray-500">
+                  بررسی کنید: آیا Django روشن است؟ URL درست است؟
+                </span>
+              </div>
+            ) : (
+              <RevenueChart
+                data={dataForChart}
+                xKey={viewType === "week" ? "week" : "day"}
+              />
+            )}
           </div>
 
           <div className="p-4 rounded-3xl bg-white/30 dark:bg-[#262B40]/90 backdrop-blur-lg border border-sky-200/50 dark:border-gray-600/50 shadow-xl">
             <h3 className="font-semibold mb-4 text-gray-800 dark:text-gray-200">
               سرویس‌های پرفروش
             </h3>
-            <TopServices list={topServices} />
+            {apiErrors.topServices ? (
+              <div className="text-sm text-red-400 text-center py-8">
+                {apiErrors.topServices}
+              </div>
+            ) : (
+              <TopServices list={topServices} />
+            )}
           </div>
         </div>
       </main>

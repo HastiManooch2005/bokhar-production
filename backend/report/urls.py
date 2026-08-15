@@ -1,4 +1,3 @@
-from django.urls import path
 from .report_urls.analytics_urls import *
 from .report_urls.order_url import *
 from .report_urls.customer_urls import *
