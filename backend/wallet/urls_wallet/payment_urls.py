@@ -12,6 +12,7 @@ path("payments/wallet/charge/",         WalletChargeView.as_view()),
 path("payments/wallet/charge/verify/",  WalletChargeVerifyView.as_view()),
 path("payments/refund/",                RefundOrderView.as_view()),
 path("payments/wallet/withdraw/",       WithdrawalRequestView.as_view()),
+path("wallet/balance/",                 WalletBalanceView.as_view()),
 path(
     "refund/process/",
     RefundProcessAPIView.as_view(),

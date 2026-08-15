@@ -21,6 +21,7 @@ from wallet.services.services_payment import PaymentService
 from wallet.services.services_wallet import WalletPaymentService
 from wallet.services.service_zarinpal import ZarinPalService
 from decouple import config
+from ..models.models import Wallet
 
 logger = logging.getLogger(__name__)
 
@@ -421,3 +422,20 @@ class WithdrawalRequestView(APIView):
             account_holder=serializer.validated_data["account_holder"],
         )
         return Response(result, status=status.HTTP_200_OK)
+
+class WalletBalanceView(APIView):
+    """
+    GET /api/wallet/balance/
+    موجودی کیف پول کاربر (ریال)
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        wallet, created = Wallet.objects.get_or_create(
+            user=request.user,
+            defaults={"available_balance": 0, "locked_balance": 0}
+        )
+        return Response(
+            {"balance": wallet.available_balance},
+            status=status.HTTP_200_OK,
+        )

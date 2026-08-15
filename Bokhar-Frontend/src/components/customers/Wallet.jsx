@@ -75,7 +75,7 @@ export default function WalletPage() {
       } finally {
         setBalanceLoading(false);
       }
-    };
+    }; 
     getBalance();
   }, []);
 
