@@ -20,8 +20,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+
+      # ==========================================================
+      # SSH SETUP
+      # ==========================================================
 
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.1
@@ -33,75 +35,94 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
 
+
+      # ==========================================================
+      # DEPLOY
+      # ==========================================================
+
       - name: Deploy
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+
         run: |
-          ssh "${VPS_USER}@${VPS_HOST}" << EOF
+          ssh \
+            -o ServerAliveInterval=60 \
+            -o ServerAliveCountMax=60 \
+            -o ConnectTimeout=30 \
+            "${VPS_USER}@${VPS_HOST}" << EOF
+
             set -e
 
             cd "${DEPLOY_PATH}"
 
-            echo "===== UPDATE CODE ====="
+            echo "========================================"
+            echo "        UPDATE CODE"
+            echo "========================================"
 
-            git fetch origin
+            git fetch origin master
             git reset --hard origin/master
 
             git clean -fd \
               -e .env.prod \
               -e Bokhar-Frontend/.env
 
-            echo "===== DOCKER VERSION ====="
 
-            docker --version
-            docker compose version
+            echo "========================================"
+            echo "        DOCKER BUILD & START"
+            echo "========================================"
 
-            echo "===== BUILD IMAGES ====="
+            docker compose up -d --build
 
-            docker compose build --pull backend frontend
 
-            echo "===== START DATABASE ====="
-
-            docker compose up -d db redis
-
-            echo "===== WAIT FOR DATABASE ====="
-
-            sleep 10
-
-            echo "===== START BACKEND ====="
-
-            docker compose up -d backend
-
-            echo "===== MIGRATIONS ====="
+            echo "========================================"
+            echo "        DATABASE MIGRATIONS"
+            echo "========================================"
 
             docker compose exec -T backend \
               python manage.py migrate --noinput
 
-            echo "===== COLLECT STATIC ====="
+
+            echo "========================================"
+            echo "        COLLECT STATIC"
+            echo "========================================"
 
             docker compose exec -T backend \
               python manage.py collectstatic --noinput
 
-            echo "===== START CELERY ====="
 
-            docker compose up -d celery celery_beat
+            echo "========================================"
+            echo "        RESTART BACKEND"
+            echo "========================================"
 
-            echo "===== START FRONTEND ====="
+            docker compose restart backend celery celery_beat
 
-            docker compose up -d frontend
 
-            echo "===== STATUS ====="
+            echo "========================================"
+            echo "        STATUS"
+            echo "========================================"
 
             docker compose ps
 
-            echo "===== CLEAN OLD IMAGES ====="
+
+            echo "========================================"
+            echo "        CLEAN OLD IMAGES"
+            echo "========================================"
 
             docker image prune -f
 
-            echo "===== DEPLOYMENT SUCCESS ====="
+
+            echo "========================================"
+            echo "        DEPLOYMENT SUCCESS"
+            echo "========================================"
+
           EOF
+
+
+      # ==========================================================
+      # HEALTH CHECK
+      # ==========================================================
 
       - name: Health Check
         if: success()
@@ -109,8 +130,13 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+
         run: |
-          ssh "${VPS_USER}@${VPS_HOST}" << EOF
+          ssh \
+            -o ServerAliveInterval=60 \
+            -o ServerAliveCountMax=60 \
+            "${VPS_USER}@${VPS_HOST}" << EOF
+
             set -e
 
             cd "${DEPLOY_PATH}"
@@ -118,12 +144,24 @@ jobs:
             echo "===== CONTAINERS ====="
             docker compose ps
 
-            echo "===== BACKEND ====="
+            echo "===== BACKEND LOGS ====="
             docker compose logs backend --tail=30
 
-            echo "===== FRONTEND ====="
+            echo "===== FRONTEND LOGS ====="
             docker compose logs frontend --tail=30
+
+            echo "===== CELERY LOGS ====="
+            docker compose logs celery --tail=30
+
+            echo "===== CELERY BEAT LOGS ====="
+            docker compose logs celery_beat --tail=30
+
           EOF
+
+
+      # ==========================================================
+      # LOGS IF DEPLOYMENT FAILS
+      # ==========================================================
 
       - name: Show logs if failed
         if: failure()
@@ -131,8 +169,13 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+
         run: |
-          ssh "${VPS_USER}@${VPS_HOST}" << EOF || true
+          ssh \
+            -o ServerAliveInterval=60 \
+            -o ServerAliveCountMax=60 \
+            "${VPS_USER}@${VPS_HOST}" << EOF || true
+
             cd "${DEPLOY_PATH}"
 
             echo "===== STATUS ====="
@@ -149,4 +192,5 @@ jobs:
 
             echo "===== CELERY BEAT LOGS ====="
             docker compose logs celery_beat --tail=100
+
           EOF
