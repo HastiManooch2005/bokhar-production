@@ -183,47 +183,59 @@ export default function Order() {
     dispatch({ type: "SET_ORDER_DATA", payload: { datetime } });
   }, []);
 
-  const saveAddressToBackend = useCallback(async (locationData) => {
-    try {
-      const addressParts = locationData.address?.split("،") || [];
-      const city = addressParts[0]?.trim() || "";
-      const addressDetail = addressParts.slice(1).join("،").trim() || locationData.address;
+const saveAddressToBackend = useCallback(async (locationData) => {
+  try {
+    const addressParts = locationData.address?.split("،") || [];
+    const city = addressParts[0]?.trim() || "";
+    const addressDetail = addressParts.slice(1).join("،").trim() || locationData.address;
 
-      const payload = {
-        title: locationData.title || "آدرس",
-        city: city,
-        address: addressDetail,
-        apartment_name: locationData.plaque || "",
-        unit: Number(locationData.unit) || 1,
-      };
+    const roundCoord = (val) => {
+      if (typeof val !== "number") return null;
+      return parseFloat(val.toFixed(6));
+    };
 
-      console.log("ADDRESS PAYLOAD:", payload);
+    const payload = {
+      title: locationData.title || "",  // ✅ اختیاری
+      province: city || "تهران",
+      city: city,
+      district: "",
+      address_detail: addressDetail,
+      apartment_name: locationData.plaque || "",
+      unit: Number(locationData.unit) || 1,
+      postal_code: "",
+      phone: "",
+      latitude: roundCoord(locationData.coords?.lat),
+      longitude: roundCoord(locationData.coords?.lng),
+    };
 
-      const response = await api.post("/order/address/create/", payload);
-      
-      return {
-        ...locationData,
-        id: response.data.id,
-      };
-    } catch (err) {
-      console.error("Save address error:", err.response?.data || err.message);
-      toast.error(
-        err.response?.data?.detail || 
-        JSON.stringify(err.response?.data) || 
-        "خطا در ذخیره آدرس"
-      );
-      return null;
-    }
-  }, []);
+    console.log("ADDRESS PAYLOAD:", JSON.stringify(payload, null, 2));
 
-  const handleLocationSelect = useCallback(async (location) => {
-    console.log("SELECTED LOCATION", location);
+    const response = await api.post("/order/address/create/", payload);
+    
+    return {
+      ...locationData,
+      id: response.data.id,  // ✅ همیشه داریم
+      title: locationData.title || "",  // ✅ آپدیت
+    };
+  } catch (err) {
+    console.error("Save address error:", err.response?.data || err.message);
+    toast.error(
+      err.response?.data?.detail || 
+      JSON.stringify(err.response?.data) || 
+      "خطا در ذخیره آدرس"
+    );
+    return null;
+  }
+}, []);
 
-    const savedLocation = await saveAddressToBackend(location);
-    if (savedLocation) {
-      dispatch({ type: "SET_ORDER_DATA", payload: { location: savedLocation } });
-    }
-  }, [saveAddressToBackend]);
+const handleLocationSelect = useCallback(async (location) => {
+  console.log("SELECTED LOCATION", location);
+
+  const savedLocation = await saveAddressToBackend(location);
+  if (savedLocation) {
+    dispatch({ type: "SET_ORDER_DATA", payload: { location: savedLocation } });
+  }
+}, [saveAddressToBackend]);
 
   // ✅ اصلاح شده: goToTimeStep حالا auth رو هم چک می‌کنه
   const goToTimeStep = useCallback(async () => {
@@ -393,61 +405,86 @@ const handlePayment = useCallback(async () => {
   }
 }, [orderData, saveAddressToBackend, dispatch, isGuest, setIsAuthModalOpen, setPendingStep]);
 
-  const loadSummary = useCallback(async () => {
-    console.log("========== LOAD SUMMARY ==========");
-    console.log("ORDER DATA:", orderData);
-    console.log("LOCATION DATA:", orderData.location);
-    console.log("CART ITEMS COUNT:", orderData.cartItems?.length || 0);
+const loadSummary = useCallback(async () => {
+  console.log("========== LOAD SUMMARY ==========");
+  console.log("LOCATION:", location);
 
-    if (!location?.address) return;
-    if (!location?.id) {
-      console.warn("Location selected but no address_id yet.");
-      return;
-    }
+  if (!location?.address) return;
 
-    const pickupShiftMapped = TIME_SLOT_MAP[orderData.datetime?.delivery?.time];
-    const deliveryShiftMapped = TIME_SLOT_MAP[orderData.datetime?.pickup?.time];
+  const pickupShiftMapped = TIME_SLOT_MAP[orderData.datetime?.delivery?.time];
+  const deliveryShiftMapped = TIME_SLOT_MAP[orderData.datetime?.pickup?.time];
 
-    const payload = {
-      pickup_date: toGregorian(orderData.datetime?.delivery?.date),
-      pickup_shift: pickupShiftMapped,
-      delivery_date: toGregorian(orderData.datetime?.pickup?.date),
-      delivery_shift: deliveryShiftMapped,
-      coupon_code: orderData.discountCode || "",
-      address_id: orderData.location?.id,
-      amount: (summary?.final_price || 0) * 10,
-      cart_items: orderData.cartItems?.map(item => ({
-        service_item_id: item.productId || item.id || item.product_id,
-        quantity: item.qty || item.quantity || 1,
-        material: item.material || "نخ",
-        size: item.size || null,
-      })) || [],
-    };
+  // ============================================================
+  // ساخت پیلود
+  // ============================================================
+  const payload = {
+    pickup_date: toGregorian(orderData.datetime?.delivery?.date),
+    pickup_shift: pickupShiftMapped,
+    delivery_date: toGregorian(orderData.datetime?.pickup?.date),
+    delivery_shift: deliveryShiftMapped,
+    coupon_code: orderData.discountCode || "",
+    cart_items: orderData.cartItems?.map(item => ({
+      service_item_id: item.productId || item.id || item.product_id,
+      quantity: item.qty || item.quantity || 1,
+      material: item.material || "نخ",
+      size: item.size || null,
+    })) || [],
+  };
 
-    console.log("SUMMARY PAYLOAD:", payload);
+  // ============================================================
+  // آدرس — دو حالت
+  // ============================================================
+  if (location?.id) {
+    // ✅ حالت ۱: آدرس سیو‌شده
+    payload.address_id = location.id;
+    console.log("✅ Using saved address_id:", location.id);
+  } else {
+    // ✅ حالت ۲: فیلدهای پراکنده — ویو خودش raw_address می‌سازه
+    console.log("⚠️ Sending raw address fields");
+    payload.address_detail = location.address || "";
+    payload.apartment_name = location.plaque || "";
+    payload.unit = Number(location.unit) || 1;
+    payload.latitude = location.coords?.lat ?? null;
+    payload.longitude = location.coords?.lng ?? null;
+    payload.title = location.title || "";
+    payload.city = location.city || "تهران";
+    payload.province = location.province || "تهران";
+  }
 
-    try {
-      const data = await getOrderSummary(payload);
-      console.log("SUMMARY RESPONSE:", data);
-      setSummary(data);
-    } catch (err) {
-      console.log("========== SUMMARY ERROR ==========");
-      console.log("STATUS:", err.response?.status);
-      console.log("DATA:", err.response?.data);
-      console.log("NON FIELD:", err.response?.data?.non_field_errors);
+  console.log("SUMMARY PAYLOAD:", payload);
 
-      if (err.response?.data?.non_field_errors) {
-        toast.error(err.response.data.non_field_errors[0]);
+  try {
+    const data = await getOrderSummary(payload);
+    console.log("SUMMARY RESPONSE:", data);
+    setSummary(data);
+  } catch (err) {
+    console.log("========== SUMMARY ERROR ==========");
+    console.log("STATUS:", err.response?.status);
+    console.log("DATA:", JSON.stringify(err.response?.data, null, 2));
+
+    if (err.response?.data?.address) {
+      toast.error(err.response.data.address[0]);
+    } else if (err.response?.data?.non_field_errors) {
+      toast.error(err.response.data.non_field_errors[0]);
+    } else {
+      const firstError = Object.entries(err.response?.data || {})[0];
+      if (firstError) {
+        toast.error(`${firstError[0]}: ${Array.isArray(firstError[1]) ? firstError[1][0] : firstError[1]}`);
+      } else {
+        toast.error("خطا در دریافت خلاصه سفارش");
       }
     }
-  }, [orderData]);
+  }
+}, [orderData, location, summary]);
+
+useEffect(() => {
+  if (!location?.address) return;
+  // ✅ فقط address چک کن، id لازم نیست
+  loadSummary();
+}, [location, orderData.datetime, orderData.discountCode]);
 
   useEffect(() => {
     if (!location?.address) return;
-    if (!location?.id) {
-      console.warn("Location selected but no address_id yet.");
-      return;
-    }
     loadSummary();
   }, [location, orderData.datetime, orderData.discountCode]);
 

@@ -209,34 +209,30 @@ export default function MapSelector({
 
   // ---------------- SUBMIT ----------------
 
-  const handleSubmit = useCallback(
-    ({ plaque, unit, title, description }) => {
-      setPlaque(plaque);
-      setUnit(unit);
-      setTitle(title);
-      setDescription(description);
-      console.log("MAP SUBMIT:", {
-        coords,
-        address,
-        plaque,
-        unit,
-        title,
-        description,
-      });
-      onLocationSelect({
-        coords,
-        address,
-        plaque,
-        unit,
-        title,
-        description,
-      });
+const handleSubmit = useCallback(
+  ({ plaque, unit, title, description }) => {
+    // ✅ آدرس اصلی بدون پلاک و واحد
+    const cleanAddress = address?.split("، پلاک")[0]?.split("، واحد")[0]?.trim() || address;
+    
+    setPlaque(plaque);
+    setUnit(unit);
+    setTitle(title);
+    setDescription(description || "");
+    
+    onLocationSelect({
+      coords,
+      address: cleanAddress,  
+      plaque,               
+      unit,                  
+      title,
+      description: description || "",
+    });
 
-      setOpen(false);
-      goToNextStep?.();
-    },
-    [coords, address, onLocationSelect, goToNextStep],
-  );
+    setOpen(false);
+    goToNextStep?.();
+  },
+  [coords, address, onLocationSelect, goToNextStep],
+);
 
   // ---------------- BACK BUTTON ----------------
 

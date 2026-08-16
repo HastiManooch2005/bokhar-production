@@ -74,7 +74,17 @@ class Address(models.Model):
     title = models.CharField(
         max_length=100, 
         blank=True, 
+        default="",  # ✅ پیش‌فرض خالی
         verbose_name='عنوان آدرس (مثلاً خانه، محل کار)'
+    )
+    apartment_name = models.CharField(
+        max_length=100, 
+        blank=True, 
+        verbose_name='پلاک/ساختمان'
+    )
+    unit = models.PositiveIntegerField(
+        default=1, 
+        verbose_name='واحد'
     )
     province = models.CharField(max_length=100, verbose_name='استان')
     city = models.CharField(max_length=100, verbose_name='شهر')

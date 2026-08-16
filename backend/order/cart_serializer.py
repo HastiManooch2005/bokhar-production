@@ -14,20 +14,11 @@ from .models import (
 
 
 # ============================================================
-# Cart Item Payload Serializer (جدید)
+# Cart Item Payload Serializer
 # ============================================================
 class CartItemPayloadSerializer(serializers.Serializer):
     """
     فقط شناسه‌ها و quantity — قیمت‌ها Backend محاسبه می‌کنه
-    
-    Frontend باید این ساختار رو بفرسته:
-    {
-        "service_item_id": 12,      # product_id
-        "quantity": 2,
-        "pricing_tab_id": 5,        # اختیاری
-        "material": "نخ",           # اختیاری
-        "size": null                # اختیاری
-    }
     """
     service_item_id = serializers.IntegerField(required=True, min_value=1)
     quantity = serializers.IntegerField(required=True, min_value=1, max_value=100)
@@ -37,12 +28,34 @@ class CartItemPayloadSerializer(serializers.Serializer):
 
 
 # ============================================================
-# OrderCreateSerializer (اصلاح شده — امن + payload)
+# Raw Address Serializer (جدید — برای آدرس‌های موقت/پراکنده)
+# ============================================================
+class RawAddressSerializer(serializers.Serializer):
+    """
+    وقتی کاربر آدرس انتخاب کرده ولی هنوز سیو نکرده
+    Frontend فیلدهای پراکنده می‌فرسته — اینجا wrap می‌شه
+    """
+    title = serializers.CharField(required=False, allow_blank=True, default="")
+    province = serializers.CharField(required=False, allow_blank=True, default="تهران")
+    city = serializers.CharField(required=False, allow_blank=True, default="تهران")
+    district = serializers.CharField(required=False, allow_blank=True, default="")
+    address_detail = serializers.CharField(required=True)
+    apartment_name = serializers.CharField(required=False, allow_blank=True, default="")
+    unit = serializers.IntegerField(required=False, default=1)
+    postal_code = serializers.CharField(required=False, allow_blank=True, default="")
+    phone = serializers.CharField(required=False, allow_blank=True, default="")
+    latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
+    longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
+
+
+# ============================================================
+# OrderCreateSerializer (کامل — با پشتیبانی از آدرس پراکنده)
 # ============================================================
 class OrderCreateSerializer(serializers.Serializer):
-    # --- آدرس ---
-    address_id = serializers.IntegerField(required=False)
+    # --- آدرس (سه حالت) ---
+    address_id = serializers.IntegerField(required=False, allow_null=True)
     new_address = AddressSerializer(required=False)
+    raw_address = RawAddressSerializer(required=False)
     
     # --- زمان ---
     pickup_date = serializers.DateField()
@@ -54,25 +67,58 @@ class OrderCreateSerializer(serializers.Serializer):
     description = serializers.CharField(required=False, allow_blank=True)
     coupon_code = serializers.CharField(required=False, allow_blank=True)
     
-    # --- سبد خرید (جدید) ---
+    # --- سبد خرید ---
     cart_items = CartItemPayloadSerializer(many=True, required=False)
-    
-    # ❌ حذف: rush_fee_amount — Backend خودش محاسبه می‌کنه
-    # ❌ حذف: service_type — Backend از تاریخ‌ها محاسبه می‌کنه
 
     def validate(self, data):
-        # آدرس
-        if not data.get('address_id') and not data.get('new_address'):
-            raise serializers.ValidationError("آدرس انتخاب یا ایجاد کنید")
-        if data.get('address_id') and data.get('new_address'):
-            raise serializers.ValidationError("فقط یکی از آدرس را ارسال کنید")
+        request = self.context.get('request')
+        user = request.user if request else None
         
-        # زمان
+        # پاک کردن address_id اگه null هست
+        if 'address_id' in data and data['address_id'] is None:
+            data.pop('address_id')
+        
+        # ============================================================
+        # اعتبارسنجی آدرس
+        # ============================================================
+        has_address_id = 'address_id' in data and data['address_id'] is not None
+        has_new_address = bool(data.get('new_address'))
+        has_raw_address = bool(data.get('raw_address'))
+        
+        address_sources = sum([has_address_id, has_new_address, has_raw_address])
+        
+        if address_sources == 0:
+            raise serializers.ValidationError({
+                "address": "آدرس انتخاب یا ایجاد کنید. یکی از موارد address_id، new_address یا raw_address را ارسال کنید."
+            })
+        
+        if address_sources > 1:
+            raise serializers.ValidationError({
+                "address": "فقط یکی از موارد address_id، new_address یا raw_address را ارسال کنید."
+            })
+        
+        if has_address_id:
+            try:
+                Address.objects.get(id=data['address_id'], user=user)
+            except Address.DoesNotExist:
+                raise serializers.ValidationError({
+                    "address_id": "آدرس پیدا نشد یا متعلق به شما نیست."
+                })
+        
+        if has_raw_address:
+            raw = data['raw_address']
+            if not raw.get('address_detail'):
+                raise serializers.ValidationError({
+                    "raw_address.address_detail": "جزئیات آدرس الزامی است."
+                })
+        
+        # ============================================================
+        # اعتبارسنجی زمان
+        # ============================================================
         pickup_shift = data.get('pickup_shift')
         delivery_shift = data.get('delivery_shift')
         
         if pickup_shift and pickup_shift not in dict(TimeRange.choices):
-            # شاید Frontend فارسی فرستاده — تبدیل کن
             mapped = FRONTEND_TIME_MAP.get(pickup_shift)
             if mapped:
                 data['pickup_shift'] = mapped
@@ -94,15 +140,13 @@ class OrderCreateSerializer(serializers.Serializer):
         user = request.user
         
         # ============================================================
-        # ۱. سبد خرید: payload اولویت داره، fallback به session
+        # ۱. سبد خرید
         # ============================================================
         cart_items_payload = validated_data.get('cart_items')
         
         if cart_items_payload:
-            # ✅ استفاده از payload — normalize به فرمت داخلی
             cart_items = self._normalize_cart_items(cart_items_payload)
         else:
-            # ❌ fallback به session (برای backward compatibility)
             cart = OrderSession(request)
             cart_items = list(cart)
             
@@ -110,22 +154,42 @@ class OrderCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError("سبد خرید خالی است")
 
         # ============================================================
-        # ۲. آدرس
+        # ۲. آدرس — سه حالت
         # ============================================================
-        if 'address_id' in validated_data:
+        if 'address_id' in validated_data and validated_data['address_id'] is not None:
             address = get_object_or_404(
                 Address, id=validated_data['address_id'], user=user
             )
-        else:
+            
+        elif 'new_address' in validated_data and validated_data['new_address']:
             addr_serializer = AddressSerializer(
-                data=validated_data['new_address'], context=self.context
+                data=validated_data['new_address'], 
+                context=self.context
             )
             addr_serializer.is_valid(raise_exception=True)
             address = addr_serializer.save()
+            
+        elif 'raw_address' in validated_data and validated_data['raw_address']:
+            raw = validated_data['raw_address']
+            address = Address.objects.create(
+                user=user,
+                title=raw.get('title', ''),
+                province=raw.get('province', 'تهران'),
+                city=raw.get('city', 'تهران'),
+                district=raw.get('district', ''),
+                address_detail=raw['address_detail'],
+                apartment_name=raw.get('apartment_name', ''),
+                unit=raw.get('unit', 1),
+                postal_code=raw.get('postal_code', ''),
+                phone=raw.get('phone', ''),
+                latitude=raw.get('latitude'),
+                longitude=raw.get('longitude'),
+            )
+        else:
+            raise serializers.ValidationError("آدرس نامعتبر است.")
 
-        # ============================================================
-        # ۳. قالب‌های ظرفیت (با lock)
-        # ============================================================
+        # ... بقیه کد create ...
+
         pickup_shift = validated_data['pickup_shift']
         delivery_shift = validated_data['delivery_shift']
 
@@ -138,9 +202,6 @@ class OrderCreateSerializer(serializers.Serializer):
             is_active=True
         )
 
-        # ============================================================
-        # ۴. بررسی نوع سفارش و ظرفیت
-        # ============================================================
         temp_order = Order(
             pickup_date=validated_data['pickup_date'],
             pickup_shift=pickup_shift,
@@ -165,18 +226,11 @@ class OrderCreateSerializer(serializers.Serializer):
         if available_delivery <= 0:
             raise serializers.ValidationError("ظرفیت تحویل‌دهی تکمیل است")
 
-        # ============================================================
-        # ۵. محاسبه هزینه‌ها — Backend-side ONLY
-        # ============================================================
-        # ❌ rush_fee از Frontend پذیرفته نمی‌شه — Backend خودش محاسبه می‌کنه
         rush_fee = temp_order.calculate_rush_fee()
         percent_fee = temp_order.calculate_percent_fee()
         pickup_cost = pickup_template.base_price + pickup_template.price_add
         delivery_base = delivery_template.base_price + delivery_template.price_add
 
-        # ============================================================
-        # ۶. محاسبه آیتم‌ها — قیمت از DB
-        # ============================================================
         engine = DiscountEngine(user=user)
         computed_items = []
         subtotal_raw = 0
@@ -185,7 +239,6 @@ class OrderCreateSerializer(serializers.Serializer):
         for item_data in cart_items:
             product = item_data.get('product') or Product.objects.get(id=item_data['product_id'])
             
-            # ✅ قیمت از DB — نه از Frontend
             pricing_tab = item_data.get('pricing_tab')
             if not pricing_tab:
                 pricing_tab_id = item_data.get('pricing_tab_id')
@@ -210,7 +263,6 @@ class OrderCreateSerializer(serializers.Serializer):
                 material=material_name
             )
 
-            # ✅ Backend قیمت واقعی رو از DB می‌خونه
             base_price = material_price.price
             
             discount_result = engine.calculate_item_price(
@@ -235,9 +287,6 @@ class OrderCreateSerializer(serializers.Serializer):
             subtotal_raw += discount_result.base_price * quantity
             total_item_discounts += discount_result.base_discount_amount * quantity
 
-        # ============================================================
-        # ۷. محاسبات نهایی
-        # ============================================================
         subtotal_after_items = subtotal_raw - total_item_discounts
         percent_amount_before_coupon = (
             (subtotal_after_items * percent_fee) // 100 if percent_fee else 0
@@ -250,9 +299,6 @@ class OrderCreateSerializer(serializers.Serializer):
             pickup_cost + delivery_cost_final + rush_fee
         )
 
-        # ============================================================
-        # ۸. کوپن
-        # ============================================================
         coupon_code = validated_data.get('coupon_code')
         order_discount_amount = 0
         applied_coupon = None
@@ -271,9 +317,6 @@ class OrderCreateSerializer(serializers.Serializer):
             order_discount_amount = coupon_discount
             applied_coupon = coupon_instance
 
-        # ============================================================
-        # ۹. قیمت نهایی
-        # ============================================================
         after_items_and_coupon = max(0, subtotal_after_items - order_discount_amount)
         percent_amount = (after_items_and_coupon * percent_fee) // 100 if percent_fee else 0
 
@@ -283,9 +326,6 @@ class OrderCreateSerializer(serializers.Serializer):
             pickup_cost + delivery_cost_final + rush_fee
         )
 
-        # ============================================================
-        # ۱۰. برگردوندن نتیجه
-        # ============================================================
         return {
             "address": address,
             "computed_items": computed_items,
@@ -330,7 +370,7 @@ class OrderCreateSerializer(serializers.Serializer):
 
 
 # ============================================================
-# Serializers دیگه (بدون تغییر)
+# Serializers دیگه (برای cart_views.py)
 # ============================================================
 
 class OrderCartItemSerializer(serializers.Serializer):

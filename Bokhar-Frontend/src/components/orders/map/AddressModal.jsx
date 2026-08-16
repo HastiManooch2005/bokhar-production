@@ -27,17 +27,18 @@ export default function AddressModal({
     setLocalTitle(title || "");
   }, [plaque, unit, title]);
 
-  // ---------------- validation ----------------
+// ---------------- validation ----------------
 
-  const plaqueValid =
-    localPlaque.trim() !== "" &&
-    /^\d+$/.test(localPlaque);
+const plaqueValid =
+  localPlaque.trim() !== "" &&
+  /^\d+$/.test(localPlaque);
 
-  const unitValid =
-    localUnit.trim() !== "" &&
-    /^\d+$/.test(localUnit);
+const unitValid =
+  localUnit.trim() !== "" &&
+  /^\d+$/.test(localUnit);
 
-  const formValid = plaqueValid && unitValid;
+// ✅ عنوان اختیاری — فقط پلاک و واحد الزامی
+const formValid = plaqueValid && unitValid;
 
   // ---------------- submit ----------------
 
@@ -182,43 +183,23 @@ export default function AddressModal({
           </div>
         </div>
 
-        {/* TITLE */}
-        <div className="mb-4">
-          <label className="text-xs mb-1 block text-gray-500 dark:text-gray-400">
-            عنوان آدرس
-          </label>
+{/* TITLE */}
+<div className="mb-4">
+  <label className="text-xs mb-1 block text-gray-500 dark:text-gray-400">
+    عنوان آدرس
+  </label>
 
-          <input
-            placeholder="خانه، محل کار ..."
-            value={localTitle}
-            onChange={(e) =>
-              setLocalTitle(e.target.value)
-            }
-            className="
-            w-full
-            h-12
-
-            rounded-2xl
-
-            border
-            border-gray-200
-            dark:border-gray-600
-
-            bg-white
-            dark:bg-[#1a1f2e]
-
-            px-4
-
-            outline-none
-
-            focus:ring-2
-            focus:ring-[#8AA1C4]
-
-            transition
-            dark:text-gray-200
-          "
-          />
-        </div>
+  <input
+    placeholder="خانه، محل کار ..."
+    value={localTitle}
+    onChange={(e) => setLocalTitle(e.target.value)}
+    className="
+      w-full h-12 rounded-2xl border px-4 outline-none transition
+      border-gray-200 dark:border-gray-600 focus:ring-[#8AA1C4]
+      bg-white dark:bg-[#1a1f2e] dark:text-gray-200
+    "
+  />
+</div>
 
         {/* DESCRIPTION */}
         <div className="mb-5">
