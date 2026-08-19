@@ -11,6 +11,7 @@ import {
 } from "react-icons/fi";
 import axios from "axios";
 import { fetchCustomers } from "../context/AuthContext";
+import { fetchCoupons } from "../api/discountsApi";
 
 // ─── API Setup (فقط برای داشبورد) ──────────────────────────────
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
@@ -49,6 +50,7 @@ export default function AdminDashboard() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [dashboardData, setDashboardData] = useState(null);
   const [customersCount, setCustomersCount] = useState(0);
+  const [couponsCount, setCouponsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -62,7 +64,7 @@ export default function AdminDashboard() {
     setActiveMenu(pathSegment || "dashboard");
   }, [location]);
 
-  // دریافت داده‌های داشبورد و مشتریان از API
+  // دریافت داده‌های داشبورد، مشتریان و تخفیف‌ها از API
   useEffect(() => {
     const controller = new AbortController();
 
@@ -71,13 +73,15 @@ export default function AdminDashboard() {
         setLoading(true);
         setError(null);
 
-        const [dashRes, customersRes] = await Promise.all([
+        const [dashRes, customersRes, couponsRes] = await Promise.all([
           api.get("/report/dashboard/", { signal: controller.signal }),
           fetchCustomers().catch(() => []),
+          fetchCoupons().catch(() => []),
         ]);
 
         setDashboardData(dashRes.data);
         setCustomersCount(Array.isArray(customersRes) ? customersRes.length : 0);
+        setCouponsCount(Array.isArray(couponsRes) ? couponsRes.length : 0);
       } catch (err) {
         if (err.name === "AbortError" || err.name === "CanceledError") return;
         console.error("خطا در دریافت داده‌های داشبورد:", err);
@@ -111,7 +115,7 @@ export default function AdminDashboard() {
         {
           title: "تخفیف‌ها",
           icon: <FiTag size={26} />,
-          count: "—",
+          count: couponsCount,
           color: "from-green-500 to-emerald-400",
           link: "/admin-dashboard/discounts",
         },
