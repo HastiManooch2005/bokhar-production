@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models.models import *
+from .models.log_models import *
 from .models.setting_payment_models import *
 from .services.refund import Refund
 
@@ -11,4 +12,4 @@ admin.site.register(WithdrawalRequest)
 admin.site.register(PaymentSession)
 admin.site.register(RefundRequest)
 admin.site.register(PaymentTerminal)
-
+admin.site.register(FinancialAuditLog)
