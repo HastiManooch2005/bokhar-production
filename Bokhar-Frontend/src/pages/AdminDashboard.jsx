@@ -7,6 +7,7 @@ import {
   FiTag,
   FiPackage,
   FiLayout,
+  FiBarChart,
 } from "react-icons/fi";
 import axios from "axios";
 import { fetchCustomers } from "../context/AuthContext";
@@ -115,11 +116,11 @@ export default function AdminDashboard() {
           link: "/admin-dashboard/discounts",
         },
         {
-          title: "خدمات",
-          icon: <FiPackage size={26} />,
+          title: "گزارش ها",
+          icon: <FiBarChart size={26} />,
           count: "—",
           color: "from-orange-500 to-yellow-400",
-          link: "/admin-dashboard/services",
+          link: "/admin-dashboard/reports",
         },
       ]
     : [];
