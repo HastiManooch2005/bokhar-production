@@ -1,20 +1,38 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  LogOut, 
-  Wallet, 
-  Package, 
-  Shield, 
-  Headphones, 
-  Info, 
+import {
+  LogOut,
+  Wallet,
+  Package,
+  Shield,
+  Headphones,
+  Info,
   Smartphone,
-  ChevronLeft, 
-  ChevronRight
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { FiSun, FiMoon } from "react-icons/fi";
 import { PencilSquareIcon } from "@heroicons/react/24/solid";
 import { useAuth } from "../context/AuthContext";
+import axios from "axios";
+import toast from "react-hot-toast";
 
+// ─── API Setup ───
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+
+const api = axios.create({
+  baseURL: API_URL,
+  withCredentials: true,
+});
+
+// ─── Helpers ───
+const formatBalance = (rial) => {
+  if (rial === null || rial === undefined) return "---";
+  const toman = Math.floor(rial / 10);
+  return toman.toLocaleString("fa-IR") + " تومان";
+};
+
+// ─── Components ───
 function QuickCard({ title, icon, onClick }) {
   return (
     <button
@@ -46,8 +64,8 @@ function SettingItem({ title, icon, onClick }) {
         </span>
         <span className="text-gray-800 dark:text-gray-200">{title}</span>
       </div>
-      <ChevronRight 
-        className="w-5 h-5 text-gray-400 dark:text-gray-500 rtl:rotate-180" 
+      <ChevronRight
+        className="w-5 h-5 text-gray-400 dark:text-gray-500 rtl:rotate-180"
       />
     </button>
   );
@@ -57,7 +75,6 @@ export default function CustomersDashboard() {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
 
-  // حالت اولیه را از localStorage یا کلاس dark روی <html> می‌خوانیم
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme) return savedTheme;
@@ -66,11 +83,30 @@ export default function CustomersDashboard() {
       : "light";
   });
 
-  // وقتی theme تغییر کرد، کلاس dark روی html و localStorage بروزرسانی می‌شود
+  const [balance, setBalance] = useState(null);
+  const [balanceLoading, setBalanceLoading] = useState(true);
+
+  // Theme effect
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
     localStorage.setItem("theme", theme);
   }, [theme]);
+
+  // Fetch wallet balance on mount
+  useEffect(() => {
+    const getBalance = async () => {
+      try {
+        const response = await api.get("/wallet/balance/");
+        setBalance(response.data.balance);
+      } catch (error) {
+        console.error("Failed to fetch balance:", error);
+        toast.error("خطا در دریافت موجودی");
+      } finally {
+        setBalanceLoading(false);
+      }
+    };
+    getBalance();
+  }, []);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
@@ -120,7 +156,13 @@ export default function CustomersDashboard() {
             کیف پول
           </div>
           <span className="font-semibold text-lg text-gray-900 dark:text-gray-200">
-            125,000 تومان
+            {balanceLoading ? (
+              <span className="text-gray-400 dark:text-gray-500 text-sm font-normal">
+                در حال دریافت...
+              </span>
+            ) : (
+              formatBalance(balance)
+            )}
           </span>
         </div>
         <button
@@ -164,23 +206,22 @@ export default function CustomersDashboard() {
           icon={<Headphones size={20} />}
           onClick={() => navigate("/customer-dashboard/support")}
         />
-        <SettingItem 
-          title="درباره خشکشویی افشار" 
+        <SettingItem
+          title="درباره خشکشویی افشار"
           icon={<Info size={20} />}
-          onClick={() => navigate("/aboutDryCleaning")} 
+          onClick={() => navigate("/aboutDryCleaning")}
         />
-<SettingItem 
-  title="درباره رایبان"
-  icon={
-    <img
-      src="/rayban-dark2.png"
-      alt="rayban"
-      className="h-7 w-7 object-contain"
-    />
-  }
-  onClick={() => navigate("/aboutUs")}
-/>
-
+        <SettingItem
+          title="درباره رایبان"
+          icon={
+            <img
+              src="/rayban-dark2.png"
+              alt="rayban"
+              className="h-7 w-7 object-contain"
+            />
+          }
+          onClick={() => navigate("/aboutUs")}
+        />
       </div>
 
       {/* Logout Desktop */}
