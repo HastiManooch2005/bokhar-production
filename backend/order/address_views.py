@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from .serializers import *
 from .session import OrderSession
-
+from users.models import *
 import requests
 from django.conf import settings
 logger = logging.getLogger(__name__)
