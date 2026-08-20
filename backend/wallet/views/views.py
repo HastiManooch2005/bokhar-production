@@ -260,7 +260,7 @@ class WalletChargeVerifyView(APIView):
     مثل PaymentVerifyView، این endpoint مستقیماً توسط مرورگر کاربر صدا زده
     می‌شود، پس همیشه به صفحه‌ی نتیجه‌ی فرانت‌اند ریدایرکت می‌کند.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request):
         serializer = PaymentVerifySerializer(data=request.query_params)
