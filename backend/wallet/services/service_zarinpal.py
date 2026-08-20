@@ -149,56 +149,35 @@ class ZarinPalService:
     # ------------------------------------------------------------------
     def request_payment(self, amount: int, description: str, mobile: str = None) -> dict:
         """
-        مرحله اول پرداخت: دریافت authority و لینک درگاه.
-
-        :param amount:      مبلغ به ریال
-        :param description: توضیح تراکنش
-        :param mobile:      شماره موبایل (اختیاری، برای pre-fill در درگاه)
-        :return:
-            موفق  → {"success": True,  "authority": "...", "payment_url": "..."}
-            خطا   → {"success": False, "error": "...",     "code": ...}
+        مرحله اول پرداخت: دریافت authority و لینک درگاه
         """
+        # ساخت payload با callback_url
         payload = {
-            "merchant_id":  self.merchant_id,
-            "amount":        amount,
-            "description":   description,
-            "callback_url":  self.callback_url,
+            "merchant_id": self.merchant_id,
+            "amount": amount,
+            "description": description,
+            "callback_url": self.callback_url,  # <-- اینجا اضافه می‌شود
         }
         if mobile:
             payload["mobile"] = mobile
 
         ok, result = self._post(self.request_url, payload)
         if not ok:
-            return {"success": False, "error": result["message"], "code": result["code"]}
+            return {"success": False, "error": result.get("message", "خطا"), "code": result.get("code", -1)}
 
         data = result.get("data", {})
-        if not isinstance(data, dict):
-            logger.error(
-                "ZarinPal request failed: invalid data structure",
-                extra={"response_type": type(data).__name__}
-            )
-            return {"success": False, "error": "پاسخ نامعتبر از سرور", "code": -4}
-
         authority = data.get("authority")
+
         if authority:
-            logger.info(
-                "ZarinPal payment request created",
-                extra={"authority_prefix": _mask_authority(authority)}
-            )
             return {
-                "success":     True,
-                "authority":   authority,
+                "success": True,
+                "authority": authority,
                 "payment_url": f"{self.payment_url}{authority}",
             }
 
         error = self._extract_error(result)
-        logger.error(
-            "ZarinPal request failed",
-            extra={
-                "code": error["code"]
-            }
-        )
-        return {"success": False, "error": error["message"], "code": error["code"]}
+        return {"success": False, "error": error.get("message", "خطا"), "code": error.get("code", -1)}
+
 
     # ------------------------------------------------------------------
     def verify_payment(self, authority: str, amount: int) -> dict:
@@ -290,3 +269,5 @@ class ZarinPalService:
             }
         )
         return {"success": False, "error": error["message"], "code": error["code"]}
+
+
