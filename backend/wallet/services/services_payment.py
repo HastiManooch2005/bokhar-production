@@ -189,7 +189,7 @@ class PaymentService:
     # PRIVATE HELPERS
     # ------------------------------------------------------------------
     def _serialize_pricing_snapshot(self, pricing: dict) -> dict:
-        required_keys = ["address", "pickup_template", "delivery_template", 
+        required_keys = ["address", "pickup_template", "delivery_template",
                         "computed_items", "final_price", "subtotal_raw",
                         "total_item_discounts", "subtotal_after_items",
                         "order_discount_amount", "pickup_cost", "delivery_cost",
@@ -544,7 +544,7 @@ class PaymentService:
 
         description = "پرداخت سفارش خشکشویی"
         phone = getattr(user, "phone", None)
-
+        callback_url = f"{settings.BACKEND_BASE_URL}/api/payments/verify/"
         result = self.gateway.request_payment(
             amount=amount_rials,
             description=description,

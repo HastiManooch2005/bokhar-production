@@ -16,6 +16,7 @@ from wallet.serializers.serializers import (
     WalletChargeSerializer,
     WithdrawalRequestSerializer,
 )
+from django.conf import settings
 
 from wallet.services.services_payment import PaymentService
 from wallet.services.services_wallet import WalletPaymentService
@@ -54,86 +55,70 @@ def _redirect_with_params(base_path: str, **params) -> HttpResponseRedirect:
     return HttpResponseRedirect(url)
 
 
-# =========================================================
-# 1. پرداخت سفارش از درگاه — initiate
-# =========================================================
-
 class PaymentInitiateView(APIView):
-
+    """شروع پرداخت - دریافت لینک درگاه"""
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = PaymentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        service = PaymentService(zarinpal_client=_make_service())
+        service = PaymentService(zarinpal_client=ZarinPalService())
         result = service.initiate_payment(
             user=request.user,
-            # FIX: قبلاً اینجا serializer.validated_data پاس داده می‌شد که چون
-            # PaymentCreateSerializer هیچ فیلدی نداره همیشه {} بود — یعنی داده‌ی
-            # واقعی سفارش (آدرس، آیتم‌ها، زمان تحویل و ...) که فرانت‌اند در
-            # request.data می‌فرسته، هیچ‌وقت به OrderCreateSerializer داخل
-            # PaymentService نمی‌رسید و initiate_payment همیشه با سبد خالی
-            # fail می‌شد. حالا request.data واقعی پاس داده می‌شه.
             validated_data=request.data,
             request=request,
         )
         return Response(result, status=status.HTTP_200_OK)
 
 
-# =========================================================
-# 2. تأیید پرداخت سفارش — verify (callback زرین‌پال)
-# =========================================================
-
 class PaymentVerifyView(APIView):
     """
+    تأیید پرداخت - CALLBACK زرین‌پال
     GET /api/payments/verify/?Authority=xxx&Status=OK
-    زرین‌پال کاربر را اینجا redirect می‌کند.
-
-    این endpoint مستقیماً توسط مرورگر کاربر (نه AJAX فرانت‌اند) صدا زده
-    می‌شود، پس همیشه باید با یک ریدایرکت به صفحه‌ی نتیجه‌ی فرانت‌اند پاسخ
-    بدهد، نه یک پاسخ JSON خام.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        serializer = PaymentVerifySerializer(data=request.query_params)
-        serializer.is_valid(raise_exception=True)
+        # 1. دریافت پارامترها
+        authority = request.query_params.get("Authority")
+        status = request.query_params.get("Status")
 
-        authority = serializer.validated_data["Authority"]
-        pay_status = serializer.validated_data["Status"]
-
-        # اگه کاربر لغو کرد
-        if pay_status != "OK":
+        # 2. اگر کاربر لغو کرده باشد
+        if status != "OK":
             return _redirect_with_params(
                 ORDER_RESULT_PATH,
                 success="false",
                 message="پرداخت توسط کاربر لغو شد.",
             )
 
-        service = PaymentService(zarinpal_client=_make_service())
+        # 3. بررسی اعتبار authority
+        if not authority:
+            return _redirect_with_params(
+                ORDER_RESULT_PATH,
+                success="false",
+                message="کد تراکنش معتبر نیست.",
+            )
 
-        # FIX: قبلاً نتیجه یا خطای این متد به صورت Response JSON خام برگردونده
-        # می‌شد که در مرورگر کاربر (بعد از redirect زرین‌پال) به جای صفحه‌ی
-        # نتیجه‌ی سفارش، یه صفحه‌ی JSON خالی نمایش داده می‌شد. حالا در همه‌ی
-        # حالت‌ها (موفق/خطا) به صفحه‌ی نتیجه‌ی فرانت‌اند ریدایرکت می‌شه.
+        # 4. ساخت سرویس با callback_url (برای امنیت)
+        service = PaymentService(
+            zarinpal_client=ZarinPalService(
+                callback_url_override=settings.ZARINPAL["CALLBACK_URL"]
+            )
+        )
+
+        # 5. تأیید پرداخت
         try:
             result = service.verify_payment(
                 authority=authority,
                 user=request.user,
                 callback_payload={
-                    "query": dict(
-                        request.query_params
-                    ),
-                    "ip": request.META.get(
-                        "REMOTE_ADDR"
-                    ),
-                    "user_agent": request.META.get(
-                        "HTTP_USER_AGENT"
-                    ),
+                    "query": dict(request.query_params),
+                    "ip": request.META.get("REMOTE_ADDR"),
+                    "user_agent": request.META.get("HTTP_USER_AGENT"),
                 },
             )
-        except (ValidationError, PermissionDenied) as exc:
+        except ValidationError as exc:
             detail = exc.detail
             message = str(detail[0]) if isinstance(detail, list) and detail else str(detail)
             return _redirect_with_params(
@@ -141,31 +126,36 @@ class PaymentVerifyView(APIView):
                 success="false",
                 message=message,
             )
-        except Exception:
-            logger.exception(
-                "Unexpected error during payment verification",
-                extra={"authority": authority, "user_id": request.user.id},
+        except PermissionDenied as exc:
+            return _redirect_with_params(
+                ORDER_RESULT_PATH,
+                success="false",
+                message=str(exc.detail) if hasattr(exc, 'detail') else "شما دسترسی ندارید.",
             )
+        except Exception as exc:
+            logger.exception("Unexpected error in payment verification")
             return _redirect_with_params(
                 ORDER_RESULT_PATH,
                 success="false",
                 message="خطای غیرمنتظره در تأیید پرداخت.",
             )
 
+        # 6. نمایش نتیجه
         if result.get("success"):
             return _redirect_with_params(
                 ORDER_RESULT_PATH,
                 success="true",
                 order_id=result.get("order_id"),
                 ref_id=result.get("ref_id"),
+                message="پرداخت با موفقیت انجام شد.",
             )
 
         return _redirect_with_params(
             ORDER_RESULT_PATH,
             success="false",
             message=result.get("error", "پرداخت ناموفق بود."),
+            code=result.get("code"),
         )
-
 
 # =========================================================
 # 3. پرداخت سفارش از کیف پول
