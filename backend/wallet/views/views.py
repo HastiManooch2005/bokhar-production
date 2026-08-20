@@ -72,12 +72,28 @@ class PaymentInitiateView(APIView):
         return Response(result, status=status.HTTP_200_OK)
 
 
+# views.py
+import logging
+from django.http import HttpResponseRedirect
+from django.utils.http import urlencode
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny  # ✅ تغییر مهم
+from rest_framework.exceptions import ValidationError, PermissionDenied
+
+
+@method_decorator(csrf_exempt, name='dispatch')  # ✅ غیرفعال کردن CSRF برای callback
 class PaymentVerifyView(APIView):
     """
     تأیید پرداخت - CALLBACK زرین‌پال
     GET /api/payments/verify/?Authority=xxx&Status=OK
+
+    ⚠️ توجه: این ویو بدون احراز هویت است چون زرین‌پال
+    توکن احراز هویت را همراه با callback ارسال نمی‌کند.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request):
         # 1. دریافت پارامترها
@@ -100,18 +116,50 @@ class PaymentVerifyView(APIView):
                 message="کد تراکنش معتبر نیست.",
             )
 
-        # 4. ساخت سرویس با callback_url (برای امنیت)
+        # 4. پیدا کردن payment session بدون نیاز به احراز هویت
+        try:
+            from ..models.models import PaymentSession  # آدرس مدل خود را تنظیم کنید
+
+            # پیدا کردن تراکنش با authority
+            payment = PaymentSession.objects.filter(authority=authority).first()
+            if not payment:
+                return _redirect_with_params(
+                    ORDER_RESULT_PATH,
+                    success="false",
+                    message="تراکنش یافت نشد.",
+                )
+
+            # کاربر را از روی payment پیدا کنید (نه از request.user)
+            user = payment.user
+
+            # اگر کاربر لاگین است، مالکیت را چک کنید
+            if request.user.is_authenticated and request.user.id != user.id:
+                return _redirect_with_params(
+                    ORDER_RESULT_PATH,
+                    success="false",
+                    message="این تراکنش متعلق به شما نیست.",
+                )
+
+        except Exception as exc:
+            logger.exception(f"Error finding payment session: {exc}")
+            return _redirect_with_params(
+                ORDER_RESULT_PATH,
+                success="false",
+                message="خطا در یافتن تراکنش.",
+            )
+
+        # 5. ساخت سرویس با callback_url
         service = PaymentService(
             zarinpal_client=ZarinPalService(
                 callback_url_override=settings.ZARINPAL["CALLBACK_URL"]
             )
         )
 
-        # 5. تأیید پرداخت
+        # 6. تأیید پرداخت
         try:
             result = service.verify_payment(
                 authority=authority,
-                user=request.user,
+                user=user,  # ✅ کاربر را از payment بگیرید
                 callback_payload={
                     "query": dict(request.query_params),
                     "ip": request.META.get("REMOTE_ADDR"),
@@ -133,14 +181,14 @@ class PaymentVerifyView(APIView):
                 message=str(exc.detail) if hasattr(exc, 'detail') else "شما دسترسی ندارید.",
             )
         except Exception as exc:
-            logger.exception("Unexpected error in payment verification")
+            logger.exception(f"Unexpected error in payment verification: {exc}")
             return _redirect_with_params(
                 ORDER_RESULT_PATH,
                 success="false",
                 message="خطای غیرمنتظره در تأیید پرداخت.",
             )
 
-        # 6. نمایش نتیجه
+        # 7. نمایش نتیجه
         if result.get("success"):
             return _redirect_with_params(
                 ORDER_RESULT_PATH,
@@ -156,7 +204,6 @@ class PaymentVerifyView(APIView):
             message=result.get("error", "پرداخت ناموفق بود."),
             code=result.get("code"),
         )
-
 # =========================================================
 # 3. پرداخت سفارش از کیف پول
 # =========================================================

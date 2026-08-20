@@ -544,7 +544,6 @@ class PaymentService:
 
         description = "پرداخت سفارش خشکشویی"
         phone = getattr(user, "phone", None)
-        callback_url = f"{settings.BACKEND_BASE_URL}/api/payments/verify/"
         result = self.gateway.request_payment(
             amount=amount_rials,
             description=description,
