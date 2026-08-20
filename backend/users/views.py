@@ -441,3 +441,15 @@ class AddressSetDefaultView(APIView):
             {"detail": "آدرس پیش‌فرض با موفقیت تغییر کرد."},
             status=status.HTTP_200_OK,
         )
+
+class AddressUseView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        address = get_object_or_404(Address, pk=pk, user=request.user)
+        address.usage_count += 1
+        address.save()
+        return Response(
+            {"detail": "شمارنده بروزرسانی شد.", "usage_count": address.usage_count},
+            status=status.HTTP_200_OK,
+        )

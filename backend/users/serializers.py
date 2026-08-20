@@ -296,7 +296,7 @@ class AddressSerializer(serializers.ModelSerializer):
             'id', 'title', 'apartment_name', 'unit',
             'province', 'city', 'district', 'address_detail',
             'postal_code', 'phone', 'is_default',
-            'latitude', 'longitude',
+            'latitude', 'longitude','usage_count',
             'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']

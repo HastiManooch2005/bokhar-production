@@ -71,6 +71,10 @@ class Address(models.Model):
         related_name='addresses',
         verbose_name='کاربر'
     )
+    usage_count = models.PositiveIntegerField(
+    default=0,
+    verbose_name='تعداد استفاده'
+    )
     title = models.CharField(
         max_length=100, 
         blank=True, 
