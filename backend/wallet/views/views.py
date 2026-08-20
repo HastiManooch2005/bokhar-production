@@ -151,7 +151,7 @@ class PaymentVerifyView(APIView):
         # 5. ساخت سرویس با callback_url
         service = PaymentService(
             zarinpal_client=ZarinPalService(
-                callback_url_override=settings.ZARINPAL["CALLBACK_URL"]
+     
             )
         )
 
