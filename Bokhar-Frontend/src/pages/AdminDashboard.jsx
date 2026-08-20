@@ -7,8 +7,11 @@ import {
   FiTag,
   FiPackage,
   FiLayout,
+  FiBarChart,
 } from "react-icons/fi";
 import axios from "axios";
+import { fetchCustomers } from "../context/AuthContext";
+import { fetchCoupons } from "../api/discountsApi";
 
 // ─── API Setup (فقط برای داشبورد) ──────────────────────────────
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
@@ -46,6 +49,8 @@ export default function AdminDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [dashboardData, setDashboardData] = useState(null);
+  const [customersCount, setCustomersCount] = useState(0);
+  const [couponsCount, setCouponsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -59,7 +64,7 @@ export default function AdminDashboard() {
     setActiveMenu(pathSegment || "dashboard");
   }, [location]);
 
-  // دریافت داده‌های داشبورد از API
+  // دریافت داده‌های داشبورد، مشتریان و تخفیف‌ها از API
   useEffect(() => {
     const controller = new AbortController();
 
@@ -67,10 +72,16 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
         setError(null);
-        const response = await api.get("/report/dashboard/", {
-          signal: controller.signal,
-        });
-        setDashboardData(response.data);
+
+        const [dashRes, customersRes, couponsRes] = await Promise.all([
+          api.get("/report/dashboard/", { signal: controller.signal }),
+          fetchCustomers().catch(() => []),
+          fetchCoupons().catch(() => []),
+        ]);
+
+        setDashboardData(dashRes.data);
+        setCustomersCount(Array.isArray(customersRes) ? customersRes.length : 0);
+        setCouponsCount(Array.isArray(couponsRes) ? couponsRes.length : 0);
       } catch (err) {
         if (err.name === "AbortError" || err.name === "CanceledError") return;
         console.error("خطا در دریافت داده‌های داشبورد:", err);
@@ -97,23 +108,23 @@ export default function AdminDashboard() {
         {
           title: "مشتریان",
           icon: <FiUsers size={26} />,
-          count: "—",
+          count: customersCount,
           color: "from-purple-500 to-pink-400",
           link: "/admin-dashboard/customers",
         },
         {
           title: "تخفیف‌ها",
           icon: <FiTag size={26} />,
-          count: "—",
+          count: couponsCount,
           color: "from-green-500 to-emerald-400",
           link: "/admin-dashboard/discounts",
         },
         {
-          title: "خدمات",
-          icon: <FiPackage size={26} />,
+          title: "گزارش ها",
+          icon: <FiBarChart size={26} />,
           count: "—",
           color: "from-orange-500 to-yellow-400",
-          link: "/admin-dashboard/services",
+          link: "/admin-dashboard/reports",
         },
       ]
     : [];
