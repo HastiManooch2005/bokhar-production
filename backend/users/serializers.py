@@ -1,7 +1,7 @@
 import re
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import User, UserSession
+from .models import User, UserSession, Address
 from .utils import can_send_otp, is_phone_blocked, validate_otp, verify_otp
 
 def safe_divmod(seconds):
@@ -285,3 +285,22 @@ class UserSessionSerializer(serializers.ModelSerializer):
             "created_at", 
             "last_used"
         ]
+# ═══════════════════════════════════════════════════════════
+# Address Serializer
+# ═══════════════════════════════════════════════════════════
+
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = [
+            'id', 'title', 'apartment_name', 'unit',
+            'province', 'city', 'district', 'address_detail',
+            'postal_code', 'phone', 'is_default',
+            'latitude', 'longitude',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)

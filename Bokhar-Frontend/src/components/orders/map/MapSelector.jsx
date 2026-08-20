@@ -15,7 +15,7 @@ import SearchLocation from "./SearchLocation";
 import AddressModal from "./AddressModal";
 
 import { useAuth } from "../../../context/AuthContext";
-
+import { useAddresses } from "../../../hooks/useAddresses";
 // ---------------- VALIDATION ----------------
 
 const isValidCoords = (coords) =>
@@ -60,40 +60,29 @@ export default function MapSelector({
   const historyLock = useRef(false);
 
   // ---------------- AUTH ----------------
+// ✅ نگاشت عنوان آدرس به آیکون
+const getAddressIcon = (title) => {
+  const t = title?.trim() || "";
+  if (t.includes("خانه") || t.includes("خونه") || t.toLowerCase().includes("home")) {
+    return Home;
+  }
+  if (
+    t.includes("کار") ||
+    t.includes("دفتر") ||
+    t.toLowerCase().includes("work") ||
+    t.toLowerCase().includes("office")
+  ) {
+    return BriefcaseBusiness;
+  }
+  return MapPin;
+};
+
+// ✅ دیتای واقعی از API
+const { addresses: savedAddresses, loading: addressesLoading } = useAddresses();
 
   const { isAuthenticated, loading: authLoading } = useAuth();
 
-  // ---------------- SAVED ADDRESSES ----------------
 
-  const savedAddresses = useMemo(
-    () => [
-      {
-        id: 1,
-        title: "خانه",
-        icon: Home,
-        address: "تهران، آزادی",
-        plaque: "12",
-        unit: "3",
-        coords: {
-          lat: 35.6892,
-          lng: 51.389,
-        },
-      },
-      {
-        id: 2,
-        title: "محل کار",
-        icon: BriefcaseBusiness,
-        address: "تهران، ونک",
-        plaque: "8",
-        unit: "1",
-        coords: {
-          lat: 35.757,
-          lng: 51.409,
-        },
-      },
-    ],
-    [],
-  );
 
   // ---------------- SAFE SETCOORDS ----------------
 
@@ -193,19 +182,24 @@ export default function MapSelector({
 
   // ---------------- SELECT SAVED ----------------
 
-  const handleSelectSaved = useCallback((item) => {
-    if (!isValidCoords(item.coords)) {
-      console.error("handleSelectSaved: item.coords is invalid:", item.coords);
-      return;
-    }
+const handleSelectSaved = useCallback((item) => {
+  const lat = parseFloat(item.latitude);
+  const lng = parseFloat(item.longitude);
+  const itemCoords = { lat, lng };
 
-    safeSetCoords(item.coords);
-    setAddress(item.address);
-    setPlaque(item.plaque);
-    setUnit(item.unit);
-    setTitle(item.title);
-    setOpen(true);
-  }, [safeSetCoords]);
+  if (!isValidCoords(itemCoords)) {
+    console.error("handleSelectSaved: invalid coords:", itemCoords);
+    toast.error("موقعیت مکانی این آدرس نامعتبر است");
+    return;
+  }
+
+  safeSetCoords(itemCoords);
+  setAddress(item.address_detail || "");
+  setPlaque(item.apartment_name || "");
+  setUnit(item.unit ? String(item.unit) : "");
+  setTitle(item.title || "");
+  setOpen(true);
+}, [safeSetCoords]);
 
   // ---------------- SUBMIT ----------------
 
@@ -389,45 +383,33 @@ const handleSubmit = useCallback(
           </div>
 
           {/* SAVED ADDRESSES */}
-          <div
-            className="
-              flex
-              gap-3
-              overflow-x-auto
-              pb-2
-              no-scrollbar
-            "
-          >
-            {savedAddresses.map((item) => {
-              const Icon = item.icon;
+{/* SAVED ADDRESSES — REAL DATA */}
+{isAuthenticated && (
+  <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+    {addressesLoading ? (
+      <div className="text-xs text-gray-400 py-2">در حال بارگذاری آدرس‌ها...</div>
+    ) : savedAddresses.length === 0 ? (
+      <div className="text-xs text-gray-400 py-2">آدرسی ذخیره نشده</div>
+    ) : (
+      savedAddresses.map((item) => {
+        const Icon = getAddressIcon(item.title);
 
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleSelectSaved(item)}
-                  className="
-                    shrink-0
-                    flex
-                    items-center
-                    gap-2
-                    h-11
-                    px-4
-                    rounded-2xl
-                    bg-gray-100
-                    dark:bg-[#262B40]
-                    border
-                    border-gray-200
-                    dark:border-gray-600
-                  "
-                >
-                  <Icon size={16} className="text-sky-500 dark:text-[#8AA1C4]" />
-                  <span className="text-xs font-bold text-right whitespace-nowrap text-gray-800 dark:text-gray-200">
-                    {item.title}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+        return (
+          <button
+            key={item.id}
+            onClick={() => handleSelectSaved(item)}
+            className="shrink-0 flex items-center gap-2 h-11 px-4 rounded-2xl bg-gray-100 dark:bg-[#262B40] border border-gray-200 dark:border-gray-600"
+          >
+            <Icon size={16} className="text-sky-500 dark:text-[#8AA1C4]" />
+            <span className="text-xs font-bold text-right whitespace-nowrap text-gray-800 dark:text-gray-200">
+              {item.title}
+            </span>
+          </button>
+        );
+      })
+    )}
+  </div>
+)}
         </div>
       </div>
 

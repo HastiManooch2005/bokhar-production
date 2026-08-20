@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 
 from .tasks import *
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -28,10 +28,10 @@ from .serializers import (
     EditFullNameSerializer,
     EditPasswordSerializer,
     UserSessionSerializer,
+    AddressSerializer,
 )
 from .info_users import *
-from .models import UserSession
-
+from .models import User, UserSession, Address
 User = get_user_model()
 
 
@@ -406,3 +406,38 @@ class UserSessionDeleteView(APIView):
         session.save()
 
         return Response({"detail": "دستگاه با موفقیت خارج شد"}, status=status.HTTP_200_OK)
+
+# ═══════════════════════════════════════════════════════════
+# Address Views
+# ═══════════════════════════════════════════════════════════
+
+class AddressListCreateView(generics.ListCreateAPIView):
+    serializer_class = AddressSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Address.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = AddressSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Address.objects.filter(user=self.request.user)
+
+
+class AddressSetDefaultView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        address = get_object_or_404(Address, pk=pk, user=request.user)
+        address.is_default = True
+        address.save()
+        return Response(
+            {"detail": "آدرس پیش‌فرض با موفقیت تغییر کرد."},
+            status=status.HTTP_200_OK,
+        )
