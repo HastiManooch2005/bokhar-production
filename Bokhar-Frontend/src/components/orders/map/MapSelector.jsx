@@ -13,7 +13,7 @@ import {
 import MapView from "./MapView";
 import SearchLocation from "./SearchLocation";
 import AddressModal from "./AddressModal";
-import SavedAddressesModal from "./SavedAddressesModal";
+import SavedAddressesPage from "./SavedAddressesPage";
 import ReplaceAddressModal from "./ReplaceAddressModal";
 
 import { useAuth } from "../../../context/AuthContext";
@@ -76,8 +76,9 @@ export default function MapSelector({
   const [open, setOpen] = useState(false);
   const historyLock = useRef(false);
 
-  // مودال‌های داخلی
-  const [showSavedModal, setShowSavedModal] = useState(false);
+  // ویو داخلی: 'map' | 'saved'
+  const [view, setView] = useState("map");
+
   const [showReplaceModal, setShowReplaceModal] = useState(false);
   const [pendingAddress, setPendingAddress] = useState(null);
   const [leastUsedToReplace, setLeastUsedToReplace] = useState(null);
@@ -277,132 +278,141 @@ export default function MapSelector({
   // ---------------- RENDER ----------------
 
   return (
-    <div
-      dir="rtl"
-      className="fixed inset-0 z-10 pt-[145px] md:pt-[90px] pb-[88px] md:pb-0 overflow-hidden bg-white dark:bg-[#1a1f2e]"
-    >
-      {/* MAP */}
-      <div className="absolute inset-0">
-        <MapView
-          position={coords}
-          onPositionChange={safeSetCoords}
-          onMarkerClick={() => {
-            if (!isValidCoords(coords)) {
-              toast.error("موقعیت مکانی نامعتبر است");
-              return;
-            }
-            setOpen(true);
+    <>
+      <div
+        dir="rtl"
+        className={`fixed inset-0 z-10 pt-[145px] md:pt-[90px] pb-[88px] md:pb-0 overflow-hidden bg-white dark:bg-[#1a1f2e] ${
+          view === "saved" ? "hidden" : ""
+        }`}
+      >
+        {/* MAP */}
+        <div className="absolute inset-0">
+          <MapView
+            position={coords}
+            onPositionChange={safeSetCoords}
+            onMarkerClick={() => {
+              if (!isValidCoords(coords)) {
+                toast.error("موقعیت مکانی نامعتبر است");
+                return;
+              }
+              setOpen(true);
+            }}
+          />
+        </div>
+
+        {/* LOCATION BUTTON */}
+        <button
+          onClick={handleCurrentLocation}
+          className="absolute start-4 bottom-70 md:bottom-60 md:start-8 z-[1000] p-0.5 md:p-1 flex items-center justify-center md:w-12 w-10 md:h-12 h-10 active:scale-95 transition bg-white/70 rounded-full"
+        >
+          <LocateFixed size={42} className="text-sky-500 dark:text-[#262B40]" />
+        </button>
+
+        {/* BOTTOM PANEL */}
+        <div className="absolute bottom-[45px] md:bottom-0 inset-x-0 z-[1000]">
+          <div className="rounded-t-[32px] bg-white/95 dark:bg-[#1a1f2e]/95 backdrop-blur-2xl shadow-2xl p-4">
+            {/* ADDRESS INFO */}
+            <div className="mb-3 flex items-start gap-2 rounded-xl bg-sky-50 dark:bg-[#262B40] px-3 py-2">
+              <MapPin size={16} className="text-sky-500 dark:text-[#8AA1C4] mt-1 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-right text-gray-500 dark:text-gray-400">آدرس انتخاب شده</p>
+                <p className="text-sm text-right truncate text-gray-800 dark:text-gray-200">
+                  {loadingAddress ? "در حال دریافت آدرس..." : address}
+                </p>
+              </div>
+            </div>
+
+            {/* SEARCH + SETTINGS — ردیف هم */}
+            <div className="pointer-events-auto mb-4 flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <SearchLocation
+                  onSelect={(loc) => {
+                    const newCoords = { lat: loc.lat, lng: loc.lng };
+                    if (isValidCoords(newCoords)) {
+                      safeSetCoords(newCoords);
+                      setAddress(loc.address);
+                    }
+                  }}
+                />
+              </div>
+              {isAuthenticated && (
+                <button
+                  onClick={() => setView("saved")}
+                  className="shrink-0 flex items-center justify-center w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-gray-100 dark:bg-[#262B40] border border-gray-200 dark:border-gray-600 active:scale-95 transition"
+                  title="آدرس‌های ذخیره شده"
+                >
+                  <Settings size={20} className="text-gray-600 dark:text-[#8AA1C4]" />
+                </button>
+              )}
+            </div>
+
+            {/* SAVED ADDRESSES */}
+            {isAuthenticated && (
+              <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+                {addressesLoading ? (
+                  <div className="text-xs text-gray-400 py-2">در حال بارگذاری آدرس‌ها...</div>
+                ) : savedAddresses.length === 0 ? (
+                  <div className="text-xs text-gray-400 py-2">آدرسی ذخیره نشده</div>
+                ) : (
+                  savedAddresses.map((item) => {
+                    const Icon = getAddressIcon(item.title);
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleSelectSaved(item)}
+                        className="shrink-0 flex items-center gap-2 h-11 px-4 rounded-2xl bg-gray-100 dark:bg-[#262B40] border border-gray-200 dark:border-gray-600"
+                      >
+                        <Icon size={16} className="text-sky-500 dark:text-[#8AA1C4]" />
+                        <span className="text-xs font-bold text-right whitespace-nowrap text-gray-800 dark:text-gray-200">
+                          {item.title}
+                        </span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ADDRESS MODAL */}
+        <AddressModal
+          isOpen={open}
+          onClose={() => setOpen(false)}
+          onSubmit={handleSubmit}
+          plaque={plaque}
+          unit={unit}
+          title={title}
+          description={description}
+          address={address}
+        />
+
+        {/* REPLACE ADDRESS MODAL */}
+        <ReplaceAddressModal
+          isOpen={showReplaceModal}
+          onClose={() => {
+            setShowReplaceModal(false);
+            setPendingAddress(null);
+            setLeastUsedToReplace(null);
           }}
+          onConfirm={handleConfirmReplace}
+          leastUsedAddress={leastUsedToReplace}
         />
       </div>
 
-      {/* LOCATION BUTTON */}
-      <button
-        onClick={handleCurrentLocation}
-        className="absolute start-4 bottom-70 md:bottom-60 md:start-8 z-[1000] p-0.5 md:p-1 flex items-center justify-center md:w-12 w-10 md:h-12 h-10 active:scale-95 transition bg-white/70 rounded-full"
-      >
-        <LocateFixed size={42} className="text-sky-500 dark:text-[#262B40]" />
-      </button>
-
-      {/* BOTTOM PANEL */}
-      <div className="absolute bottom-[45px] md:bottom-0 inset-x-0 z-[1000]">
-        <div className="rounded-t-[32px] bg-white/95 dark:bg-[#1a1f2e]/95 backdrop-blur-2xl shadow-2xl p-4">
-          {/* ADDRESS INFO */}
-          <div className="mb-3 flex items-start gap-2 rounded-xl bg-sky-50 dark:bg-[#262B40] px-3 py-2">
-            <MapPin size={16} className="text-sky-500 dark:text-[#8AA1C4] mt-1 shrink-0" />
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-right text-gray-500 dark:text-gray-400">آدرس انتخاب شده</p>
-              <p className="text-sm text-right truncate text-gray-800 dark:text-gray-200">
-                {loadingAddress ? "در حال دریافت آدرس..." : address}
-              </p>
-            </div>
-          </div>
-
-          {/* SEARCH + SETTINGS — ردیف هم */}
-          <div className="pointer-events-auto mb-4 flex items-center gap-2">
-            <div className="flex-1 min-w-0">
-              <SearchLocation
-                onSelect={(loc) => {
-                  const newCoords = { lat: loc.lat, lng: loc.lng };
-                  if (isValidCoords(newCoords)) {
-                    safeSetCoords(newCoords);
-                    setAddress(loc.address);
-                  }
-                }}
-              />
-            </div>
-            {isAuthenticated && (
-              <button
-                onClick={() => setShowSavedModal(true)}
-                className="shrink-0 flex items-center justify-center w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-gray-100 dark:bg-[#262B40] border border-gray-200 dark:border-gray-600 active:scale-95 transition"
-                title="آدرس‌های ذخیره شده"
-              >
-                <Settings size={20} className="text-gray-600 dark:text-[#8AA1C4]" />
-              </button>
-            )}
-          </div>
-
-          {/* SAVED ADDRESSES */}
-          {isAuthenticated && (
-            <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-              {addressesLoading ? (
-                <div className="text-xs text-gray-400 py-2">در حال بارگذاری آدرس‌ها...</div>
-              ) : savedAddresses.length === 0 ? (
-                <div className="text-xs text-gray-400 py-2">آدرسی ذخیره نشده</div>
-              ) : (
-                savedAddresses.map((item) => {
-                  const Icon = getAddressIcon(item.title);
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => handleSelectSaved(item)}
-                      className="shrink-0 flex items-center gap-2 h-11 px-4 rounded-2xl bg-gray-100 dark:bg-[#262B40] border border-gray-200 dark:border-gray-600"
-                    >
-                      <Icon size={16} className="text-sky-500 dark:text-[#8AA1C4]" />
-                      <span className="text-xs font-bold text-right whitespace-nowrap text-gray-800 dark:text-gray-200">
-                        {item.title}
-                      </span>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ADDRESS MODAL */}
-      <AddressModal
-        isOpen={open}
-        onClose={() => setOpen(false)}
-        onSubmit={handleSubmit}
-        plaque={plaque}
-        unit={unit}
-        title={title}
-        description={description}
-        address={address}
-      />
-
-      {/* SAVED ADDRESSES MODAL */}
-      <SavedAddressesModal
-        isOpen={showSavedModal}
-        onClose={() => setShowSavedModal(false)}
-        addresses={savedAddresses}
-        onDelete={deleteAddress}
-        onUpdate={updateAddress}
-      />
-
-      {/* REPLACE ADDRESS MODAL */}
-      <ReplaceAddressModal
-        isOpen={showReplaceModal}
-        onClose={() => {
-          setShowReplaceModal(false);
-          setPendingAddress(null);
-          setLeastUsedToReplace(null);
-        }}
-        onConfirm={handleConfirmReplace}
-        leastUsedAddress={leastUsedToReplace}
-      />
-    </div>
+      {/* SAVED ADDRESSES PAGE — full screen */}
+      {view === "saved" && (
+        <SavedAddressesPage
+          addresses={savedAddresses}
+          onBack={() => setView("map")}
+          onDelete={deleteAddress}
+          onUpdate={updateAddress}
+          onSelect={(item) => {
+            handleSelectSaved(item);
+            setView("map");
+          }}
+        />
+      )}
+    </>
   );
 }
