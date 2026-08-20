@@ -36,6 +36,11 @@ urlpatterns = [
 
     path("sessions/", UserSessionListView.as_view(), name="session-list"),
     path("sessions/<int:pk>/", UserSessionDeleteView.as_view(), name="session-delete"),
+
+    # ─── آدرس‌ها ───
+    path("addresses/", AddressListCreateView.as_view(), name="address-list"),
+    path("addresses/<int:pk>/", AddressDetailView.as_view(), name="address-detail"),
+    path("addresses/<int:pk>/set-default/", AddressSetDefaultView.as_view(), name="address-set-default"),
 ]
 
 # Router
