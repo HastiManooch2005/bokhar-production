@@ -9,17 +9,24 @@ export default function SavedAddressesPage({
   onUpdate,
   onSelect,
 }) {
+  // فقط به یک استیت نیاز داریم
   const [editingItem, setEditingItem] = useState(null);
 
-  const handleEdit = (item) => {
-    setEditingItem(item);
+  const handleEdit = (e, item) => {
+    e.stopPropagation();
+    console.log("ویرایش آدرس:", item);
+    setEditingItem(item); // به محض تنظیم، مودال با isOpen=true رندر می‌شود
+  };
+
+  const handleCloseModal = () => {
+    setEditingItem(null); // بستن مودال و پاک کردن داده‌ها
   };
 
   const handleEditSubmit = ({ plaque, unit, title, description }) => {
     if (!editingItem) return;
 
     onUpdate(editingItem.id, {
-      title,
+      title: title || editingItem.title,
       address_detail: editingItem.address_detail,
       apartment_name: plaque,
       unit: parseInt(unit) || 1,
@@ -33,10 +40,12 @@ export default function SavedAddressesPage({
       longitude: editingItem.longitude,
       is_default: editingItem.is_default,
     });
-    setEditingItem(null);
+    
+    handleCloseModal();
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = (e, id) => {
+    e.stopPropagation();
     if (window.confirm("آیا از حذف این آدرس مطمئنید؟")) {
       onDelete(id);
     }
@@ -51,10 +60,7 @@ export default function SavedAddressesPage({
   };
 
   return (
-    <div
-      dir="rtl"
-      className="fixed inset-0 z-[2000] bg-white dark:bg-[#1a1f2e] flex flex-col"
-    >
+    <div dir="rtl" className="fixed inset-0 z-[2000] bg-white dark:bg-[#1a1f2e] flex flex-col">
       {/* HEADER */}
       <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100 dark:border-gray-700">
         <button
@@ -85,7 +91,6 @@ export default function SavedAddressesPage({
                 key={item.id}
                 className="flex items-start gap-3 rounded-2xl border bg-white dark:bg-[#262B40] dark:border-gray-700 p-4 shadow-sm"
               >
-                {/* INFO — clickable to select */}
                 <div
                   className="flex-1 min-w-0 cursor-pointer"
                   onClick={() => onSelect?.(item)}
@@ -110,17 +115,18 @@ export default function SavedAddressesPage({
                   )}
                 </div>
 
-                {/* ACTIONS */}
                 <div className="flex gap-2 shrink-0">
                   <button
-                    onClick={() => handleEdit(item)}
+                    onClick={(e) => handleEdit(e, item)}
                     className="p-2.5 rounded-xl bg-sky-100 text-sky-600 hover:bg-sky-200 dark:bg-[#1a1f2e] dark:text-[#8AA1C4] dark:hover:bg-[#2d3350] transition active:scale-95"
+                    title="ویرایش"
                   >
                     <Pencil size={16} />
                   </button>
                   <button
-                    onClick={() => handleDelete(item.id)}
+                    onClick={(e) => handleDelete(e, item.id)}
                     className="p-2.5 rounded-xl bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 transition active:scale-95"
+                    title="حذف"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -131,19 +137,19 @@ export default function SavedAddressesPage({
         )}
       </div>
 
-      {/* EDIT MODAL */}
-      {editingItem && (
-        <AddressModal
-          isOpen={true}
-          onClose={() => setEditingItem(null)}
-          onSubmit={handleEditSubmit}
-          plaque={editingItem.apartment_name || ""}
-          unit={String(editingItem.unit || "")}
-          title={editingItem.title || ""}
-          description={editingItem.description || ""}
-          address={editingItem.address_detail || ""}
-        />
-      )}
+      {/* ✅ EDIT MODAL - ساده‌شده و بدون باگ */}
+      {/* مودال فقط زمانی رندر می‌شود که editingItem وجود داشته باشد و همیشه با isOpen=true شروع می‌شود */}
+      <AddressModal
+        isOpen={!!editingItem}
+        onClose={handleCloseModal}
+        onSubmit={handleEditSubmit}
+        submitLabel="اعمال تغییرات"
+        plaque={editingItem?.apartment_name || ""}
+        unit={String(editingItem?.unit || "")}
+        title={editingItem?.title || ""}
+        description={editingItem?.description || ""}
+        address={editingItem?.address_detail || ""}
+      />
     </div>
   );
 }
