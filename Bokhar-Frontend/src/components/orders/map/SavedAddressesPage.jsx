@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  ArrowRight,
+  ArrowLeft,
   MapPin,
   Pencil,
   Trash2,
@@ -109,32 +109,35 @@ export default function SavedAddressesPage({
       className="fixed inset-0 z-[2000] bg-white dark:bg-[#1a1f2e] flex flex-col"
     >
       {/* ============ HEADER ============ */}
-      <div className="bg-white dark:bg-[#1a1f2e] border-b border-gray-100 dark:border-gray-700">
-        <div className="flex items-center gap-3 px-4 py-4">
-          <button
-            onClick={onBack}
-            className="p-2.5 rounded-xl bg-gray-100 dark:bg-[#262B40] hover:bg-gray-200 dark:hover:bg-[#2d3350] transition active:scale-95"
-          >
-            <ArrowRight size={20} className="text-gray-700 dark:text-gray-200" />
-          </button>
+<div className="bg-white dark:bg-[#1a1f2e] border-b border-gray-100 dark:border-gray-700">
+  <div dir="ltr" className="flex items-center gap-3 px-4 py-4">
+    {/* دکمه بک — سمت چپ (بدون تغییر) */}
+    <button
+      onClick={onBack}
+      className="p-2.5 rounded-xl bg-gray-100 dark:bg-[#262B40] hover:bg-gray-200 dark:hover:bg-[#2d3350] transition active:scale-95"
+    >
+      <ArrowLeft size={20} className="text-gray-700 dark:text-gray-200" />
+    </button>
 
-          <div className="flex-1">
-            <h1 className="text-lg font-bold text-gray-800 dark:text-gray-200">
-              آدرس‌های من
-            </h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              {addresses.length} آدرس ذخیره شده
-            </p>
-          </div>
+    {/* شمارنده X/10 — الان اینجا (چپِ عنوان) */}
+    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800/40">
+      <MapPin size={14} className="text-sky-600 dark:text-sky-400" />
+      <span className="text-xs font-bold text-sky-700 dark:text-sky-300">
+        {addresses.length}/10
+      </span>
+    </div>
 
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800/40">
-            <MapPin size={14} className="text-sky-600 dark:text-sky-400" />
-            <span className="text-xs font-bold text-sky-700 dark:text-sky-300">
-              {addresses.length}/10
-            </span>
-          </div>
-        </div>
-      </div>
+    {/* عنوان و زیرنویس — راست */}
+    <div className="flex-1 text-right">
+      <h1 className="text-lg font-bold text-gray-800 dark:text-gray-200">
+        آدرس‌های من
+      </h1>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        {addresses.length} آدرس ذخیره شده
+      </p>
+    </div>
+  </div>
+</div>
 
       {/* ============ LIST ============ */}
       <div className="flex-1 overflow-y-auto">
