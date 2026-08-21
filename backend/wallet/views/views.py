@@ -82,7 +82,7 @@ from rest_framework.permissions import AllowAny  # ✅ تغییر مهم
 from rest_framework.exceptions import ValidationError, PermissionDenied
 
 
-@method_decorator(csrf_exempt, name='dispatch')  # ✅ غیرفعال کردن CSRF برای callback
+@method_decorator(csrf_exempt, name='dispatch')
 class PaymentVerifyView(APIView):
     """
     تأیید پرداخت - CALLBACK زرین‌پال
@@ -92,6 +92,7 @@ class PaymentVerifyView(APIView):
     توکن احراز هویت را همراه با callback ارسال نمی‌کند.
     """
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def get(self, request):
         # 1. دریافت پارامترها
