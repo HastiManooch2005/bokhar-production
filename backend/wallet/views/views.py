@@ -37,10 +37,8 @@ FRONTEND_URL = config(
     default="http://localhost:5173"
 )
 
-
-ORDER_RESULT_PATH = "/order/result"
-WALLET_CHARGE_RESULT_PATH = "/wallet/result"
-
+ORDER_RESULT_PATH = "/#/shop"
+WALLET_CHARGE_RESULT_PATH = "/#/customer-dashboard/wallet"
 
 def _redirect_with_params(base_path: str, **params) -> HttpResponseRedirect:
     """
