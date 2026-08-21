@@ -38,8 +38,10 @@ export function useAddresses() {
       if (!res.ok) throw new Error("خطا در ثبت آدرس");
       toast.success("آدرس با موفقیت ثبت شد");
       await fetchAddresses();
+      return true;
     } catch (err) {
       toast.error(err.message);
+      return false;
     }
   };
 
@@ -54,8 +56,10 @@ export function useAddresses() {
       if (!res.ok) throw new Error("خطا در بروزرسانی آدرس");
       toast.success("آدرس بروزرسانی شد");
       await fetchAddresses();
+      return true;
     } catch (err) {
       toast.error(err.message);
+      return false;
     }
   };
 
@@ -68,9 +72,32 @@ export function useAddresses() {
       if (!res.ok) throw new Error("خطا در حذف آدرس");
       toast.success("آدرس حذف شد");
       await fetchAddresses();
+      return true;
     } catch (err) {
       toast.error(err.message);
+      return false;
     }
+  };
+
+  const incrementUsage = async (id) => {
+    try {
+      await fetch(`${API_URL}/addresses/${id}/use/`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {
+      // silently fail
+    }
+  };
+
+  const getLeastUsed = () => {
+    if (!addresses.length) return null;
+    return [...addresses].sort((a, b) => {
+      if (a.usage_count !== b.usage_count) {
+        return a.usage_count - b.usage_count;
+      }
+      return new Date(a.created_at) - new Date(b.created_at);
+    })[0];
   };
 
   return {
@@ -80,5 +107,7 @@ export function useAddresses() {
     createAddress,
     updateAddress,
     deleteAddress,
+    incrementUsage,
+    getLeastUsed,
   };
 }

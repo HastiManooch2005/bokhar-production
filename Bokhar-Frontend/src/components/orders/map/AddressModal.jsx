@@ -5,46 +5,36 @@ export default function AddressModal({
   isOpen,
   onClose,
   onSubmit,
-
   plaque,
   unit,
   title,
   address,
-
+  description: initialDescription = "", // اضافه کردن مقدار پیش‌فرض
   onSelectDifferentDestination,
+  submitLabel = "ثبت آدرس", // ✅ پراپ جدید با مقدار پیش‌فرض
 }) {
   const [localPlaque, setLocalPlaque] = useState(plaque || "");
   const [localUnit, setLocalUnit] = useState(unit || "");
   const [localTitle, setLocalTitle] = useState(title || "");
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(initialDescription);
 
-  const [differentDestination, setDifferentDestination] =
-    useState(false);
+  const [differentDestination, setDifferentDestination] = useState(false);
 
   useEffect(() => {
     setLocalPlaque(plaque || "");
     setLocalUnit(unit || "");
     setLocalTitle(title || "");
-  }, [plaque, unit, title]);
+    setDescription(initialDescription || "");
+  }, [plaque, unit, title, initialDescription, isOpen]); // بازشدن مودال مقادیر را ریست/ست می‌کند
 
-// ---------------- validation ----------------
-
-const plaqueValid =
-  localPlaque.trim() !== "" &&
-  /^\d+$/.test(localPlaque);
-
-const unitValid =
-  localUnit.trim() !== "" &&
-  /^\d+$/.test(localUnit);
-
-// ✅ عنوان اختیاری — فقط پلاک و واحد الزامی
-const formValid = plaqueValid && unitValid;
+  // ---------------- validation ----------------
+  const plaqueValid = localPlaque.trim() !== "" && /^\d+$/.test(localPlaque);
+  const unitValid = localUnit.trim() !== "" && /^\d+$/.test(localUnit);
+  const formValid = plaqueValid && unitValid;
 
   // ---------------- submit ----------------
-
   const handleSubmit = () => {
     if (!formValid) return;
-
     onSubmit({
       plaque: localPlaque,
       unit: localUnit,
@@ -55,10 +45,8 @@ const formValid = plaqueValid && unitValid;
   };
 
   // ---------------- different destination ----------------
-
   const handleDifferentDestination = () => {
     if (!formValid) return;
-
     onSelectDifferentDestination?.({
       plaque: localPlaque,
       unit: localUnit,
@@ -68,36 +56,11 @@ const formValid = plaqueValid && unitValid;
   };
 
   return (
-    <BaseModal
-      isOpen={isOpen}
-      onClose={onClose}
-      maxWidth="lg"
-      title="اطلاعات آدرس"
-    >
-      
+    <BaseModal isOpen={isOpen} onClose={onClose} maxWidth="lg" title="اطلاعات آدرس">
       <div className="flex flex-col">
         {/* ADDRESS */}
-        <div
-          className="
-          mb-5
-
-          rounded-3xl
-
-          bg-gray-100
-          dark:bg-[#262B40]
-
-          p-4
-        "
-        >
-          <p
-            className="
-            text-sm
-            leading-7
-
-            text-gray-700
-            dark:text-gray-200
-          "
-          >
+        <div className="mb-5 rounded-3xl bg-gray-100 dark:bg-[#262B40] p-4">
+          <p className="text-sm leading-7 text-gray-700 dark:text-gray-200">
             {address || "آدرسی انتخاب نشده"}
           </p>
         </div>
@@ -105,140 +68,62 @@ const formValid = plaqueValid && unitValid;
         {/* PLAQUE + UNIT */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="flex flex-col">
-            <label className="text-xs mb-1 text-gray-500 dark:text-gray-400">
-              پلاک
-            </label>
-
+            <label className="text-xs mb-1 text-gray-500 dark:text-gray-400">پلاک</label>
             <input
               type="number"
               placeholder="مثلاً ۱۲"
               value={localPlaque}
-              onChange={(e) =>
-                setLocalPlaque(e.target.value)
-              }
-              className={`
-                h-12
-                rounded-2xl
-                border
-                px-4
-                outline-none
-                transition
-
-                ${
-                  localPlaque && !plaqueValid
-                    ? "border-red-400 focus:ring-red-300"
-                    : "border-gray-200 dark:border-gray-600 focus:ring-[#8AA1C4]"
-                }
-
-                bg-white
-                dark:bg-[#1a1f2e]
-                dark:text-gray-200
-              `}
+              onChange={(e) => setLocalPlaque(e.target.value)}
+              className={`h-12 rounded-2xl border px-4 outline-none transition ${
+                localPlaque && !plaqueValid
+                  ? "border-red-400 focus:ring-red-300"
+                  : "border-gray-200 dark:border-gray-600 focus:ring-[#8AA1C4]"
+              } bg-white dark:bg-[#1a1f2e] dark:text-gray-200`}
             />
-
             {localPlaque && !plaqueValid && (
-              <span className="text-red-500 text-xs mt-1">
-                پلاک معتبر وارد کنید
-              </span>
+              <span className="text-red-500 text-xs mt-1">پلاک معتبر وارد کنید</span>
             )}
           </div>
 
           <div className="flex flex-col">
-            <label className="text-xs mb-1 text-gray-500 dark:text-gray-400">
-              واحد
-            </label>
-
+            <label className="text-xs mb-1 text-gray-500 dark:text-gray-400">واحد</label>
             <input
               type="number"
               placeholder="مثلاً ۳"
               value={localUnit}
-              onChange={(e) =>
-                setLocalUnit(e.target.value)
-              }
-              className={`
-                h-12
-                rounded-2xl
-                border
-                px-4
-                outline-none
-                transition
-
-                ${
-                  localUnit && !unitValid
-                    ? "border-red-400 focus:ring-red-300"
-                    : "border-gray-200 dark:border-gray-600 focus:ring-[#8AA1C4]"
-                }
-
-                bg-white
-                dark:bg-[#1a1f2e]
-                dark:text-gray-200
-              `}
+              onChange={(e) => setLocalUnit(e.target.value)}
+              className={`h-12 rounded-2xl border px-4 outline-none transition ${
+                localUnit && !unitValid
+                  ? "border-red-400 focus:ring-red-300"
+                  : "border-gray-200 dark:border-gray-600 focus:ring-[#8AA1C4]"
+              } bg-white dark:bg-[#1a1f2e] dark:text-gray-200`}
             />
-
             {localUnit && !unitValid && (
-              <span className="text-red-500 text-xs mt-1">
-                واحد معتبر وارد کنید
-              </span>
+              <span className="text-red-500 text-xs mt-1">واحد معتبر وارد کنید</span>
             )}
           </div>
         </div>
 
-{/* TITLE */}
-<div className="mb-4">
-  <label className="text-xs mb-1 block text-gray-500 dark:text-gray-400">
-    عنوان آدرس
-  </label>
-
-  <input
-    placeholder="خانه، محل کار ..."
-    value={localTitle}
-    onChange={(e) => setLocalTitle(e.target.value)}
-    className="
-      w-full h-12 rounded-2xl border px-4 outline-none transition
-      border-gray-200 dark:border-gray-600 focus:ring-[#8AA1C4]
-      bg-white dark:bg-[#1a1f2e] dark:text-gray-200
-    "
-  />
-</div>
+        {/* TITLE */}
+        <div className="mb-4">
+          <label className="text-xs mb-1 block text-gray-500 dark:text-gray-400">عنوان آدرس</label>
+          <input
+            placeholder="خانه، محل کار ..."
+            value={localTitle}
+            onChange={(e) => setLocalTitle(e.target.value)}
+            className="w-full h-12 rounded-2xl border px-4 outline-none transition border-gray-200 dark:border-gray-600 focus:ring-[#8AA1C4] bg-white dark:bg-[#1a1f2e] dark:text-gray-200"
+          />
+        </div>
 
         {/* DESCRIPTION */}
         <div className="mb-5">
-          <label className="text-xs mb-1 block text-gray-500 dark:text-gray-400">
-            توضیحات اضافی
-          </label>
-
+          <label className="text-xs mb-1 block text-gray-500 dark:text-gray-400">توضیحات اضافی</label>
           <textarea
             rows={4}
             placeholder="مثلاً زنگ خراب است، طبقه دوم ..."
             value={description}
-            onChange={(e) =>
-              setDescription(e.target.value)
-            }
-            className="
-            w-full
-
-            rounded-2xl
-
-            border
-            border-gray-200
-            dark:border-gray-600
-
-            bg-white
-            dark:bg-[#1a1f2e]
-
-            px-4
-            py-3
-
-            outline-none
-
-            focus:ring-2
-            focus:ring-[#8AA1C4]
-
-            transition
-
-            resize-none
-            dark:text-gray-200
-          "
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full rounded-2xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-[#1a1f2e] px-4 py-3 outline-none focus:ring-2 focus:ring-[#8AA1C4] transition resize-none dark:text-gray-200"
           />
         </div>
 
@@ -247,40 +132,11 @@ const formValid = plaqueValid && unitValid;
           type="button"
           onClick={handleDifferentDestination}
           disabled={!formValid}
-          className={`
-            w-full
-            h-12
-
-            rounded-2xl
-
-            border-2
-            border-dashed
-
-            mb-4
-
-            font-bold
-
-            transition
-
-            ${
-              formValid
-                ? `
-                  border-sky-400
-                  text-sky-600
-                  hover:bg-sky-50
-                  dark:border-[#8AA1C4]
-                  dark:text-[#8AA1C4]
-                  dark:hover:bg-[#262B40]
-                `
-                : `
-                  border-gray-300
-                  text-gray-400
-                  dark:border-gray-600
-                  dark:text-gray-500
-                  cursor-not-allowed
-                `
-            }
-          `}
+          className={`w-full h-12 rounded-2xl border-2 border-dashed mb-4 font-bold transition ${
+            formValid
+              ? "border-sky-400 text-sky-600 hover:bg-sky-50 dark:border-[#8AA1C4] dark:text-[#8AA1C4] dark:hover:bg-[#262B40]"
+              : "border-gray-300 text-gray-400 dark:border-gray-600 dark:text-gray-500 cursor-not-allowed"
+          }`}
         >
           مقصد تحویل گرفتن فرق می‌کند
         </button>
@@ -289,23 +145,7 @@ const formValid = plaqueValid && unitValid;
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="
-            flex-1
-            h-12
-
-            rounded-2xl
-
-            bg-gray-100
-            dark:bg-[#262B40]
-
-            text-gray-700
-            dark:text-gray-200
-
-            font-bold
-
-            transition
-            hover:opacity-80
-          "
+            className="flex-1 h-12 rounded-2xl bg-gray-100 dark:bg-[#262B40] text-gray-700 dark:text-gray-200 font-bold transition hover:opacity-80"
           >
             انصراف
           </button>
@@ -313,34 +153,14 @@ const formValid = plaqueValid && unitValid;
           <button
             onClick={handleSubmit}
             disabled={!formValid}
-            className={`
-              flex-1
-              h-12
-
-              rounded-2xl
-
-              text-white
-              font-bold
-
-              transition
-
-              ${
-                formValid
-                  ? `
-                    bg-green-500
-                    hover:bg-green-600
-                    dark:bg-[#8AA1C4]
-                    dark:hover:bg-[#7a93b8]
-                  `
-                  : `
-                    bg-gray-300
-                    dark:bg-gray-600
-                    cursor-not-allowed
-                  `
-              }
-            `}
+            className={`flex-1 h-12 rounded-2xl text-white font-bold transition ${
+              formValid
+                ? "bg-green-500 hover:bg-green-600 dark:bg-[#8AA1C4] dark:hover:bg-[#7a93b8]"
+                : "bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
+            }`}
           >
-            ثبت آدرس
+            {/* ✅ استفاده از پراپ submitLabel به جای متن ثابت */}
+            {submitLabel}
           </button>
         </div>
       </div>

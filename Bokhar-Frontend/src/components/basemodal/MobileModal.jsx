@@ -154,7 +154,7 @@ export default function MobileModal({ isOpen, onClose, children, title }) {
   return ReactDOM.createPortal(
     <div
       ref={backdropRef}
-      className="fixed inset-0 z-[200] bg-black/40 dark:bg-black/60"
+      className="fixed inset-0 z-[3000] bg-black/40 dark:bg-black/60"
       onClick={closeWithAnim}
     >
       <div
